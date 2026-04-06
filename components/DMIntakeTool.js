@@ -1,0 +1,511 @@
+import { useState, useRef } from "react";
+
+const STEPS = [
+  { id: "alert", title: "重要確認" },
+  { id: "reason", title: "受診理由" },
+  { id: "disease", title: "病気について" },
+  { id: "history", title: "既往・家族歴" },
+  { id: "lifestyle", title: "生活情報" },
+  { id: "body", title: "体格・要望" },
+];
+
+const NEARBY_HOSPITALS = ["自治医大さいたま医療センター", "上尾中央総合病院", "埼玉県立がんセンター", "その他", "不明"];
+
+const LIVING_OPTIONS = ["夫婦2人暮らし","独居","妻と娘世帯が同居","子供と同居","親と同居","その他"];
+
+const ALCOHOL_TYPES = [
+  { key: "beer", label: "ビール", unit: "缶(350ml)", amounts: ["1缶","2缶","3缶以上"] },
+  { key: "happo", label: "発泡酒", unit: "缶(350ml)", amounts: ["1缶","2缶","3缶以上"] },
+  { key: "wine", label: "ワイン", unit: "杯", amounts: ["1杯","2杯","ボトル1本"] },
+  { key: "shochu", label: "焼酎", unit: "", amounts: ["1合","2合","3合以上"] },
+  { key: "sake", label: "日本酒", unit: "合", amounts: ["1合","2合","3合以上"] },
+  { key: "whisky", label: "ウイスキー", unit: "杯", amounts: ["1杯","2杯","3杯以上"] },
+];
+
+const emptyOtherDisease = () => ({ name: "", hospital: "", hospitalOther: "" });
+const emptyAlcohol = () => ({ type: "", amount: "", freq: "" });
+
+const initialData = {
+  alert: { weightLoss: "" },
+  reason: { type: "", referralFrom: "", referralDept: "", referralQuickSelect: false, referralDetail: "", transferFrom: "", transferDetail: "", checkupType: "", summary: "" },
+  disease: {
+    dmOnsetEra: "令和", dmOnset: "", dmOnsetUnknown: false,
+    ht: false, hl: false, thyroidAdded: false,
+    gastricCancer: { selected: false, resection: "", surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", meds: "" },
+    pancreasCancer: { selected: false, surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", meds: "" },
+    ihd: { selected: false, surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", meds: "" },
+    stroke: { selected: false, surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", meds: "" },
+    otherDiseases: Array(5).fill(null).map(emptyOtherDisease),
+  },
+  history: {
+    age: "", allergy: "なし", allergyDetail: "",
+    fh: { dm: false, ht: false, apo: false, ihd: false },
+    alcoholNone: false, alcoholItems: [emptyAlcohol()],
+    smoking: "なし", smokingAmount: "", smokingYears: "", smokingStartAge: "",
+    smokingQuitEra: "令和", smokingQuitYear: "",
+    eye: "", eyeVisiting: "", checkup: [], vaccine65Prevena: "", vaccine65Herpes: "",
+  },
+  lifestyle: { livingPreset: "", livingCustom: "", childInfo: "", work: "していない", job: "", activity: "" },
+  body: { height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "" },
+};
+
+const inp = (x={}) => ({ padding:"9px 12px", border:"1.5px solid #d0dff5", borderRadius:8, fontSize:14, color:"#1a2a3a", background:"#f7faff", outline:"none", boxSizing:"border-box", fontFamily:"inherit", width:"100%", ...x });
+const lbl = (x={}) => ({ display:"block", fontSize:12, fontWeight:700, color:"#1a5fa8", marginBottom:5, letterSpacing:"0.03em", ...x });
+const btn = (active, color="#1a5fa8", x={}) => ({ padding:"8px 14px", borderRadius:8, border:active?`2px solid ${color}`:"2px solid #d0dff5", background:active?color:"#f7faff", color:active?"#fff":"#5580a8", fontWeight:700, fontSize:13, cursor:"pointer", margin:"3px 4px 3px 0", ...x });
+const sBox = (x={}) => ({ background:"#f7faff", border:"1.5px solid #e0ecff", borderRadius:10, padding:"14px 16px", marginBottom:14, ...x });
+
+function EraYear({ era, year, onEraChange, onYearChange, disabled }) {
+  return (
+    <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
+      <select style={{ ...inp(), width:96 }} value={era} onChange={e=>onEraChange(e.target.value)} disabled={disabled}>
+        <option>昭和</option><option>平成</option><option>令和</option>
+      </select>
+      <input style={{ ...inp(), width:68 }} type="number" placeholder="年" value={disabled?"":year} onChange={e=>onYearChange(e.target.value)} disabled={disabled} />
+      <span style={{ fontSize:13, color:"#666" }}>年ごろ</span>
+    </div>
+  );
+}
+
+function HospitalPicker({ label, value, otherValue, onSelect, onOtherChange, color="#1a5fa8", includeNone }) {
+  const opts = includeNone ? [...NEARBY_HOSPITALS,"通院なし"] : NEARBY_HOSPITALS;
+  return (
+    <div style={{ marginBottom:10 }}>
+      <label style={lbl({ color })}>{label}</label>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:3 }}>
+        {opts.map(h=><button key={h} style={btn(value===h,color)} onClick={()=>onSelect(h)}>{h}</button>)}
+      </div>
+      {value==="その他" && <input style={{ ...inp(), marginTop:6 }} placeholder="病院名を入力" value={otherValue} onChange={e=>onOtherChange(e.target.value)} />}
+    </div>
+  );
+}
+
+function DetailBox({ title, color, data, onChange, showResection }) {
+  return (
+    <div style={{ ...sBox(), border:`1.5px solid ${color}40`, background:`${color}08`, marginTop:6 }}>
+      <div style={{ fontSize:13, fontWeight:800, color, marginBottom:12 }}>{title} ― 詳細</div>
+      {showResection && (
+        <div style={{ marginBottom:12 }}>
+          <label style={lbl({ color })}>胃の切除範囲</label>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:3 }}>
+            {["1/3切除","1/2切除","2/3切除","全摘","不明"].map(o=><button key={o} style={btn(data.resection===o,color)} onClick={()=>onChange("resection",o)}>{o}</button>)}
+          </div>
+        </div>
+      )}
+      <div style={{ marginBottom:12 }}>
+        <label style={lbl({ color })}>手術・治療時期</label>
+        <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+          <EraYear era={data.surgeryEra} year={data.surgeryYear} onEraChange={v=>onChange("surgeryEra",v)} onYearChange={v=>onChange("surgeryYear",v)} disabled={data.surgeryUnknown} />
+          <label style={{ fontSize:13, color:"#888", display:"flex", alignItems:"center", gap:4, cursor:"pointer" }}>
+            <input type="checkbox" checked={!!data.surgeryUnknown} onChange={e=>onChange("surgeryUnknown",e.target.checked)} /> 不明
+          </label>
+        </div>
+      </div>
+      <HospitalPicker label="治療を行った病院" value={data.treatedHospital} otherValue={data.treatedHospitalOther} onSelect={v=>onChange("treatedHospital",v)} onOtherChange={v=>onChange("treatedHospitalOther",v)} color={color} />
+      <HospitalPicker label="現在の通院先" value={data.visitingHospital} otherValue={data.visitingHospitalOther} onSelect={v=>onChange("visitingHospital",v)} onOtherChange={v=>onChange("visitingHospitalOther",v)} color={color} includeNone />
+      <div>
+        <label style={lbl({ color })}>内服薬（分かる範囲で）</label>
+        <input style={inp()} placeholder="例：アスピリン100mg・不明" value={data.meds} onChange={e=>onChange("meds",e.target.value)} />
+      </div>
+    </div>
+  );
+}
+
+function AlcoholRow({ item, index, onChange, onRemove, showRemove }) {
+  const typeInfo = ALCOHOL_TYPES.find(t=>t.key===item.type);
+  return (
+    <div style={sBox({ background:"#f0f8ff", border:"1.5px solid #bee3f8", marginBottom:8 })}>
+      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+        <label style={lbl({ color:"#2b6cb0", marginBottom:0 })}>種類</label>
+        {showRemove && <button onClick={onRemove} style={{ fontSize:12, color:"#e53e3e", background:"none", border:"none", cursor:"pointer", fontWeight:700 }}>✕ 削除</button>}
+      </div>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:3, marginBottom:8 }}>
+        {ALCOHOL_TYPES.map(t=><button key={t.key} style={btn(item.type===t.key,"#2b6cb0")} onClick={()=>onChange(index,"type",t.key)}>{t.label}</button>)}
+      </div>
+      {typeInfo && (<>
+        <label style={lbl({ color:"#2b6cb0" })}>量（{typeInfo.unit||"目安"}）</label>
+        <div style={{ display:"flex", flexWrap:"wrap", gap:3, marginBottom:8 }}>
+          {typeInfo.amounts.map(a=><button key={a} style={btn(item.amount===a,"#2b6cb0")} onClick={()=>onChange(index,"amount",a)}>{a}</button>)}
+        </div>
+        <label style={lbl({ color:"#2b6cb0" })}>頻度</label>
+        <div style={{ display:"flex", flexWrap:"wrap", gap:3 }}>
+          {["毎日","週5〜6日","週3〜4日","週1〜2日","機会飲酒"].map(f=><button key={f} style={btn(item.freq===f,"#2b6cb0")} onClick={()=>onChange(index,"freq",f)}>{f}</button>)}
+        </div>
+      </>)}
+    </div>
+  );
+}
+
+export default function DMIntakeTool() {
+  const [step,setStep]=useState(0);
+  const [data,setData]=useState(initialData);
+  const [isNurse,setIsNurse]=useState(false);
+  const [result,setResult]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [done,setDone]=useState(false);
+  const topRef=useRef(null);
+  const scrollTop=()=>{ if(topRef.current) topRef.current.scrollIntoView({behavior:"smooth"}); };
+  const goStep=(n)=>{ setStep(n); setTimeout(scrollTop,50); };
+  const up=(sec,f,v)=>setData(p=>({...p,[sec]:{...p[sec],[f]:v}}));
+  const upN=(sec,par,f,v)=>setData(p=>({...p,[sec]:{...p[sec],[par]:{...p[sec][par],[f]:v}}}));
+  const toggleArr=(sec,f,v)=>setData(p=>{const a=p[sec][f];return{...p,[sec]:{...p[sec],[f]:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};});
+  const upOD=(i,f,v)=>setData(p=>{const a=[...p.disease.otherDiseases];a[i]={...a[i],[f]:v};return{...p,disease:{...p.disease,otherDiseases:a}};});
+  const upAl=(i,f,v)=>setData(p=>{const a=[...p.history.alcoholItems];a[i]={...a[i],[f]:v};return{...p,history:{...p.history,alcoholItems:a}};});
+  const addAl=()=>setData(p=>({...p,history:{...p.history,alcoholItems:[...p.history.alcoholItems,emptyAlcohol()]}}));
+  const delAl=(i)=>setData(p=>({...p,history:{...p.history,alcoholItems:p.history.alcoholItems.filter((_,j)=>j!==i)}}));
+  const age=parseInt(data.history.age)||0;
+  const isOver60=age>=60;
+  const isOver70=age>=70;
+
+  const buildAlcohol=()=>{
+    if(data.history.alcoholNone) return "なし";
+    const items=data.history.alcoholItems.filter(a=>a.type&&a.amount);
+    if(!items.length) return "";
+    return items.map(a=>{const t=ALCOHOL_TYPES.find(x=>x.key===a.type);return `${t?.label||a.type}${a.amount}${a.freq?`（${a.freq}）`:""}`;}).join("、");
+  };
+  const buildSmoking=()=>{
+    const s=data.history;
+    if(s.smoking==="なし") return "なし";
+    const base=`${s.smokingAmount}本×${s.smokingYears}年（${s.smokingStartAge}歳〜）`;
+    return s.smoking==="禁煙済"?`${base}、${s.smokingQuitEra}${s.smokingQuitYear}年に禁煙`:base;
+  };
+  const buildLiving=()=>{
+    const{livingPreset,livingCustom}=data.lifestyle;
+    if(livingPreset==="その他") return livingCustom;
+    return livingPreset+(livingCustom?`（${livingCustom}）`:"");
+  };
+  const dmOnsetText=()=>{
+    if(data.disease.dmOnsetUnknown||!data.disease.dmOnset) return "";
+    return `（${data.disease.dmOnsetEra}${data.disease.dmOnset}年）`;
+  };
+
+  const generateKarte=async()=>{
+    setLoading(true);
+    const prompt=`あなたは糖尿病専門クリニックの電子カルテ記載AIです。以下の患者情報をもとに、クリニックのフォーマット通りにカルテ記載文を生成してください。
+【ルール】
+- 該当しない項目は省略する
+- フォーマット記号（＃【】□♯）を使用する
+- 体重減少ありの場合は一番上に【⚠️ 体重減少あり・早急なインスリン導入を検討】と記載
+- 60歳未満はワクチン歴を省略、70歳未満は子供の状況を省略
+- 喫煙歴は「○本×○年（○歳〜）」の形式
+- 重要既往歴には「治療した病院 → 現在通院先」を記載
+- ＃糖尿病の右に発症時期を記載
+- 受診理由の直後に空行なしで＃糖尿病を続ける
+
+【整形済みデータ】
+飲酒歴：${buildAlcohol()}
+喫煙歴：${buildSmoking()}
+生活情報：${buildLiving()}
+
+【患者情報JSON】
+${JSON.stringify(data,null,2)}
+
+【出力フォーマット】
+（体重減少ありなら）【⚠️ 体重減少あり・早急なインスリン導入を検討】
+R8.4：（受診理由1〜2行）
+＃糖尿病${dmOnsetText()}
+＃HT（該当時のみ）
+＃HL（該当時のみ）
+◎甲状腺3項目追加済（該当時のみ）
+♯胃癌/膵臓癌/IHD/脳梗塞（該当時のみ、治療病院→通院先・内服薬）
+【アレルギー歴】【FH】【飲酒歴】【喫煙歴】【眼科通院歴】【健診】【ワクチン歴】（60歳以上のみ）【生活情報】【仕事】
+身長:○cm 初診時:○kg 20歳時:○kg max体重○kg(○歳)
+診察にあたっての要望：`;
+    try {
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages:[{role:"user",content:prompt}]})});
+      const json=await res.json();
+      setResult(json.content?.[0]?.text||"生成に失敗しました");
+      setDone(true);
+      setTimeout(scrollTop,50);
+    } catch(e){setResult("エラー: "+e.message);setDone(true);}
+    setLoading(false);
+  };
+
+  const renderStep=()=>{
+    const d=data;
+    switch(step){
+      case 0: return (
+        <div>
+          <div style={{display:"flex",gap:8,marginBottom:20,padding:"10px 14px",background:"#f0f4f8",borderRadius:10}}>
+            <span style={{fontSize:13,color:"#555",fontWeight:700,alignSelf:"center"}}>入力モード：</span>
+            <button style={btn(!isNurse,"#1a5fa8")} onClick={()=>setIsNurse(false)}>👤 患者入力</button>
+            <button style={btn(isNurse,"#6b3fa8")} onClick={()=>setIsNurse(true)}>👩‍⚕️ 看護師入力</button>
+          </div>
+          <div style={{background:"#fff5f5",border:"2px solid #e53e3e",borderRadius:12,padding:"16px 20px",marginBottom:20}}>
+            <div style={{fontSize:15,fontWeight:900,color:"#c53030",marginBottom:6}}>⚠️ 最初に必ず確認してください</div>
+            <div style={{fontSize:13,color:"#742a2a",lineHeight:1.7}}>体重減少がある患者様は<strong>早急なインスリン導入</strong>が必要な場合があります。<br/>※体重減少の定義：<strong>3ヶ月以内に3kg以上の体重減少</strong></div>
+          </div>
+          <label style={lbl()}>最近、体重が減っていますか？</label>
+          <div style={{display:"flex",gap:8}}>
+            {["あり","なし","不明"].map(v=>(
+              <button key={v} style={btn(d.alert.weightLoss===v,v==="あり"?"#e53e3e":"#1a5fa8")} onClick={()=>{up("alert","weightLoss",v);if(v==="あり")setIsNurse(true);}}>
+                {v==="あり"?"⚠️ あり":v}
+              </button>
+            ))}
+          </div>
+          {d.alert.weightLoss==="あり"&&(<div style={{marginTop:14,background:"#c53030",color:"#fff",borderRadius:10,padding:"14px 18px",fontWeight:800,fontSize:14,lineHeight:1.8}}>🚨 スタッフへ申し送り：<br/>体重減少ありのため、インスリン導入を要検討。<br/>医師に至急お伝えください。</div>)}
+        </div>
+      );
+      case 1: return (
+        <div>
+          <label style={lbl()}>受診理由</label>
+          <div style={{display:"flex",flexWrap:"wrap",marginBottom:14}}>
+            {["紹介","検診異常","自主転院"].map(r=><button key={r} style={btn(d.reason.type===r)} onClick={()=>up("reason","type",r)}>{r}</button>)}
+          </div>
+          {d.reason.type==="紹介"&&(<div style={sBox()}>
+            <label style={lbl()}>よく使う紹介元</label>
+            <button style={{...btn(d.reason.referralQuickSelect,"#0f9668"),marginBottom:12,fontSize:14,padding:"10px 18px",border:d.reason.referralQuickSelect?"2px solid #0f9668":"2px dashed #0f9668",background:d.reason.referralQuickSelect?"#0f9668":"#f0fff8",color:d.reason.referralQuickSelect?"#fff":"#0f9668"}}
+              onClick={()=>{const n=!d.reason.referralQuickSelect;setData(p=>({...p,reason:{...p.reason,referralQuickSelect:n,referralFrom:n?"上尾中央総合病院":"",referralDept:n?"糖尿病内科":""}}));}}>
+              {d.reason.referralQuickSelect?"✓ ":""}上尾中央総合病院・糖尿病内科
+            </button>
+            {!d.reason.referralQuickSelect&&(<div style={{display:"flex",gap:10,marginBottom:12}}>
+              <div style={{flex:2}}><label style={lbl()}>病院名</label><input style={inp()} placeholder="病院名" value={d.reason.referralFrom} onChange={e=>up("reason","referralFrom",e.target.value)}/></div>
+              <div style={{flex:1}}><label style={lbl()}>科名</label><input style={inp()} placeholder="例：糖尿病内科" value={d.reason.referralDept} onChange={e=>up("reason","referralDept",e.target.value)}/></div>
+            </div>)}
+            <label style={lbl()}>紹介の理由</label>
+            <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+              {["血糖コントロール不良のため","安定していたため当院へ","専門的管理のため","内容不明"].map(v=><button key={v} style={btn(d.reason.referralDetail===v)} onClick={()=>up("reason","referralDetail",v)}>{v}</button>)}
+            </div>
+          </div>)}
+          {d.reason.type==="自主転院"&&(<div style={sBox()}>
+            <label style={lbl()}>転院元 医療機関名</label>
+            <input style={{...inp(),marginBottom:12}} placeholder="例：○○クリニック" value={d.reason.transferFrom} onChange={e=>up("reason","transferFrom",e.target.value)}/>
+            <label style={lbl()}>転院の理由</label>
+            <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+              {["血糖コントロール改善しないため","転居のため","より専門的な治療を希望","その他"].map(v=><button key={v} style={btn(d.reason.transferDetail===v)} onClick={()=>up("reason","transferDetail",v)}>{v}</button>)}
+            </div>
+          </div>)}
+          {d.reason.type==="検診異常"&&(<div style={sBox()}>
+            <label style={lbl()}>検診の種類</label>
+            <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+              {["会社健診","市健診","人間ドック"].map(v=><button key={v} style={btn(d.reason.checkupType===v)} onClick={()=>up("reason","checkupType",v)}>{v}</button>)}
+            </div>
+          </div>)}
+          <div style={{marginTop:8}}>
+            <label style={lbl()}>自由記入欄（任意）</label>
+            <textarea style={{...inp(),minHeight:72,resize:"vertical"}} placeholder="補足があれば記載（書かなくてもOK）" value={d.reason.summary} onChange={e=>up("reason","summary",e.target.value)}/>
+          </div>
+        </div>
+      );
+      case 2: return (
+        <div>
+          <div style={{...sBox({background:"#f0f7ff",border:"2px solid #bcd4f8"}),marginBottom:16}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,flexWrap:"wrap"}}>
+              <span style={{fontSize:15,fontWeight:900,color:"#1a5fa8"}}>＃糖尿病</span>
+              <span style={{fontSize:13,color:"#888"}}>発症時期：</span>
+              <EraYear era={d.disease.dmOnsetEra} year={d.disease.dmOnset} onEraChange={v=>up("disease","dmOnsetEra",v)} onYearChange={v=>up("disease","dmOnset",v)} disabled={d.disease.dmOnsetUnknown}/>
+            </div>
+            <label style={{fontSize:13,color:"#5580a8",display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}>
+              <input type="checkbox" checked={d.disease.dmOnsetUnknown} onChange={e=>up("disease","dmOnsetUnknown",e.target.checked)}/>発症時期は不明（カルテ記載を省略）
+            </label>
+          </div>
+          <label style={lbl()}>合併する疾患</label>
+          <div style={{display:"flex",flexWrap:"wrap",marginBottom:14}}>
+            {[["ht","高血圧（HT）"],["hl","脂質異常症（HL）"]].map(([k,l])=><button key={k} style={btn(d.disease[k])} onClick={()=>up("disease",k,!d.disease[k])}>{l}</button>)}
+          </div>
+          {isNurse&&d.disease.hl&&(<div style={{background:"#fffff0",border:"2px solid #d69e2e",borderRadius:10,padding:"12px 16px",marginBottom:14}}>
+            <div style={{fontSize:13,fontWeight:800,color:"#744210",marginBottom:8}}>👩‍⚕️ 看護師確認事項</div>
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:14,color:"#744210",fontWeight:700}}>
+              <input type="checkbox" checked={d.disease.thyroidAdded} onChange={e=>up("disease","thyroidAdded",e.target.checked)} style={{width:18,height:18}}/>◎ 甲状腺3項目を採血に追加した
+            </label>
+          </div>)}
+          {d.disease.hl&&!isNurse&&(<div style={{background:"#fff8f0",border:"1.5px solid #e07000",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:13,color:"#a05000"}}>⚠️ 看護師が甲状腺3項目の追加採血を確認します</div>)}
+          <label style={lbl({marginTop:6})}>重要既往歴</label>
+          <div style={{display:"flex",flexWrap:"wrap",marginBottom:8}}>
+            {[["gastricCancer","胃癌（胃切除後）","#c0392b"],["pancreasCancer","膵臓癌（術後）","#c0392b"],["ihd","IHD：PCI後","#8e44ad"],["stroke","脳梗塞後","#8e44ad"]].map(([k,l,c])=>(
+              <button key={k} style={btn(d.disease[k].selected,c)} onClick={()=>upN("disease",k,"selected",!d.disease[k].selected)}>{l}</button>
+            ))}
+          </div>
+          {d.disease.gastricCancer.selected&&<DetailBox title="胃癌（胃切除後）" color="#c0392b" showResection data={d.disease.gastricCancer} onChange={(f,v)=>upN("disease","gastricCancer",f,v)}/>}
+          {d.disease.pancreasCancer.selected&&<DetailBox title="膵臓癌（術後）" color="#c0392b" data={d.disease.pancreasCancer} onChange={(f,v)=>upN("disease","pancreasCancer",f,v)}/>}
+          {d.disease.ihd.selected&&<DetailBox title="IHD：PCI後" color="#8e44ad" data={d.disease.ihd} onChange={(f,v)=>upN("disease","ihd",f,v)}/>}
+          {d.disease.stroke.selected&&<DetailBox title="脳梗塞後" color="#8e44ad" data={d.disease.stroke} onChange={(f,v)=>upN("disease","stroke",f,v)}/>}
+          <label style={lbl({marginTop:8})}>その他の病気・既往歴</label>
+          <div style={{fontSize:12,color:"#7a9abf",marginBottom:8}}>例：慢性腎臓病、COPD、甲状腺疾患、うつ病、骨粗鬆症 など</div>
+          {d.disease.otherDiseases.map((od,i)=>(
+            <div key={i} style={{display:"flex",gap:8,marginBottom:8,alignItems:"flex-start"}}>
+              <div style={{flex:"0 0 20px",paddingTop:10,fontSize:13,color:"#8899aa",fontWeight:700}}>{i+1}</div>
+              <div style={{flex:2}}>
+                {i===0&&<label style={lbl()}>病名</label>}
+                <input style={inp()} placeholder="病名（なければ空欄）" value={od.name} onChange={e=>upOD(i,"name",e.target.value)}/>
+              </div>
+              <div style={{flex:3}}>
+                {i===0&&<label style={lbl()}>現在の通院先</label>}
+                {od.name?(<div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                    {[...NEARBY_HOSPITALS,"通院なし"].map(h=><button key={h} style={{...btn(od.hospital===h),padding:"5px 10px",fontSize:12}} onClick={()=>upOD(i,"hospital",h)}>{h}</button>)}
+                  </div>
+                  {od.hospital==="その他"&&<input style={{...inp(),marginTop:6,fontSize:13}} placeholder="病院名" value={od.hospitalOther} onChange={e=>upOD(i,"hospitalOther",e.target.value)}/>}
+                </div>):<div style={{paddingTop:8,fontSize:12,color:"#b0c0d0"}}>病名を入力すると通院先が選べます</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+      case 3: return (
+        <div>
+          <label style={lbl()}>患者様の年齢</label>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20}}>
+            <input style={{...inp(),width:80}} type="number" placeholder="歳" value={d.history.age} onChange={e=>up("history","age",e.target.value)}/>
+            <span style={{fontSize:13,color:"#666"}}>歳</span>
+            {age>0&&(<span style={{fontSize:12,fontWeight:700,padding:"4px 12px",borderRadius:20,color:isOver70?"#c53030":isOver60?"#c05621":"#276749",background:isOver70?"#fff5f5":isOver60?"#fffaf0":"#f0fff4",border:`1px solid ${isOver70?"#feb2b2":isOver60?"#fbd38d":"#9ae6b4"}`}}>
+              {isOver70?"70歳以上：子供の状況も確認":isOver60?"60歳以上：ワクチン確認あり":"60歳未満：ワクチン確認不要"}
+            </span>)}
+          </div>
+          <label style={lbl()}>アレルギー歴</label>
+          <div style={{display:"flex",gap:8,marginBottom:8}}>
+            {["なし","あり"].map(v=><button key={v} style={btn(d.history.allergy===v)} onClick={()=>up("history","allergy",v)}>{v}</button>)}
+          </div>
+          {d.history.allergy==="あり"&&<input style={{...inp(),marginBottom:14}} placeholder="内容（例：ペニシリン系・造影剤）" value={d.history.allergyDetail} onChange={e=>up("history","allergyDetail",e.target.value)}/>}
+          <label style={lbl({marginTop:10})}>家族歴（FH）</label>
+          <div style={{display:"flex",flexWrap:"wrap",marginBottom:18}}>
+            {[["dm","糖尿病(DM)"],["ht","高血圧(HT)"],["apo","脳卒中(APO)"],["ihd","虚血性心疾患(IHD)"]].map(([k,l])=><button key={k} style={btn(d.history.fh[k],"#6b3fa8")} onClick={()=>upN("history","fh",k,!d.history.fh[k])}>{l}</button>)}
+          </div>
+          <label style={lbl()}>飲酒歴</label>
+          <div style={{marginBottom:8}}>
+            <button style={btn(d.history.alcoholNone,"#718096")} onClick={()=>up("history","alcoholNone",!d.history.alcoholNone)}>{d.history.alcoholNone?"✓ 飲まない":"飲まない"}</button>
+          </div>
+          {!d.history.alcoholNone&&(<div>
+            {d.history.alcoholItems.map((item,i)=><AlcoholRow key={i} item={item} index={i} onChange={upAl} onRemove={()=>delAl(i)} showRemove={d.history.alcoholItems.length>1}/>)}
+            <button style={{...btn(false,"#2b6cb0"),fontSize:13,width:"100%",textAlign:"center",marginTop:4}} onClick={addAl}>＋ お酒を追加</button>
+            {buildAlcohol()&&(<div style={{marginTop:10,padding:"8px 14px",background:"#ebf8ff",border:"1px solid #bee3f8",borderRadius:8,fontSize:13,color:"#2b6cb0",fontWeight:700}}>📝 カルテ記載例：{buildAlcohol()}</div>)}
+          </div>)}
+          <label style={lbl({marginTop:16})}>喫煙歴</label>
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
+            {["なし","あり","禁煙済"].map(v=><button key={v} style={btn(d.history.smoking===v)} onClick={()=>up("history","smoking",v)}>{v}</button>)}
+          </div>
+          {(d.history.smoking==="あり"||d.history.smoking==="禁煙済")&&(<div style={sBox({border:"1.5px solid #bee3f8",background:"#ebf8ff",marginBottom:10})}>
+            <div style={{fontSize:12,color:"#2b6cb0",fontWeight:700,marginBottom:10}}>📝 カルテ記載：{buildSmoking()||"入力中..."}</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
+              <div style={{flex:"1 1 80px"}}><label style={lbl({color:"#2b6cb0"})}>1日の本数</label><input style={inp()} type="number" placeholder="本/日" value={d.history.smokingAmount} onChange={e=>up("history","smokingAmount",e.target.value)}/></div>
+              <div style={{flex:"1 1 80px"}}><label style={lbl({color:"#2b6cb0"})}>喫煙年数</label><input style={inp()} type="number" placeholder="年" value={d.history.smokingYears} onChange={e=>up("history","smokingYears",e.target.value)}/></div>
+              <div style={{flex:"1 1 80px"}}><label style={lbl({color:"#2b6cb0"})}>開始年齢</label><input style={inp()} type="number" placeholder="歳〜" value={d.history.smokingStartAge} onChange={e=>up("history","smokingStartAge",e.target.value)}/></div>
+            </div>
+            {d.history.smoking==="禁煙済"&&(<div><label style={lbl({color:"#2b6cb0"})}>禁煙した時期</label><EraYear era={d.history.smokingQuitEra} year={d.history.smokingQuitYear} onEraChange={v=>up("history","smokingQuitEra",v)} onYearChange={v=>up("history","smokingQuitYear",v)}/></div>)}
+          </div>)}
+          <label style={lbl()}>眼科通院歴（糖尿病網膜症チェック）</label>
+          <div style={{fontSize:12,color:"#7a9abf",marginBottom:6}}>糖尿病による網膜症のフォローのため確認します</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}}>
+            {["通院中","通院していない","今後受診予定"].map(v=>(
+              <button key={v} style={btn(d.history.eyeVisiting===v,v==="通院していない"?"#718096":"#1a5fa8")} onClick={()=>up("history","eyeVisiting",v)}>{v}</button>
+            ))}
+          </div>
+          {d.history.eyeVisiting==="通院中"&&<input style={{...inp(),marginBottom:14}} placeholder="例：○○眼科" value={d.history.eye} onChange={e=>up("history","eye",e.target.value)}/>}
+          {d.history.eyeVisiting!=="通院中"&&<div style={{marginBottom:14}}/>}
+          <label style={lbl()}>健診の種類</label>
+          <div style={{display:"flex",flexWrap:"wrap",marginBottom:14}}>
+            {["市の健診","会社の健診","人間ドック"].map(v=><button key={v} style={btn(d.history.checkup.includes(v))} onClick={()=>toggleArr("history","checkup",v)}>{v}</button>)}
+          </div>
+          {isOver60&&(<div style={sBox({border:"1.5px solid #bee3f8",background:"#ebf8ff"})}>
+            <div style={{fontSize:13,fontWeight:800,color:"#2b6cb0",marginBottom:12}}>💉 ワクチン希望（60歳以上）</div>
+            <div style={{marginBottom:12}}>
+              <label style={lbl({color:"#2b6cb0"})}>プレベナー20</label>
+              <div style={{display:"flex",gap:4}}>{["希望あり","なし"].map(v=><button key={v} style={btn(d.history.vaccine65Prevena===v,"#2b6cb0")} onClick={()=>up("history","vaccine65Prevena",v)}>{v}</button>)}</div>
+            </div>
+            <div>
+              <label style={lbl({color:"#2b6cb0"})}>帯状疱疹ワクチン</label>
+              <div style={{display:"flex",gap:4}}>{["希望あり","なし"].map(v=><button key={v} style={btn(d.history.vaccine65Herpes===v,"#2b6cb0")} onClick={()=>up("history","vaccine65Herpes",v)}>{v}</button>)}</div>
+            </div>
+          </div>)}
+        </div>
+      );
+      case 4: return (
+        <div>
+          <label style={lbl()}>生活情報（同居・家族構成）</label>
+          <div style={{display:"flex",flexWrap:"wrap",marginBottom:10}}>
+            {LIVING_OPTIONS.map(v=><button key={v} style={btn(d.lifestyle.livingPreset===v)} onClick={()=>up("lifestyle","livingPreset",v)}>{v}</button>)}
+          </div>
+          {d.lifestyle.livingPreset==="その他"&&<input style={{...inp(),marginBottom:8}} placeholder="例：兄弟と同居" value={d.lifestyle.livingCustom} onChange={e=>up("lifestyle","livingCustom",e.target.value)}/>}
+          {d.lifestyle.livingPreset&&d.lifestyle.livingPreset!=="その他"&&(<div style={{marginBottom:8}}><input style={inp()} placeholder="補足があれば（例：夫は要介護）" value={d.lifestyle.livingCustom} onChange={e=>up("lifestyle","livingCustom",e.target.value)}/></div>)}
+          {isOver70&&(<div style={sBox({border:"1.5px solid #fbd38d",background:"#fffaf0"})}>
+            <div style={{fontSize:13,fontWeight:800,color:"#c05621",marginBottom:8}}>👨‍👩‍👧 お子さんの状況（70歳以上）</div>
+            <div style={{fontSize:12,color:"#9c6231",marginBottom:6}}>例：子供は近居（さいたま市）　例：子供は遠方（千葉県）　例：子供なし</div>
+            <input style={inp()} placeholder="お子さんの居住状況を記載" value={d.lifestyle.childInfo} onChange={e=>up("lifestyle","childInfo",e.target.value)}/>
+          </div>)}
+          <label style={lbl({marginTop:8})}>仕事</label>
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
+            {["している","していない"].map(v=><button key={v} style={btn(d.lifestyle.work===v)} onClick={()=>up("lifestyle","work",v)}>{v}</button>)}
+          </div>
+          {d.lifestyle.work==="している"&&<input style={{...inp(),marginBottom:14}} placeholder="職業（例：会社員・自営業・パート）" value={d.lifestyle.job} onChange={e=>up("lifestyle","job",e.target.value)}/>}
+          <label style={lbl()}>活動量</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+            {["体を動かしていることが多い","立っていることが多い","座っていることが多い"].map(v=><button key={v} style={btn(d.lifestyle.activity===v)} onClick={()=>up("lifestyle","activity",v)}>{v}</button>)}
+          </div>
+        </div>
+      );
+      case 5: return (
+        <div>
+          <label style={lbl()}>身長・体重</label>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:20}}>
+            {[["height","身長","cm"],["weightNow","現在の体重","kg"],["weight20","20歳時の体重","kg"],["weightMax","最大体重","kg"],["weightMaxAge","最大体重の年齢","歳"]].map(([k,l,u])=>(
+              <div key={k} style={{flex:"1 1 90px"}}>
+                <label style={lbl()}>{l}（{u}）</label>
+                <input style={inp()} type="number" placeholder={u} value={d.body[k]} onChange={e=>up("body",k,e.target.value)}/>
+              </div>
+            ))}
+          </div>
+          <label style={lbl()}>診察への要望・聞きたいこと</label>
+          <textarea style={{...inp(),minHeight:80,resize:"vertical"}} placeholder="自由にご記入ください（なければ空欄）" value={d.body.concern} onChange={e=>up("body","concern",e.target.value)}/>
+        </div>
+      );
+      default: return null;
+    }
+  };
+
+  return (
+    <div ref={topRef} style={{minHeight:"100vh",background:"linear-gradient(135deg,#e8f0fe 0%,#f0f7ff 60%,#e8f4fd 100%)",fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif",padding:"20px 16px"}}>
+      <div style={{maxWidth:720,margin:"0 auto 18px"}}>
+        {data.alert.weightLoss==="あり"&&!done&&(<div style={{background:"#c53030",color:"#fff",borderRadius:10,padding:"12px 18px",marginBottom:12,fontWeight:900,fontSize:14}}>🚨 体重減少あり ― インスリン導入を要検討・医師へ至急申し送り</div>)}
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#1a5fa8,#3b82f6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>🏥</div>
+          <div>
+            <div style={{fontSize:11,color:"#6b9fd4",fontWeight:700,letterSpacing:"0.08em"}}>糖尿病専門クリニック</div>
+            <div style={{fontSize:20,fontWeight:900,color:"#1a2a4a"}}>初診事前問診</div>
+          </div>
+          <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
+            {isNurse&&<span style={{fontSize:11,background:"#6b3fa8",color:"#fff",padding:"3px 10px",borderRadius:20,fontWeight:700}}>👩‍⚕️ 看護師モード</span>}
+            <span style={{fontSize:12,background:"#e8f0fe",color:"#1a5fa8",padding:"4px 14px",borderRadius:20,fontWeight:700}}>DM基本</span>
+          </div>
+        </div>
+      </div>
+      <div style={{maxWidth:720,margin:"0 auto"}}>
+        {!done&&(<div style={{display:"flex",gap:4,marginBottom:18}}>
+          {STEPS.map((s,i)=>(<div key={s.id} style={{flex:1,textAlign:"center"}}>
+            <div style={{height:4,borderRadius:2,background:i<=step?"#1a5fa8":"#d0dff5",marginBottom:4,transition:"background 0.3s"}}/>
+            <div style={{fontSize:10,color:i<=step?"#1a5fa8":"#b0c8e0",fontWeight:i===step?700:400}}>{s.title}</div>
+          </div>))}
+        </div>)}
+        {!done?(
+          <div style={{background:"#fff",borderRadius:16,padding:"24px 26px",boxShadow:"0 2px 20px rgba(0,80,160,0.07)"}}>
+            <h2 style={{fontSize:16,fontWeight:800,color:"#1a2a4a",marginBottom:18,borderBottom:"2px solid #e8f0fe",paddingBottom:10}}>{STEPS[step].title}</h2>
+            {renderStep()}
+            <div style={{display:"flex",justifyContent:"space-between",marginTop:26}}>
+              <button style={{padding:"11px 22px",borderRadius:8,border:"1.5px solid #d0dff5",background:"#f7faff",color:step===0?"#c0d0e0":"#5580a8",fontWeight:700,fontSize:14,cursor:step===0?"not-allowed":"pointer"}} onClick={()=>goStep(step-1)} disabled={step===0}>← 前へ</button>
+              {step<STEPS.length-1?(
+                <button style={{padding:"11px 26px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#1a5fa8,#3b82f6)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",boxShadow:"0 4px 12px rgba(26,95,168,0.25)"}} onClick={()=>goStep(step+1)}>次へ →</button>
+              ):(
+                <button style={{padding:"11px 26px",borderRadius:8,border:"none",background:loading?"#8ab0d4":"linear-gradient(135deg,#0f9668,#34d399)",color:"#fff",fontWeight:800,fontSize:14,cursor:loading?"not-allowed":"pointer",boxShadow:"0 4px 12px rgba(15,150,104,0.25)"}} onClick={generateKarte} disabled={loading}>{loading?"生成中...":"✨ カルテ文を生成"}</button>
+              )}
+            </div>
+          </div>
+        ):(
+          <div style={{background:"#fff",borderRadius:16,padding:"24px 26px",boxShadow:"0 2px 20px rgba(0,80,160,0.07)",border:"2px solid #c6f6d5"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+              <div style={{width:32,height:32,borderRadius:8,background:"#0f9668",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:900,fontSize:16}}>✓</div>
+              <div>
+                <div style={{fontWeight:800,color:"#0a5c40",fontSize:15}}>カルテ記載文が生成されました</div>
+                <div style={{fontSize:12,color:"#5a9a80"}}>内容確認後、電子カルテにコピーしてください</div>
+              </div>
+            </div>
+            {data.alert.weightLoss==="あり"&&(<div style={{background:"#c53030",color:"#fff",borderRadius:8,padding:"12px 16px",marginBottom:12,fontSize:14,fontWeight:800}}>🚨 体重減少あり ― 医師への至急申し送りが必要です</div>)}
+            <div style={{background:"#f5f9f7",border:"1px solid #c0e8d8",borderRadius:10,padding:"16px 18px",whiteSpace:"pre-wrap",fontSize:13,lineHeight:2,color:"#1a3a2a",fontFamily:"monospace"}}>{result}</div>
+            <div style={{display:"flex",gap:10,marginTop:14}}>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#1a5fa8,#3b82f6)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer"}} onClick={()=>navigator.clipboard.writeText(result)}>📋 コピー</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #d0dff5",background:"#f7faff",color:"#5580a8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setTimeout(scrollTop,50);}}>🔄 最初から</button>
+            </div>
+          </div>
+        )}
+        <div style={{textAlign:"center",fontSize:11,color:"#a0b8d0",marginTop:14}}>入力内容は送信後に消去されます　│　個人情報は院内のみで使用されます</div>
+      </div>
+    </div>
+  );
+}
