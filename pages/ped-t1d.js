@@ -1,1 +1,1 @@
-export { default } from '../components/PedT1DIntakeTool
+export { default } from '../components/PedT1DIntakeTool'
