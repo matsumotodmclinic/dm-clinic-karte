@@ -1,1 +1,1 @@
-export { default } from '../components/RHIntakeTool
+export { default } from '../components/RHIntakeTool'
