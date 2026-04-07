@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 const FORMATS = [
   {
     id: 'dm',
-    href: '/',
+    href: '/dm',
     label: 'DM基本',
     sublabel: '2型糖尿病',
     emoji: '🩺',
