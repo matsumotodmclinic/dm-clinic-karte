@@ -1,1 +1,1 @@
-export { default } from '../components/GDMIntakeTool
+export { default } from '../components/GDMIntakeTool'
