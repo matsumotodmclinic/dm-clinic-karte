@@ -1,1 +1,1 @@
-export { default } from '../components/HTHLIntakeTool
+export { default } from '../components/HTHLIntakeTool'
