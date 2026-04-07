@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 export function middleware(request) {
   const { pathname } = request.nextUrl;
 
-  // /auth は認証ページなので素通り
-  if (pathname.startsWith('/auth')) {
+ // /auth と /api/auth は認証不要
+  if (pathname.startsWith('/auth') || pathname.startsWith('/api/auth')) {
     return NextResponse.next();
   }
 
