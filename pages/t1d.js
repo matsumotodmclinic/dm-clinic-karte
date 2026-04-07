@@ -1,1 +1,1 @@
-export { default } from '../components/T1DIntakeTool
+export { default } from '../components/T1DIntakeTool'
