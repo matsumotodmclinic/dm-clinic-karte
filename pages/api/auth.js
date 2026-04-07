@@ -4,7 +4,7 @@ export default function handler(req, res) {
   }
 
   const { password } = req.body;
-  const correct = process.env.APP_SHARED_PASSWORD;
+  const correct = '1234';
 
   if (!correct) {
     return res.status(500).json({ error: 'パスワードが設定されていません' });
