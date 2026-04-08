@@ -11,7 +11,7 @@ const STEPS = [
 const NEARBY_HOSPITALS = ["自治医大さいたま医療センター", "上尾中央総合病院", "埼玉県立がんセンター", "その他", "不明"];
 const LIVING_WITH_SPOUSE = ["配偶者あり", "配偶者なし（独居・死別・離別等）"];
 const LIVING_OTHERS = ["子供と同居なし", "息子と同居", "娘と同居", "息子夫婦と同居", "娘夫婦と同居", "親と同居", "その他"];
-const ALCOHOL_TYPES    = [
+const ALCOHOL_TYPES = [
   { key: "beer",   label: "ビール",     unit: "缶(350ml)", amounts: ["1缶","2缶","3缶以上"] },
   { key: "happo",  label: "発泡酒",     unit: "缶(350ml)", amounts: ["1缶","2缶","3缶以上"] },
   { key: "wine",   label: "ワイン",     unit: "杯",        amounts: ["1杯","2杯","ボトル1本"] },
@@ -19,7 +19,6 @@ const ALCOHOL_TYPES    = [
   { key: "sake",   label: "日本酒",     unit: "合",        amounts: ["1合","2合","3合以上"] },
   { key: "whisky", label: "ウイスキー", unit: "杯",        amounts: ["1杯","2杯","3杯以上"] },
 ];
-
 const emptyAlcohol = () => ({ type: "", amount: "", freq: "" });
 
 const initialData = {
@@ -30,14 +29,11 @@ const initialData = {
     deviceWish: [], summary: "",
   },
   disease: {
-    dm1type: "",           // 激症1型・急性発症・緩徐進行性・不明
+    dm1type: "",
     dmOnsetEra: "令和", dmOnset: "", dmOnsetUnknown: false,
     ht: false, hl: false,
-    thyroidChecked: false, // 甲状腺検査確認済（看護師）
-    // 障害年金
-    pensionStatus: "",     // 受給状況
-    pensionKosei: "",      // 診断時厚生年金加入
-    pensionPossibility: "", // 受給の可能性
+    thyroidChecked: false,
+    pensionStatus: "", pensionKosei: "", pensionPossibility: "",
   },
   history: {
     age: "", allergy: "なし", allergyDetail: "",
@@ -97,12 +93,13 @@ function AlcoholRow({ item, index, onChange, onRemove, showRemove }) {
 }
 
 export default function T1DIntakeTool() {
-  const [step, setStep]       = useState(0);
-  const [data, setData]       = useState(initialData);
-  const [isNurse, setIsNurse] = useState(false);
-  const [result, setResult]   = useState("");
-  const [loading, setLoading] = useState(false);
-  const [done, setDone]       = useState(false);
+  const [step, setStep]         = useState(0);
+  const [data, setData]         = useState(initialData);
+  const [isNurse, setIsNurse]   = useState(false);
+  const [result, setResult]     = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [done, setDone]         = useState(false);
+  const [visitCode, setVisitCode] = useState("");
   const topRef = useRef(null);
 
   const scrollTop = () => { if(topRef.current) topRef.current.scrollIntoView({behavior:"smooth"}); };
@@ -146,6 +143,15 @@ export default function T1DIntakeTool() {
     if(data.disease.dmOnsetUnknown||!data.disease.dmOnset) return "";
     return `（${data.disease.dmOnsetEra}${data.disease.dmOnset}年）`;
   };
+  const getCurrentMonth = () => {
+    const now = new Date();
+    return `R${now.getFullYear()-2018}.${now.getMonth()+1}`;
+  };
+
+  const copyToClipboard = (text) => {
+    const copy = () => { const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); alert('コピーしました'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(copy); } else { copy(); }
+  };
 
   const generateKarte = async () => {
     setLoading(true);
@@ -171,8 +177,8 @@ ${JSON.stringify(data,null,2)}
 【出力フォーマット】
 （体重減少ありなら）【⚠️ 体重減少あり・早急なインスリン導入を検討】
 
-R8.4：（受診理由1〜2行）
-＃1型糖尿病　（1型のタイプ：激症1型・急性発症・緩徐進行性・不明のうち該当するもの）${dmOnsetText()}
+${getCurrentMonth()}：（受診理由1〜2行）
+＃1型糖尿病　（1型のタイプ）${dmOnsetText()}
 ・GAD抗体：（初診時採血）
 ・CPR：（初診時採血）
 ・甲状腺検査：（初診時採血）
@@ -195,9 +201,15 @@ R8.4：（受診理由1〜2行）
 診察にあたっての要望：
 `;
     try {
-      const res  = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages:[{role:"user",content:prompt}]})});
+      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages:[{role:"user",content:prompt}]})});
       const json = await res.json();
-      setResult(json.content?.[0]?.text||"生成に失敗しました");
+      const generated = json.content?.[0]?.text||"生成に失敗しました";
+      setResult(generated);
+      try {
+        const saveRes = await fetch("/api/questionnaire",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({form_type:"1型糖尿病",form_data:data,age:data.history?.age||null,generated_karte:generated})});
+        const saveJson = await saveRes.json();
+        if(saveJson.visit_code) setVisitCode(saveJson.visit_code);
+      } catch(e) { console.error('Save error:', e); }
       setDone(true);
       setTimeout(scrollTop,50);
     } catch(e){setResult("エラー: "+e.message);setDone(true);}
@@ -208,7 +220,6 @@ R8.4：（受診理由1〜2行）
     const d = data;
     switch(step) {
 
-      /* 0: 重要確認 */
       case 0: return (
         <div>
           <div style={{display:"flex",gap:8,marginBottom:20,padding:"10px 14px",background:"#f0f4f8",borderRadius:10}}>
@@ -234,15 +245,12 @@ R8.4：（受診理由1〜2行）
           </div>
           {d.alert.weightLoss==="あり"&&(
             <div style={{marginTop:14,background:"#c53030",color:"#fff",borderRadius:10,padding:"14px 18px",fontWeight:800,fontSize:14,lineHeight:1.8}}>
-              🚨 スタッフへ申し送り：<br/>体重減少ありのため、インスリン導入を要検討。<br/>医師に至急お伝えください。
+              🚨 スタッフへ申し送り：体重減少ありのため、インスリン導入を要検討。医師に至急お伝えください。
             </div>
           )}
-
-
         </div>
       );
 
-      /* 1: 受診理由 */
       case 1: return (
         <div>
           <label style={lbl()}>受診理由</label>
@@ -291,42 +299,36 @@ R8.4：（受診理由1〜2行）
         </div>
       );
 
-      /* 2: 1型糖尿病 */
       case 2: return (
         <div>
-          {/* 1型のタイプ */}
           <div style={{...sBox({background:"#f0f7ff",border:"2px solid #bcd4f8"}),marginBottom:16}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
-              <span style={{fontSize:15,fontWeight:900,color:"#1a5fa8"}}>＃1型糖尿病</span>
+            <span style={{fontSize:15,fontWeight:900,color:"#1a5fa8"}}>＃1型糖尿病</span>
+            <div style={{marginTop:12}}>
+              <label style={lbl()}>1型のタイプ</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:14}}>
+                {["激症1型","急性発症","緩徐進行性（SPIDDM）","不明"].map(v=>(
+                  <button key={v} style={btn(d.disease.dm1type===v)} onClick={()=>up("disease","dm1type",v)}>{v}</button>
+                ))}
+              </div>
+              <label style={lbl()}>発症時期</label>
+              <div style={{marginBottom:6}}>
+                <EraYear era={d.disease.dmOnsetEra} year={d.disease.dmOnset}
+                  onEraChange={v=>up("disease","dmOnsetEra",v)}
+                  onYearChange={v=>up("disease","dmOnset",v)}
+                  disabled={d.disease.dmOnsetUnknown}/>
+              </div>
+              <label style={{fontSize:13,color:"#5580a8",display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}>
+                <input type="checkbox" checked={d.disease.dmOnsetUnknown} onChange={e=>up("disease","dmOnsetUnknown",e.target.checked)}/>
+                発症時期は不明
+              </label>
             </div>
-            <label style={lbl()}>1型のタイプ</label>
-            <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:14}}>
-              {["激症1型","急性発症","緩徐進行性（SPIDDM）","不明"].map(v=>(
-                <button key={v} style={btn(d.disease.dm1type===v)} onClick={()=>up("disease","dm1type",v)}>{v}</button>
-              ))}
-            </div>
-            <label style={lbl()}>発症時期</label>
-            <div style={{marginBottom:6}}>
-              <EraYear era={d.disease.dmOnsetEra} year={d.disease.dmOnset}
-                onEraChange={v=>up("disease","dmOnsetEra",v)}
-                onYearChange={v=>up("disease","dmOnset",v)}
-                disabled={d.disease.dmOnsetUnknown}/>
-            </div>
-            <label style={{fontSize:13,color:"#5580a8",display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}>
-              <input type="checkbox" checked={d.disease.dmOnsetUnknown} onChange={e=>up("disease","dmOnsetUnknown",e.target.checked)}/>
-              発症時期は不明
-            </label>
           </div>
-
-          {/* 合併疾患 */}
           <label style={lbl()}>合併する疾患</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:16}}>
             {[["ht","高血圧（HT）"],["hl","脂質異常症（HL）"]].map(([k,l])=>(
               <button key={k} style={btn(d.disease[k])} onClick={()=>up("disease",k,!d.disease[k])}>{l}</button>
             ))}
           </div>
-
-          {/* 看護師：甲状腺確認 */}
           {isNurse && (
             <div style={{background:"#fffff0",border:"2px solid #d69e2e",borderRadius:10,padding:"12px 16px",marginBottom:14}}>
               <div style={{fontSize:13,fontWeight:800,color:"#744210",marginBottom:8}}>👩‍⚕️ 看護師確認事項</div>
@@ -336,8 +338,6 @@ R8.4：（受診理由1〜2行）
               </label>
             </div>
           )}
-
-          {/* 障害年金 */}
           <div style={sBox({background:"#faf5ff",border:"1.5px solid #d6bcfa"})}>
             <div style={{fontSize:13,fontWeight:800,color:"#553c9a",marginBottom:10}}>💼 障害年金について</div>
             <label style={lbl({color:"#553c9a"})}>現在の受給状況</label>
@@ -373,7 +373,6 @@ R8.4：（受診理由1〜2行）
         </div>
       );
 
-      /* 3: 既往・生活歴 */
       case 3: return (
         <div>
           <label style={lbl()}>患者様の年齢</label>
@@ -384,13 +383,11 @@ R8.4：（受診理由1〜2行）
               {isOver70?"70歳以上：子供の状況も確認":isOver60?"60歳以上：ワクチン確認あり":"60歳未満：ワクチン確認不要"}
             </span>)}
           </div>
-
           <label style={lbl()}>アレルギー歴</label>
           <div style={{display:"flex",gap:8,marginBottom:8}}>
             {["なし","あり"].map(v=><button key={v} style={btn(d.history.allergy===v)} onClick={()=>up("history","allergy",v)}>{v}</button>)}
           </div>
           {d.history.allergy==="あり"&&<input style={{...inp(),marginBottom:14}} placeholder="内容（例：ペニシリン系・造影剤）" value={d.history.allergyDetail} onChange={e=>up("history","allergyDetail",e.target.value)}/>}
-
           <label style={lbl({marginTop:10})}>家族歴（FH）</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:16}}>
             {[["dm","糖尿病(DM)"],["ht","高血圧(HT)"],["apo","脳卒中(APO)"],["ihd","虚血性心疾患(IHD)"]].map(([k,l])=>(
@@ -410,8 +407,6 @@ R8.4：（受診理由1〜2行）
               </div>
             </div>
           )}
-
-
           <label style={lbl()}>飲酒歴</label>
           <div style={{marginBottom:8}}>
             <button style={btn(d.history.alcoholNone,"#718096")} onClick={()=>up("history","alcoholNone",!d.history.alcoholNone)}>{d.history.alcoholNone?"✓ 飲まない":"飲まない"}</button>
@@ -421,7 +416,6 @@ R8.4：（受診理由1〜2行）
             <button style={{...btn(false,"#2b6cb0"),fontSize:13,width:"100%",textAlign:"center",marginTop:4}} onClick={addAl}>＋ お酒を追加</button>
             {buildAlcohol()&&(<div style={{marginTop:8,padding:"8px 14px",background:"#ebf8ff",border:"1px solid #bee3f8",borderRadius:8,fontSize:13,color:"#2b6cb0",fontWeight:700}}>📝 カルテ記載例：{buildAlcohol()}</div>)}
           </div>)}
-
           <label style={lbl({marginTop:14})}>喫煙歴</label>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             {["なし","あり","禁煙済"].map(v=><button key={v} style={btn(d.history.smoking===v)} onClick={()=>up("history","smoking",v)}>{v}</button>)}
@@ -436,7 +430,6 @@ R8.4：（受診理由1〜2行）
             {d.history.smoking==="禁煙済"&&(<div><label style={lbl({color:"#2b6cb0"})}>禁煙した時期</label>
               <EraYear era={d.history.smokingQuitEra} year={d.history.smokingQuitYear} onEraChange={v=>up("history","smokingQuitEra",v)} onYearChange={v=>up("history","smokingQuitYear",v)}/></div>)}
           </div>)}
-
           <label style={lbl()}>眼科通院歴（糖尿病網膜症チェック）</label>
           <div style={{fontSize:12,color:"#7a9abf",marginBottom:6}}>糖尿病による網膜症のフォローのため確認します</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}}>
@@ -448,8 +441,7 @@ R8.4：（受診理由1〜2行）
             <div style={{marginBottom:14}}>
               <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:6}}>
                 {["上尾こいけ眼科","おが・おおぐし眼科","上尾中央総合病院","おおたけ眼科","こしの眼科"].map(v=>(
-                  <button key={v} style={{...btn(d.history.eye===v),padding:"6px 10px",fontSize:12}}
-                    onClick={()=>up("history","eye",v)}>{v}</button>
+                  <button key={v} style={{...btn(d.history.eye===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","eye",v)}>{v}</button>
                 ))}
               </div>
               <input style={inp()} placeholder="その他の眼科名を入力"
@@ -458,12 +450,10 @@ R8.4：（受診理由1〜2行）
             </div>
           )}
           {d.history.eyeVisiting!=="通院中"&&<div style={{marginBottom:14}}/>}
-
           <label style={lbl()}>健診の種類</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:14}}>
-            {["市の健診","会社の健診","人間ドック"].map(v=><button key={v} style={btn(d.history.checkup.includes(v))} onClick={()=>toggleArr("history","checkup",v)}>{v}</button>)}
+            {["市の健診","会社の健診","人間ドック","なし"].map(v=><button key={v} style={btn(d.history.checkup.includes(v))} onClick={()=>toggleArr("history","checkup",v)}>{v}</button>)}
           </div>
-
           {isOver60&&(<div style={sBox({border:"1.5px solid #bee3f8",background:"#ebf8ff"})}>
             <div style={{fontSize:13,fontWeight:800,color:"#2b6cb0",marginBottom:12}}>💉 ワクチン希望（60歳以上）</div>
             <div style={{marginBottom:12}}>
@@ -475,25 +465,25 @@ R8.4：（受診理由1〜2行）
               <div style={{display:"flex",gap:4}}>{["希望あり","なし"].map(v=><button key={v} style={btn(d.history.vaccine65Herpes===v,"#2b6cb0")} onClick={()=>up("history","vaccine65Herpes",v)}>{v}</button>)}</div>
             </div>
           </div>)}
-
           <label style={lbl()}>生活情報（同居・家族構成）</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:8}}>
-            <>{LIVING_WITH_SPOUSE.map(v=><button key={v} style={btn(d.history.livingSpouse===v)} onClick={()=>up("history","livingSpouse",v)}>{v}</button>)}</>
+            {LIVING_WITH_SPOUSE.map(v=><button key={v} style={btn(d.history.livingSpouse===v)} onClick={()=>up("history","livingSpouse",v)}>{v}</button>)}
           </div>
-          <label style={lbl({marginTop:8})}>子供・その他との同居</label><div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>{LIVING_OTHERS.map(v=><button key={v} style={btn(d.history.livingOther===v)} onClick={()=>up("history","livingOther",v)}>{v}</button>)}</div>
-          {(d.history.livingOther==="その他")&&<input style={{...inp(),marginBottom:6}} placeholder="例：兄弟と同居" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>}<input style={{...inp(),marginBottom:8}} placeholder="補足があれば（例：夫は要介護）" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>
-
+          <label style={lbl({marginTop:8})}>子供・その他との同居</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
+            {LIVING_OTHERS.map(v=><button key={v} style={btn(d.history.livingOther===v)} onClick={()=>up("history","livingOther",v)}>{v}</button>)}
+          </div>
+          {d.history.livingOther==="その他"&&<input style={{...inp(),marginBottom:6}} placeholder="例：兄弟と同居" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>}
+          <input style={{...inp(),marginBottom:8}} placeholder="補足があれば（例：夫は要介護）" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>
           {isOver70&&(<div style={sBox({border:"1.5px solid #fbd38d",background:"#fffaf0"})}>
             <div style={{fontSize:13,fontWeight:800,color:"#c05621",marginBottom:8}}>👨‍👩‍👧 お子さんの状況（70歳以上）</div>
             <input style={inp()} placeholder="例：子供は近居（さいたま市）　例：子供なし" value={d.history.childInfo} onChange={e=>up("history","childInfo",e.target.value)}/>
           </div>)}
-
           <label style={lbl({marginTop:8})}>仕事</label>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             {["している","していない"].map(v=><button key={v} style={btn(d.history.work===v)} onClick={()=>up("history","work",v)}>{v}</button>)}
           </div>
           {d.history.work==="している"&&<input style={{...inp(),marginBottom:14}} placeholder="職業（例：会社員・自営業・パート）" value={d.history.job} onChange={e=>up("history","job",e.target.value)}/>}
-
           <label style={lbl()}>活動量</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
             {["体を動かしていることが多い","立っていることが多い","座っていることが多い"].map(v=><button key={v} style={btn(d.history.activity===v)} onClick={()=>up("history","activity",v)}>{v}</button>)}
@@ -501,7 +491,6 @@ R8.4：（受診理由1〜2行）
         </div>
       );
 
-      /* 4: 体格・要望 */
       case 4: return (
         <div>
           <label style={lbl()}>身長・体重</label>
@@ -578,11 +567,23 @@ R8.4：（受診理由1〜2行）
                 🚨 体重減少あり ― 医師への至急申し送りが必要です
               </div>
             )}
+            {visitCode && (
+              <div style={{background:"linear-gradient(135deg,#c53030,#fc8181)",borderRadius:14,padding:"20px",marginBottom:16,textAlign:"center"}}>
+                <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",marginBottom:6,fontWeight:700}}>受付番号</div>
+                <div style={{fontSize:56,fontWeight:900,color:"#fff",letterSpacing:"0.2em",lineHeight:1}}>{visitCode}</div>
+                <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",marginTop:10}}>この番号を診察時にお伝えください</div>
+              </div>
+            )}
             <div style={{background:"#f5f9f7",border:"1px solid #c0e8d8",borderRadius:10,padding:"16px 18px",whiteSpace:"pre-wrap",fontSize:13,lineHeight:2,color:"#1a3a2a",fontFamily:"monospace"}}>{result}</div>
-            <div style={{display:"flex",gap:10,marginTop:14}}>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#1a5fa8,#3b82f6)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer"}} onClick={()=>navigator.clipboard.writeText(result)}>📋 コピー</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #1a5fa8",background:"#f0f7ff",color:"#1a5fa8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setTimeout(scrollTop,50);}}>✏️ 修正する</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #d0dff5",background:"#f7faff",color:"#5580a8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setTimeout(scrollTop,50);}}>🔄 最初から</button>
+            <div style={{background:"#fff8e1",border:"2px solid #f59e0b",borderRadius:12,padding:"14px 18px",marginTop:16,textAlign:"center"}}>
+              <div style={{fontSize:16,fontWeight:900,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
+              <div style={{fontSize:12,color:"#b45309",marginTop:4}}>問診は完了しています。ありがとうございました。</div>
+            </div>
+            <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#c53030,#fc8181)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer"}} onClick={()=>copyToClipboard(result)}>📋 コピー</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #c53030",background:"#fff5f5",color:"#c53030",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setTimeout(scrollTop,50);}}>✏️ 修正する</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #d0dff5",background:"#f7faff",color:"#5580a8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setVisitCode("");setTimeout(scrollTop,50);}}>🔄 最初から</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #9ae6b4",background:"#f0fff4",color:"#276749",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{window.location.href="/";}}>🏠 TOPへ</button>
             </div>
           </div>
         )}
