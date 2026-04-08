@@ -92,7 +92,24 @@ export default function TopPage() {
           該当するフォーマットを選択してください
         </div>
       </div>
-
+　　　{/* 問診一覧ボタン */}
+        <div style={{ maxWidth: 640, margin: '0 auto 16px', textAlign: 'right' }}>
+          <button
+            onClick={() => router.push('/list')}
+            style={{
+              padding: '10px 20px',
+              borderRadius: 10,
+              border: '1.5px solid #d0dff5',
+              background: '#fff',
+              color: '#1a5fa8',
+              fontWeight: 700,
+              fontSize: 14,
+              cursor: 'pointer',
+            }}
+          >
+            📋 問診一覧
+          </button>
+        </div>
       {/* フォーマット選択カード */}
       <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {FORMATS.map((f) => (
