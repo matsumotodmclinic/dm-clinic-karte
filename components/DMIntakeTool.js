@@ -162,12 +162,13 @@ function AlcoholRow({ item, index, onChange, onRemove, showRemove }) {
 
 /* ── main ── */
 export default function DMIntakeTool() {
-  const [step, setStep]       = useState(0);
-  const [data, setData]       = useState(initialData);
-  const [isNurse, setIsNurse] = useState(false);
-  const [result, setResult]   = useState("");
-  const [loading, setLoading] = useState(false);
-  const [done, setDone]       = useState(false);
+  const [step, setStep]         = useState(0);
+  const [data, setData]         = useState(initialData);
+  const [isNurse, setIsNurse]   = useState(false);
+  const [result, setResult]     = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [done, setDone]         = useState(false);
+  const [visitCode, setVisitCode] = useState(""); // ★ 追加
   const topRef = useRef(null);
 
   const scrollTop = () => {
@@ -225,17 +226,8 @@ export default function DMIntakeTool() {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
-    // Convert to Reiwa
     const reiwaYear = year - 2018;
     return `R${reiwaYear}.${month}`;
-  };
-
-  const buildSendNote = () => {
-    const notes = [];
-    if (data.history.fh.ht || data.disease.ht) notes.push("□HTの確認のため、血圧手帳をお渡ししています。");
-    if (data.disease.hl) notes.push("□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。");
-    if (!data.disease.insulinUse) notes.push("□生活習慣病療養計画書を作成済");
-    return notes;
   };
 
   const generateKarte = async () => {
@@ -323,12 +315,42 @@ DM基本セット
 LINE登録ご案内→済　登録確認未・登録できない
 `;
     try {
-      const res  = await fetch("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1200, messages: [{ role: "user", content: prompt }] }) });
+      // ① カルテ文生成
+      const res  = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1200,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
       const json = await res.json();
-      setResult(json.content?.[0]?.text || "生成に失敗しました");
+      const generated = json.content?.[0]?.text || "生成に失敗しました";
+      setResult(generated);
+
+      // ② Supabaseに保存してvisit_codeを受け取る ★ 追加
+      const saveRes = await fetch("/api/questionnaire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          form_type: "DM基本",
+          form_data: data,
+          age: data.history.age || null,
+          generated_karte: generated,
+        }),
+      });
+      const saveJson = await saveRes.json();
+      if (saveJson.visit_code) {
+        setVisitCode(saveJson.visit_code); // ★ visit_codeをセット
+      }
+
       setDone(true);
       setTimeout(scrollTop, 50);
-    } catch (e) { setResult("エラー: " + e.message); setDone(true); }
+    } catch (e) {
+      setResult("エラー: " + e.message);
+      setDone(true);
+    }
     setLoading(false);
   };
 
@@ -352,7 +374,6 @@ LINE登録ご案内→済　登録確認未・登録できない
               </button>
             ))}
           </div>
-
         </div>
       );
 
@@ -432,7 +453,6 @@ LINE登録ご案内→済　登録確認未・登録できない
       /* 2: 病気 */
       case 2: return (
         <div>
-          {/* ＃糖尿病 + 発症時期 を横並び */}
           <div style={{ ...sBox({ background: "#f0f7ff", border: "2px solid #bcd4f8" }), marginBottom: 16 }}>
             <span style={{ fontSize: 15, fontWeight: 900, color: "#1a5fa8" }}>＃糖尿病</span>
             {(d.reason.type !== "検診異常" && !d.reason.dmConcern) && (
@@ -462,16 +482,14 @@ LINE登録ご案内→済　登録確認未・登録できない
             {[["ht", "高血圧（HT）"], ["hl", "脂質異常症（HL）"]].map(([k, l]) => <button key={k} style={btn(d.disease[k])} onClick={() => up("disease", k, !d.disease[k])}>{l}</button>)}
           </div>
 
-
-
           <label style={lbl({ marginTop: 6 })}>重要既往歴</label>
           <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 8 }}>
             {[["gastricCancer","胃癌（胃切除後）","#c0392b"],["pancreasCancer","膵臓癌（術後）","#c0392b"],["ihd","狭心症・心筋梗塞","#8e44ad"],["stroke","脳梗塞後","#8e44ad"]].map(([k, l, c]) => (
               <button key={k} style={btn(d.disease[k].selected, c)} onClick={() => upN("disease", k, "selected", !d.disease[k].selected)}>{l}</button>
             ))}
           </div>
-          {d.disease.gastricCancer.selected  && <DetailBox title="胃癌（胃切除後）"          color="#c0392b" showResection data={d.disease.gastricCancer}  onChange={(f,v) => upN("disease","gastricCancer",f,v)} />}
-          {d.disease.pancreasCancer.selected && <DetailBox title="膵臓癌（術後）"            color="#c0392b"              data={d.disease.pancreasCancer} onChange={(f,v) => upN("disease","pancreasCancer",f,v)} />}
+          {d.disease.gastricCancer.selected  && <DetailBox title="胃癌（胃切除後）"  color="#c0392b" showResection data={d.disease.gastricCancer}  onChange={(f,v) => upN("disease","gastricCancer",f,v)} />}
+          {d.disease.pancreasCancer.selected && <DetailBox title="膵臓癌（術後）"    color="#c0392b"              data={d.disease.pancreasCancer} onChange={(f,v) => upN("disease","pancreasCancer",f,v)} />}
           {d.disease.ihd.selected && (
             <div style={{ background: "#8e44ad08", border: "1.5px solid #8e44ad40", borderRadius: 10, padding: "14px 16px", marginTop: 6, marginBottom: 14 }}>
               <div style={{ fontSize: 13, fontWeight: 800, color: "#8e44ad", marginBottom: 12 }}>狭心症・心筋梗塞 ― 詳細</div>
@@ -546,7 +564,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
             </div>
           ))}
-          {/* エコー検査 */}
+
           <div style={{ ...sBox({ background: "#f0f8ff", border: "1.5px solid #bee3f8" }), marginTop: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 800, color: "#2b6cb0", marginBottom: 4 }}>🔍 エコー検査について</div>
             <div style={{ fontSize: 12, color: "#4a7fa8", marginBottom: 12, lineHeight: 1.7 }}>
@@ -606,7 +624,6 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
           )}
 
-          {/* 飲酒歴 */}
           <label style={lbl()}>飲酒歴</label>
           <div style={{ marginBottom: 8 }}>
             <button style={btn(d.history.alcoholNone, "#718096")} onClick={() => up("history", "alcoholNone", !d.history.alcoholNone)}>
@@ -625,7 +642,6 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
           )}
 
-          {/* 喫煙歴 */}
           <label style={lbl({ marginTop: 16 })}>喫煙歴</label>
           <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
             {["なし","あり","禁煙済"].map(v => <button key={v} style={btn(d.history.smoking === v)} onClick={() => up("history","smoking",v)}>{v}</button>)}
@@ -763,7 +779,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             <div style={{ fontSize: 11, color: "#6b9fd4", fontWeight: 700, letterSpacing: "0.08em" }}>まつもと糖尿病クリニック</div>
             <div style={{ fontSize: 20, fontWeight: 900, color: "#1a2a4a" }}>初診事前問診</div>
           </div>
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ marginLeft: "auto" }}>
             <span style={{ fontSize: 12, background: "#e8f0fe", color: "#1a5fa8", padding: "4px 14px", borderRadius: 20, fontWeight: 700 }}>DM基本</span>
           </div>
         </div>
@@ -808,6 +824,16 @@ LINE登録ご案内→済　登録確認未・登録できない
                 <div style={{ fontSize: 12, color: "#5a9a80" }}>内容確認後、電子カルテにコピーしてください</div>
               </div>
             </div>
+
+            {/* ★ visit_code 表示 */}
+            {visitCode && (
+              <div style={{ background: "linear-gradient(135deg,#1a5fa8,#3b82f6)", borderRadius: 14, padding: "20px", marginBottom: 16, textAlign: "center" }}>
+                <div style={{ fontSize: 13, color: "#a8d4ff", marginBottom: 6, fontWeight: 700 }}>受付番号</div>
+                <div style={{ fontSize: 56, fontWeight: 900, color: "#fff", letterSpacing: "0.2em", lineHeight: 1 }}>{visitCode}</div>
+                <div style={{ fontSize: 13, color: "#c8e8ff", marginTop: 10 }}>この番号を診察時にお伝えください</div>
+              </div>
+            )}
+
             {data.alert.weightLoss === "あり" && (
               <div style={{ background: "#c53030", color: "#fff", borderRadius: 8, padding: "12px 16px", marginBottom: 12, fontSize: 14, fontWeight: 800 }}>
                 🚨 体重減少あり ― 医師への至急申し送りが必要です
@@ -822,10 +848,9 @@ LINE登録ご案内→済　登録確認未・登録できない
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #1a5fa8", background: "#f0f7ff", color: "#1a5fa8", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
                 onClick={() => { setDone(false); setStep(0); setTimeout(scrollTop, 50); }}>✏️ 修正する</button>
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #d0dff5", background: "#f7faff", color: "#5580a8", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
-                onClick={() => { setDone(false); setStep(0); setData(initialData); setResult(""); setTimeout(scrollTop, 50); }}>🔄 最初から</button>
+                onClick={() => { setDone(false); setStep(0); setData(initialData); setResult(""); setVisitCode(""); setTimeout(scrollTop, 50); }}>🔄 最初から</button>
             </div>
 
-            {/* LINE登録の促し */}
             <div style={{ marginTop: 20, background: "linear-gradient(135deg,#06c755,#00b900)", borderRadius: 12, padding: "16px 20px", textAlign: "center" }}>
               <div style={{ fontSize: 15, fontWeight: 900, color: "#fff", marginBottom: 8 }}>📱 公式LINEに登録してください</div>
               <div style={{ fontSize: 13, color: "#d4ffd4", marginBottom: 12, lineHeight: 1.6 }}>
