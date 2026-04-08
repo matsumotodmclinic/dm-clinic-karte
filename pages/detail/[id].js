@@ -82,6 +82,7 @@ export default function DetailPage() {
   return (
     <div style={{ minHeight:'100vh', background:'#f7faff', fontFamily:"'Noto Sans JP',sans-serif", padding:'16px' }}>
       <div style={{ maxWidth:720, margin:'0 auto' }}>
+
         {/* ヘッダー */}
         <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
           <button onClick={() => router.push('/list')}
@@ -125,5 +126,51 @@ export default function DetailPage() {
               <div style={{ background:'#f5f9f7', border:'1px solid #c0e8d8', borderRadius:10, padding:'16px', whiteSpace:'pre-wrap', fontSize:13, lineHeight:2, color:'#1a3a2a', fontFamily:'monospace', marginBottom:12 }}>
                 {karte}
               </div>
-              <div style={{ display:'flex', gap:8' }}>
-                <button onClick={() => navigator.cl
+              <div style={{ display:'flex', gap:8 }}>
+                <button
+                  onClick={() => navigator.clipboard.writeText(karte)}
+                  style={{ flex:1, padding:'12px', borderRadius:8, border:'none', background:'linear-gradient(135deg,#0f9668,#34d399)', color:'#fff', fontWeight:800, fontSize:14, cursor:'pointer' }}>
+                  📋 コピー
+                </button>
+                <button
+                  onClick={handleGenerate}
+                  disabled={generating}
+                  style={{ padding:'12px 16px', borderRadius:8, border:'1.5px solid #d0dff5', background:'#f7faff', color:'#5580a8', fontWeight:700, fontSize:13, cursor:generating?'not-allowed':'pointer' }}>
+                  {generating ? '生成中...' : '🔄 再生成'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div style={{ textAlign:'center', padding:'20px 0' }}>
+              <div style={{ color:'#a0b8d0', marginBottom:16, fontSize:13 }}>カルテ文がまだ生成されていません</div>
+              <button
+                onClick={handleGenerate}
+                disabled={generating}
+                style={{ padding:'12px 28px', borderRadius:8, border:'none', background:generating?'#8ab0d4':'linear-gradient(135deg,#1a5fa8,#6b9fd4)', color:'#fff', fontWeight:800, fontSize:14, cursor:generating?'not-allowed':'pointer' }}>
+                {generating ? '生成中...' : '✨ カルテ文を生成'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* 問診データ */}
+        <div style={{ background:'#fff', borderRadius:16, padding:'20px', marginBottom:12, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+          <div style={{ fontSize:14, fontWeight:800, color:'#1a2a4a', marginBottom:12 }}>問診データ（生データ）</div>
+          <pre style={{ background:'#f7faff', borderRadius:8, padding:'12px', fontSize:11, overflowX:'auto', color:'#3a5a7a', lineHeight:1.6 }}>
+            {JSON.stringify(record.form_data, null, 2)}
+          </pre>
+        </div>
+
+        {/* 削除ボタン */}
+        <div style={{ textAlign:'right', marginBottom:32 }}>
+          <button
+            onClick={handleDelete}
+            style={{ padding:'10px 20px', borderRadius:8, border:'1.5px solid #fed7d7', background:'#fff5f5', color:'#e53e3e', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+            🗑 このレコードを削除
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
