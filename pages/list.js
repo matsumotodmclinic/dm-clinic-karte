@@ -43,6 +43,7 @@ export default function ListPage() {
   return (
     <div style={{ minHeight:'100vh', background:'#f7faff', fontFamily:"'Noto Sans JP',sans-serif", padding:'16px' }}>
       <div style={{ maxWidth:720, margin:'0 auto' }}>
+
         {/* ヘッダー */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
           <div>
@@ -104,3 +105,13 @@ export default function ListPage() {
                 </div>
                 <div style={{ padding:'4px 10px', borderRadius:20, background:STATUS_COLOR[r.status]+'20', color:STATUS_COLOR[r.status], fontWeight:700, fontSize:12, flexShrink:0 }}>
                   {STATUS_LABEL[r.status] || r.status}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
