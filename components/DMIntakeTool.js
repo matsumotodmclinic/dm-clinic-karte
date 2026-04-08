@@ -844,7 +844,27 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
             <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#1a5fa8,#3b82f6)", color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer" }}
-                onClick={() => navigator.clipboard.writeText(result)}>📋 コピー</button>
+                onClick={() => {
+                  if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(result).then(() => alert("コピーしました")).catch(() => {
+                      const el = document.createElement("textarea");
+                      el.value = result;
+                      document.body.appendChild(el);
+                      el.select();
+                      document.execCommand("copy");
+                      document.body.removeChild(el);
+                      alert("コピーしました");
+                    });
+                  } else {
+                    const el = document.createElement("textarea");
+                    el.value = result;
+                    document.body.appendChild(el);
+                    el.select();
+                    document.execCommand("copy");
+                    document.body.removeChild(el);
+                    alert("コピーしました");
+                  }
+                }}>📋 コピー</button>
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #1a5fa8", background: "#f0f7ff", color: "#1a5fa8", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
                 onClick={() => { setDone(false); setStep(0); setTimeout(scrollTop, 50); }}>✏️ 修正する</button>
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #d0dff5", background: "#f7faff", color: "#5580a8", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
