@@ -670,7 +670,17 @@ LINE登録ご案内→済　登録確認未・登録できない
             ))}
           </div>
           {d.history.eyeVisiting === "通院中" && (
-            <input style={{ ...inp(), marginBottom: 14 }} placeholder="例：○○眼科" value={d.history.eye} onChange={e => up("history","eye",e.target.value)} />
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 6 }}>
+                {["上尾こいけ眼科", "おが・おおぐし眼科", "上尾中央総合病院", "おおたけ眼科", "こしの眼科"].map(v => (
+                  <button key={v} style={{ ...btn(d.history.eye === v), padding: "6px 10px", fontSize: 12 }}
+                    onClick={() => up("history", "eye", v)}>{v}</button>
+                ))}
+              </div>
+              <input style={inp()} placeholder="その他の眼科名を入力"
+                value={["上尾こいけ眼科","おが・おおぐし眼科","上尾中央総合病院","おおたけ眼科","こしの眼科"].includes(d.history.eye) ? "" : d.history.eye}
+                onChange={e => up("history", "eye", e.target.value)} />
+            </div>
           )}
           {d.history.eyeVisiting !== "通院中" && <div style={{ marginBottom: 14 }} />}
 
@@ -842,33 +852,25 @@ LINE登録ご案内→済　登録確認未・登録できない
             <div style={{ background: "#f5f9f7", border: "1px solid #c0e8d8", borderRadius: 10, padding: "16px 18px", whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 2, color: "#1a3a2a", fontFamily: "monospace" }}>
               {result}
             </div>
-            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+            {/* 患者向け返却メッセージ */}
+            <div style={{ background: "#fff8e1", border: "2px solid #f59e0b", borderRadius: 12, padding: "14px 18px", marginTop: 16, textAlign: "center" }}>
+              <div style={{ fontSize: 16, fontWeight: 900, color: "#92400e" }}>📋 タブレットを受付にお返しください</div>
+              <div style={{ fontSize: 12, color: "#b45309", marginTop: 4 }}>問診は完了しています。ありがとうございました。</div>
+            </div>
+
+            {/* スタッフ向けボタン */}
+            <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#1a5fa8,#3b82f6)", color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer" }}
                 onClick={() => {
-                  if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(result).then(() => alert("コピーしました")).catch(() => {
-                      const el = document.createElement("textarea");
-                      el.value = result;
-                      document.body.appendChild(el);
-                      el.select();
-                      document.execCommand("copy");
-                      document.body.removeChild(el);
-                      alert("コピーしました");
-                    });
-                  } else {
-                    const el = document.createElement("textarea");
-                    el.value = result;
-                    document.body.appendChild(el);
-                    el.select();
-                    document.execCommand("copy");
-                    document.body.removeChild(el);
-                    alert("コピーしました");
-                  }
+                  const copy = () => { const el = document.createElement("textarea"); el.value = result; document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el); alert("コピーしました"); };
+                  if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(result).then(() => alert("コピーしました")).catch(copy); } else { copy(); }
                 }}>📋 コピー</button>
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #1a5fa8", background: "#f0f7ff", color: "#1a5fa8", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
                 onClick={() => { setDone(false); setStep(0); setTimeout(scrollTop, 50); }}>✏️ 修正する</button>
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #d0dff5", background: "#f7faff", color: "#5580a8", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
                 onClick={() => { setDone(false); setStep(0); setData(initialData); setResult(""); setVisitCode(""); setTimeout(scrollTop, 50); }}>🔄 最初から</button>
+              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #9ae6b4", background: "#f0fff4", color: "#276749", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+                onClick={() => { window.location.href = "/"; }}>🏠 TOPへ</button>
             </div>
 
 
