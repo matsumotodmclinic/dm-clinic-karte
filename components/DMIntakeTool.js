@@ -851,19 +851,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                 onClick={() => { setDone(false); setStep(0); setData(initialData); setResult(""); setVisitCode(""); setTimeout(scrollTop, 50); }}>🔄 最初から</button>
             </div>
 
-            <div style={{ marginTop: 20, background: "linear-gradient(135deg,#06c755,#00b900)", borderRadius: 12, padding: "16px 20px", textAlign: "center" }}>
-              <div style={{ fontSize: 15, fontWeight: 900, color: "#fff", marginBottom: 8 }}>📱 公式LINEに登録してください</div>
-              <div style={{ fontSize: 13, color: "#d4ffd4", marginBottom: 12, lineHeight: 1.6 }}>
-                まつもと糖尿病クリニックの公式LINEから<br/>検査結果や診察のお知らせをお届けします
-              </div>
-              <a href="https://lin.ee/matsumotodm" target="_blank" rel="noopener noreferrer"
-                style={{ display: "inline-block", background: "#fff", color: "#06c755", fontWeight: 900, fontSize: 14, padding: "10px 28px", borderRadius: 24, textDecoration: "none" }}>
-                LINEで友だち追加する
-              </a>
-              <div style={{ fontSize: 11, color: "#a8f0a8", marginTop: 8 }}>
-                ※登録できない場合はスタッフにお声がけください
-              </div>
-            </div>
+
           </div>
         )}
         <div style={{ textAlign: "center", fontSize: 11, color: "#a0b8d0", marginTop: 14 }}>
