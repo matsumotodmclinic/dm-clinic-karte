@@ -46,6 +46,7 @@ const initialData = {
     vaccine65Prevena: "", vaccine65Herpes: "",
     livingSpouse: "", livingOther: "", livingCustom: "", childInfo: "",
     work: "していない", job: "", activity: "",
+    otherDiseases: [{name:"",hospital:"",hospitalOther:""}],
   },
   body: { height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "" },
 };
@@ -177,11 +178,10 @@ ${JSON.stringify(data,null,2)}
 （体重減少ありなら）【⚠️ 体重減少あり・早急なインスリン導入を検討】
 
 ${getCurrentMonth()}：（受診理由1〜2行）
-＃1型糖尿病　（1型のタイプ）${dmOnsetText()}
+＃1型糖尿病（${data.disease.dm1type||"タイプ不明"}）${dmOnsetText()}
 ・GAD抗体：（初診時採血）
 ・CPR：（初診時採血）
-・甲状腺検査：（初診時採血）
-・障害年金：DM診断時厚生年金加入（有/無/不明）→受給の可能性（×　or　CPR次第）
+・甲状腺検査：（${data.disease.thyroidChecked?"初診時採血済":"初診時採血"}）
 
 ＃HT（該当時のみ）
 ＃HL（該当時のみ）
@@ -203,7 +203,10 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 身長:○cm　初診時:○kg　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
 【事前聴取時　申し送り事項】
-（該当する申し送り事項を全て記載。なければ省略）
+（体重減少ありの場合）□体重減少あり（3ヶ月以内に3kg以上）インスリン導入要検討
+（障害年金：厚生年金加入ありの場合）□障害年金の可能性あり→CPR結果を確認してください
+（デバイス希望がある場合）□使用希望デバイス：CGM=${data.reason.cgmWish||"なし"}　ポンプ=${data.reason.pumpWish||"なし"}
+□甲状腺3項目・GAD抗体・CPRを初診時採血
 【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
 ---------------------------------------------
 ${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲状腺項目追加してください　CPR0.5以下の方は今後半年ごとCPR測定を入れてください。
@@ -324,7 +327,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
               <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>CGM（希望）</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
-                {["フリースタイルリブレ","Dexcom G7","希望なし"].map(v=>(
+                {["フリースタイルリブレ","Dexcom G7","希望なし","先生と相談したい"].map(v=>(
                   <button key={v} style={btn(d.reason.cgmWish===v,"#0f9668")} onClick={()=>up("reason","cgmWish",v)}>{v}</button>
                 ))}
               </div>
@@ -336,7 +339,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
               <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>インスリンポンプ（希望）</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
-                {["ミニメド","メディセーフウィズ","希望なし"].map(v=>(
+                {["ミニメド","メディセーフウィズ","希望なし","先生と相談したい"].map(v=>(
                   <button key={v} style={btn(d.reason.pumpWish===v,"#553c9a")} onClick={()=>up("reason","pumpWish",v)}>{v}</button>
                 ))}
               </div>
@@ -414,6 +417,31 @@ LINE登録ご案内→済　登録確認未・登録できない
               {isOver70?"70歳以上：子供の状況も確認":isOver60?"60歳以上：ワクチン確認あり":"60歳未満：ワクチン確認不要"}
             </span>)}
           </div>
+
+          <label style={lbl({marginTop:8})}>その他の病名・既往歴</label>
+          <div style={{fontSize:12,color:"#7a9abf",marginBottom:8}}>例：慢性腎臓病、甲状腺疾患、うつ病 など</div>
+          {(d.history.otherDiseases||[{name:"",hospital:"",hospitalOther:""}]).map((od,i)=>(
+            <div key={i} style={{display:"flex",gap:8,marginBottom:8,alignItems:"flex-start"}}>
+              <div style={{flex:"0 0 20px",paddingTop:10,fontSize:13,color:"#8899aa",fontWeight:700}}>{i+1}</div>
+              <div style={{flex:2}}>
+                {i===0&&<label style={lbl()}>病名</label>}
+                <input style={inp()} placeholder="病名（なければ空欄）" value={od.name||""} onChange={e=>setData(p=>{const a=[...(p.history.otherDiseases||[])];a[i]={...a[i],name:e.target.value};return{...p,history:{...p.history,otherDiseases:a}};})}/>
+              </div>
+              <div style={{flex:3}}>
+                {i===0&&<label style={lbl()}>現在の通院先</label>}
+                {od.name?(
+                  <div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                      {["自治医大さいたま医療センター","上尾中央総合病院","埼玉県立がんセンター","通院なし","その他"].map(h=>(
+                        <button key={h} style={{...btn(od.hospital===h),padding:"5px 10px",fontSize:12}} onClick={()=>setData(p=>{const a=[...(p.history.otherDiseases||[])];a[i]={...a[i],hospital:h};return{...p,history:{...p.history,otherDiseases:a}};})}>{h}</button>
+                      ))}
+                    </div>
+                    {od.hospital==="その他"&&<input style={{...inp(),marginTop:6,fontSize:13}} placeholder="病院名" value={od.hospitalOther||""} onChange={e=>setData(p=>{const a=[...(p.history.otherDiseases||[])];a[i]={...a[i],hospitalOther:e.target.value};return{...p,history:{...p.history,otherDiseases:a}};})}/>}
+                  </div>
+                ):<div style={{paddingTop:8,fontSize:12,color:"#b0c0d0"}}>病名を入力すると通院先が選べます</div>}
+              </div>
+            </div>
+          ))}
           <label style={lbl()}>アレルギー歴</label>
           <div style={{display:"flex",gap:8,marginBottom:8}}>
             {["なし","あり"].map(v=><button key={v} style={btn(d.history.allergy===v)} onClick={()=>up("history","allergy",v)}>{v}</button>)}
