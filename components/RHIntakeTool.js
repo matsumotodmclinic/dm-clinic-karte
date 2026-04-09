@@ -337,13 +337,15 @@ LINE登録ご案内→済　登録確認未・登録できない
           </div>
           {isOver60&&(<div style={sBox({border:"1.5px solid #bee3f8",background:"#ebf8ff"})}>
             <div style={{fontSize:13,fontWeight:800,color:"#2b6cb0",marginBottom:12}}>💉 ワクチン希望（60歳以上）</div>
-            <div style={{marginBottom:12}}>
-              <label style={lbl({color:"#2b6cb0"})}>プレベナー20</label>
-              <div style={{display:"flex",gap:4}}>{["希望あり","なし"].map(v=><button key={v} style={btn(d.history.vaccine65Prevena===v,"#2b6cb0")} onClick={()=>up("history","vaccine65Prevena",v)}>{v}</button>)}</div>
-            </div>
-            <div>
-              <label style={lbl({color:"#2b6cb0"})}>帯状疱疹ワクチン</label>
-              <div style={{display:"flex",gap:4}}>{["希望あり","なし"].map(v=><button key={v} style={btn(d.history.vaccine65Herpes===v,"#2b6cb0")} onClick={()=>up("history","vaccine65Herpes",v)}>{v}</button>)}</div>
+            <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+              <div style={{flex:1,minWidth:180}}>
+                <label style={lbl({color:"#2b6cb0"})}>プレベナー20</label>
+                <div style={{display:"flex",gap:4}}>{["希望あり","なし"].map(v=><button key={v} style={btn(d.history.vaccine65Prevena===v,"#2b6cb0")} onClick={()=>up("history","vaccine65Prevena",v)}>{v}</button>)}</div>
+              </div>
+              <div style={{flex:1,minWidth:180}}>
+                <label style={lbl({color:"#2b6cb0"})}>帯状疱疹ワクチン</label>
+                <div style={{display:"flex",gap:4}}>{["希望あり","なし"].map(v=><button key={v} style={btn(d.history.vaccine65Herpes===v,"#2b6cb0")} onClick={()=>up("history","vaccine65Herpes",v)}>{v}</button>)}</div>
+              </div>
             </div>
           </div>)}
           <label style={lbl()}>生活情報（同居・家族構成）</label>
