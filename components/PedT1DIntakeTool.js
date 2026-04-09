@@ -124,7 +124,7 @@ DM基本セット
 LINE登録ご案内→済　登録確認未・登録できない
 `;
     try {
-      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
+      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,messages:[{role:"user",content:prompt}]})});
       const json = await res.json();
       const generated = json.content?.[0]?.text||"生成に失敗しました";
       setResult(generated);
@@ -213,6 +213,12 @@ LINE登録ご案内→済　登録確認未・登録できない
                 <input type="checkbox" checked={d.disease.dmOnsetUnknown} onChange={e=>up("disease","dmOnsetUnknown",e.target.checked)}/> 発症時期は不明（推定）
               </label>
             </div>
+          </div>
+          <label style={lbl()}>インスリン使用状況</label>
+          <div style={{display:"flex",flexWrap:"wrap",marginBottom:14}}>
+            {["インスリン使用中","インスリン未使用"].map(v=>(
+              <button key={v} style={btn(d.disease.insulinStatus===v,v==="インスリン使用中"?"#c53030":"#1a5fa8")} onClick={()=>up("disease","insulinStatus",v)}>{v}</button>
+            ))}
           </div>
           <label style={lbl()}>バクスミー（グルカゴン）の希望</label>
           <div style={{display:"flex",gap:3,marginBottom:16}}>
@@ -357,7 +363,14 @@ LINE登録ご案内→済　登録確認未・登録できない
                 <span style={{fontSize:13,color:"#666"}}>日</span>
               </div>
               <label style={lbl({color:"#744210"})}>③出生時に住民登録をしたところ</label>
-              <input style={{...inp(),marginBottom:14}} placeholder="例：埼玉県 上尾市" value={d.chronic.birthCity} onChange={e=>up("chronic","birthCity",e.target.value)}/>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:6}}>
+                {["上尾市","さいたま市","桶川市","伊奈町","川越市","北本市","その他"].map(v=>(
+                  <button key={v} style={{...btn(d.chronic.birthCity===v,"#744210"),padding:"6px 10px",fontSize:12}} onClick={()=>up("chronic","birthCity",v)}>{v}</button>
+                ))}
+              </div>
+              {d.chronic.birthCity==="その他"&&(
+                <input style={{...inp(),marginBottom:14}} placeholder="市区町村名を入力" value={d.chronic.birthCityOther||""} onChange={e=>up("chronic","birthCityOther",e.target.value)}/>
+              )}
               <label style={lbl({color:"#744210"})}>手帳の取得内容</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:12}}>
                 {["身体障害者手帳","養育手帳","精神障害者保健福祉手帳"].map(v=>(
@@ -441,9 +454,15 @@ LINE登録ご案内→済　登録確認未・登録できない
                   <button key={v} style={{...btn(d.history.eye===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","eye",v)}>{v}</button>
                 ))}
               </div>
-              <input style={inp()} placeholder="その他の眼科名を入力"
+              <input style={{...inp(),marginBottom:8}} placeholder="その他の眼科名を入力"
                 value={EYE_CLINICS.includes(d.history.eye)?"":d.history.eye}
                 onChange={e=>up("history","eye",e.target.value)}/>
+              <label style={lbl({fontSize:11})}>糖尿病網膜症の状況（分かる範囲で）</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                {["網膜症なし","単純性網膜症","前増殖性網膜症","増殖性網膜症"].map(v=>(
+                  <button key={v} style={{...btn(d.history.retinopathy===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","retinopathy",v)}>{v}</button>
+                ))}
+              </div>
             </div>
           )}
           {d.history.eyeVisiting!=="通院中"&&<div style={{marginBottom:14}}/>}
