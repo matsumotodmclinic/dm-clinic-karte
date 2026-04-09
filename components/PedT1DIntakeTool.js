@@ -501,18 +501,12 @@ R${new Date().getFullYear()-2018}.${new Date().getMonth()+1}：（受診理由1�
               </div>
             </div>
             {visitCode&&(
-              <div style={{background:"linear-gradient(135deg,#3182ce,#63b3ed)",borderRadius:14,padding:"20px",marginBottom:16,textAlign:"center"}}>
+              <div style={{background:"linear-gradient(135deg,#3182ce,#63b3ed)",borderRadius:14,padding:"20px",marginBottom:0,textAlign:"center"}}>
                 <div style={{fontSize:13,color:"#a8d4ff",marginBottom:6,fontWeight:700}}>受付番号</div>
                 <div style={{fontSize:56,fontWeight:900,color:"#fff",letterSpacing:"0.2em",lineHeight:1}}>{visitCode}</div>
               </div>
             )}
-            {visitCode && (
-              <div style={{background:"linear-gradient(135deg,#3182ce,#63b3ed)",borderRadius:14,padding:"20px",marginBottom:16,textAlign:"center"}}>
-                <div style={{fontSize:13,color:"rgba(255,255,255,0.7)",marginBottom:6,fontWeight:700}}>受付番号</div>
-                <div style={{fontSize:56,fontWeight:900,color:"#fff",letterSpacing:"0.2em",lineHeight:1}}>{visitCode}</div>
-              </div>
-            )}
-            <div style={{background:"#fff8e1",border:"2px solid #f59e0b",borderRadius:12,padding:"14px 18px",textAlign:"center"}}>
+            <div style={{background:"#fff8e1",border:"2px solid #f59e0b",borderRadius:12,padding:"14px 18px",marginBottom:12,textAlign:"center"}}>
               <div style={{fontSize:16,fontWeight:900,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
               <div style={{fontSize:12,color:"#b45309",marginTop:4}}>問診は完了しています。ありがとうございました。</div>
             </div>
