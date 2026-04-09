@@ -85,7 +85,7 @@ export default function GDMIntakeTool() {
 生活情報：${buildLiving()}
 
 【患者情報JSON】
-${JSON.stringify(data,null,2)}
+${JSON.stringify({disease:data.disease,history:data.history,body:data.body,reason:data.reason},null,2)}
 
 【出力フォーマット】
 R${new Date().getFullYear()-2018}.${new Date().getMonth()+1}：（受診理由1〜2行）
@@ -129,7 +129,7 @@ DM基本セット
 LINE登録ご案内→済　登録確認未・登録できない
 `;
     try {
-      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
+      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,messages:[{role:"user",content:prompt}]})});
       const json = await res.json();
       const generated = json.content?.[0]?.text||"生成に失敗しました";
       setResult(generated);
