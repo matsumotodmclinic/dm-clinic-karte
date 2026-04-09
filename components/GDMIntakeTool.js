@@ -40,7 +40,6 @@ const sBox = (x={}) => ({ background:"#fff7fb", border:"1.5px solid #f0d0e0", bo
 export default function GDMIntakeTool() {
   const [step, setStep]       = useState(0);
   const [data, setData]       = useState(initialData);
-  const [isNurse, setIsNurse] = useState(false);
   const [result, setResult]   = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone]       = useState(false);
@@ -105,8 +104,11 @@ R${new Date().getFullYear()-2018}.${new Date().getMonth()+1}：（受診理由1�
 【生活情報】（整形済みテキスト）
 【仕事】職業・活動量
 
+---------------------------------------------
 身長:○cm　初診時:○kg　妊娠前:○kg　20歳時:○kg　max体重○kg(○歳)
+---------------------------------------------
 診察にあたっての要望：
+（喫煙「あり」の場合）□喫煙確認あり・指導必要
 `;
     try {
       const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
@@ -254,20 +256,7 @@ R${new Date().getFullYear()-2018}.${new Date().getMonth()+1}：（受診理由1�
               <button key={k} style={btn(d.disease[k])} onClick={()=>up("disease",k,!d.disease[k])}>{l}</button>
             ))}
           </div>
-          {isNurse && d.disease.hl && (
-            <div style={{background:"#fffff0",border:"2px solid #d69e2e",borderRadius:10,padding:"12px 16px",marginBottom:14}}>
-              <div style={{fontSize:13,fontWeight:800,color:"#744210",marginBottom:8}}>👩‍⚕️ 看護師確認事項</div>
-              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:14,color:"#744210",fontWeight:700}}>
-                <input type="checkbox" checked={d.disease.thyroidAdded} onChange={e=>up("disease","thyroidAdded",e.target.checked)} style={{width:18,height:18}}/>
-                ◎ 甲状腺3項目を採血に追加した
-              </label>
-            </div>
-          )}
-          {d.disease.hl && !isNurse && (
-            <div style={{background:"#fff8f0",border:"1.5px solid #e07000",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:13,color:"#a05000"}}>
-              ⚠️ 看護師が甲状腺3項目の追加採血を確認します
-            </div>
-          )}
+
         </div>
       );
 
@@ -331,11 +320,7 @@ R${new Date().getFullYear()-2018}.${new Date().getMonth()+1}：（受診理由1�
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             {["なし","あり","禁煙済"].map(v=><button key={v} style={btn(d.history.smoking===v)} onClick={()=>up("history","smoking",v)}>{v}</button>)}
           </div>
-          {d.history.smoking==="あり"&&(
-            <div style={{...sBox({border:"1.5px solid #fed7d7",background:"#fff5f5"}),marginBottom:10}}>
-              <div style={{fontSize:12,color:"#c53030",fontWeight:700,marginBottom:6}}>⚠️ 妊娠中の喫煙は胎児に影響があります。禁煙のご相談もお気軽に。</div>
-            </div>
-          )}
+
 
           <label style={lbl()}>生活情報（同居・家族構成）</label>
           <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>配偶者の有無</label>
@@ -392,15 +377,10 @@ R${new Date().getFullYear()-2018}.${new Date().getMonth()+1}：（受診理由1�
             <div style={{fontSize:20,fontWeight:900,color:"#1a2a4a"}}>初診事前問診</div>
           </div>
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
-            {isNurse&&<span style={{fontSize:11,background:"#6b3fa8",color:"#fff",padding:"3px 10px",borderRadius:20,fontWeight:700}}>👩‍⚕️ 看護師モード</span>}
-            <span style={{fontSize:12,background:"#fff0f7",color:"#c05c8a",padding:"4px 14px",borderRadius:20,fontWeight:700}}>妊娠糖尿病</span>
+<span style={{fontSize:12,background:"#fff0f7",color:"#c05c8a",padding:"4px 14px",borderRadius:20,fontWeight:700}}>妊娠糖尿病</span>
           </div>
         </div>
-        <div style={{display:"flex",gap:8,marginTop:12,padding:"8px 12px",background:"#f9f0f5",borderRadius:10}}>
-          <span style={{fontSize:13,color:"#555",fontWeight:700,alignSelf:"center"}}>入力モード：</span>
-          <button style={btn(!isNurse,"#c05c8a")} onClick={()=>setIsNurse(false)}>👤 患者入力</button>
-          <button style={btn(isNurse,"#6b3fa8")} onClick={()=>setIsNurse(true)}>👩‍⚕️ 看護師入力</button>
-        </div>
+
       </div>
 
       <div style={{maxWidth:680,margin:"0 auto"}}>
