@@ -571,14 +571,15 @@ ${getCurrentMonth()}：（受診理由1〜2行）
               <div style={{background:"linear-gradient(135deg,#c53030,#fc8181)",borderRadius:14,padding:"20px",marginBottom:16,textAlign:"center"}}>
                 <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",marginBottom:6,fontWeight:700}}>受付番号</div>
                 <div style={{fontSize:56,fontWeight:900,color:"#fff",letterSpacing:"0.2em",lineHeight:1}}>{visitCode}</div>
-                <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",marginTop:10}}>この番号を診察時にお伝えください</div>
+                
               </div>
             )}
-            <div style={{background:"#f5f9f7",border:"1px solid #c0e8d8",borderRadius:10,padding:"16px 18px",whiteSpace:"pre-wrap",fontSize:13,lineHeight:2,color:"#1a3a2a",fontFamily:"monospace"}}>{result}</div>
-            <div style={{background:"#fff8e1",border:"2px solid #f59e0b",borderRadius:12,padding:"14px 18px",marginTop:16,textAlign:"center"}}>
+            <div style={{background:"#fff8e1",border:"2px solid #f59e0b",borderRadius:12,padding:"14px 18px",textAlign:"center"}}>
               <div style={{fontSize:16,fontWeight:900,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
               <div style={{fontSize:12,color:"#b45309",marginTop:4}}>問診は完了しています。ありがとうございました。</div>
             </div>
+            <div style={{background:"#f5f9f7",border:"1px solid #c0e8d8",borderRadius:10,padding:"16px 18px",whiteSpace:"pre-wrap",fontSize:13,lineHeight:2,color:"#1a3a2a",fontFamily:"monospace"}}>{result}</div>
+
             <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#c53030,#fc8181)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer"}} onClick={()=>copyToClipboard(result)}>📋 コピー</button>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #c53030",background:"#fff5f5",color:"#c53030",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setTimeout(scrollTop,50);}}>✏️ 修正する</button>
