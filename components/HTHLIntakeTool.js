@@ -22,7 +22,7 @@ const ALCOHOL_TYPES = [
 
 const initialData = {
   reason: { type: "", referralFrom: "", referralDept: "", referralQuickSelect: false, referralDetail: "", transferFrom: "", transferDetail: "", checkupType: "", concern: false, concernType: "", summary: "" },
-  disease: { igt: false, ht: false, hl: false, thyroidAdded: false, echoNeck: "", echoAbdomen: "" },
+  disease: { igt: false, ht: false, hl: false, thyroidAdded: false, echoNeck: "", echoAbdomen: "", otherDisease: "", otherDiseases: [{name:"",hospital:"",hospitalOther:""}] },
   history: {
     age: "", allergy: "なし", allergyDetail: "",
     fh: { dm: false, dmWho: [], ht: false, hl: false, apo: false, ihd: false },
@@ -173,11 +173,11 @@ ${JSON.stringify(data,null,2)}
 - 頚部エコー・腹部エコーの情報を記載
 
 【出力フォーマット】
-${getCurrentMonth()}：（受診理由1〜2行）
+${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の場合は気になる理由も含めて記載。自由記入欄の内容も含める）
 ＃IGT（該当時のみ）
 ＃HT（該当時のみ）
 ＃HL（該当時のみ）
-（その他病名があれば記載）
+（その他病名があれば「♯病名（通院先）」の形式で記載）
 
 【アレルギー歴】
 【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)
@@ -197,14 +197,13 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 （該当する申し送り事項を全て記載。なければ省略）
 【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
 ---------------------------------------------
-${getCurrentMonth()}：基本採血なし
+${getCurrentMonth()}：
 
 
 
 
 アレルギー薬あれば赤字14フォント太字
 目標HbA1c　　　　%　目標体重　　　次回検討薬：
-基本採血なし
 1月follow
 曜希望
 LINE登録ご案内→済　登録確認未・登録できない
