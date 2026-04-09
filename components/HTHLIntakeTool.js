@@ -160,16 +160,24 @@ export default function HTHLIntakeTool() {
 飲酒歴：${buildAlcohol()}
 喫煙歴：${buildSmoking()}
 生活情報：${buildLiving()}
+頚部エコー：${data.disease.echoNeck||"未選択"}
+腹部エコー：${data.disease.echoAbdomen||"未選択"}
+その他の病名：${data.disease.otherDisease||"なし"}
 
 【患者情報JSON】
 ${JSON.stringify(data,null,2)}
+
+【ルール追加】
+- 「診察にあたっての要望」は必ず【】付きで記載。記載なければ「なし」と記載
+- その他の病名がある場合は既往歴として記載
+- 頚部エコー・腹部エコーの情報を記載
 
 【出力フォーマット】
 ${getCurrentMonth()}：（受診理由1〜2行）
 ＃IGT（該当時のみ）
 ＃HT（該当時のみ）
 ＃HL（該当時のみ）
-◎甲状腺3項目追加済（該当時のみ）
+（その他病名があれば記載）
 
 【アレルギー歴】
 【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)
@@ -179,10 +187,27 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 【ワクチン歴】（60歳以上のみ）
 【生活情報】（70歳以上は子供の状況も含む）
 【仕事】職業・活動量
-
+---------------------------------------------
+頚部エコー：（他院で施行済の場合「他院施行済」、健診で施行済の場合「健診施行済」、行っていない場合「当院で施行予定」と記載）
+腹部エコー：（他院で施行済の場合「他院施行済」、健診で施行済の場合「健診施行済」、行っていない場合「当院で施行予定」と記載）
 ---------------------------------------------
 身長:○cm　初診時:○kg　20歳時:○kg　max体重○kg(○歳)
-診察にあたっての要望：
+---------------------------------------------
+【事前聴取時　申し送り事項】
+（該当する申し送り事項を全て記載。なければ省略）
+【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
+---------------------------------------------
+${getCurrentMonth()}：基本採血なし
+
+
+
+
+アレルギー薬あれば赤字14フォント太字
+目標HbA1c　　　　%　目標体重　　　次回検討薬：
+基本採血なし
+1月follow
+曜希望
+LINE登録ご案内→済　登録確認未・登録できない
 `;
     try {
       const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
@@ -212,7 +237,20 @@ ${getCurrentMonth()}：（受診理由1〜2行）
           <label style={lbl()}>受診理由</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:14}}>
             {["紹介","検診異常","自主転院"].map(r=><button key={r} style={btn(d.reason.type===r)} onClick={()=>up("reason","type",r)}>{r}</button>)}
+            <button style={btn(d.reason.concern,"#8e44ad")} onClick={()=>{up("reason","concern",!d.reason.concern);if(d.reason.type)up("reason","type","");}}>
+              {d.reason.concern?"✓ 気になって受診":"気になって受診"}
+            </button>
           </div>
+          {d.reason.concern&&(
+            <div style={{paddingLeft:12,borderLeft:"3px solid #8e44ad",marginBottom:14}}>
+              <label style={lbl({color:"#8e44ad"})}>気になる理由</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                {["家族に高血圧・脂質異常症の方がいる","健診で異常を指摘された","頭痛・めまいがある","その他"].map(v=>(
+                  <button key={v} style={btn(d.reason.concernType===v,"#8e44ad")} onClick={()=>up("reason","concernType",v)}>{v}</button>
+                ))}
+              </div>
+            </div>
+          )}
           {d.reason.type==="紹介"&&(<div style={sBox()}>
             <label style={lbl()}>よく使う紹介元</label>
             <button style={{...btn(d.reason.referralQuickSelect,"#0f9668"),marginBottom:12,fontSize:14,padding:"10px 18px",border:d.reason.referralQuickSelect?"2px solid #0f9668":"2px dashed #0f9668",background:d.reason.referralQuickSelect?"#0f9668":"#f0fff8",color:d.reason.referralQuickSelect?"#fff":"#0f9668"}}
@@ -243,22 +281,6 @@ ${getCurrentMonth()}：（受診理由1〜2行）
             </div>
           </div>)}
           <div style={{marginTop:8}}>
-            <label style={lbl()}>気になって受診の方</label>
-            <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}}>
-              <button style={btn(d.reason.concern,"#8e44ad")} onClick={()=>up("reason","concern",!d.reason.concern)}>
-                {d.reason.concern?"✓ ":""} 高血圧・脂質異常症が気になる
-              </button>
-            </div>
-            {d.reason.concern && (
-              <div style={{paddingLeft:12,borderLeft:"3px solid #8e44ad",marginBottom:12}}>
-                <label style={lbl({color:"#8e44ad"})}>気になる理由</label>
-                <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
-                  {["家族に高血圧・脂質異常症の方がいる","健診で異常を指摘された","頭痛・めまいがある","その他"].map(v=>(
-                    <button key={v} style={btn(d.reason.concernType===v,"#8e44ad")} onClick={()=>up("reason","concernType",v)}>{v}</button>
-                  ))}
-                </div>
-              </div>
-            )}
             <label style={lbl({marginTop:8})}>自由記入欄（任意）</label>
             <textarea style={{...inp(),minHeight:60,resize:"vertical"}} placeholder="補足があれば記載（書かなくてもOK）" value={d.reason.summary} onChange={e=>up("reason","summary",e.target.value)}/>
           </div>
@@ -268,10 +290,14 @@ ${getCurrentMonth()}：（受診理由1〜2行）
       case 1: return (
         <div>
           <label style={lbl()}>病名（該当するものを選択）</label>
-          <div style={{display:"flex",flexWrap:"wrap",marginBottom:16}}>
+          <div style={{display:"flex",flexWrap:"wrap",marginBottom:8}}>
             {[["igt","耐糖能異常（IGT）","#e07000"],["ht","高血圧（HT）","#1a5fa8"],["hl","脂質異常症（HL）","#1a5fa8"]].map(([k,l,c])=>(
               <button key={k} style={btn(d.disease[k],c)} onClick={()=>up("disease",k,!d.disease[k])}>{l}</button>
             ))}
+          </div>
+          <div style={{marginBottom:16}}>
+            <label style={lbl({fontSize:11,color:"#888"})}>その他の病名（あれば入力）</label>
+            <input style={inp()} placeholder="例：慢性腎臓病、甲状腺疾患、高尿酸血症 など" value={d.disease.otherDisease||""} onChange={e=>up("disease","otherDisease",e.target.value)}/>
           </div>
 
 
