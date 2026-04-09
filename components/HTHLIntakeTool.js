@@ -81,7 +81,6 @@ function AlcoholRow({ item, index, onChange, onRemove, showRemove }) {
 export default function HTHLIntakeTool() {
   const [step, setStep] = useState(0);
   const [data, setData] = useState(initialData);
-  const [isNurse, setIsNurse] = useState(false);
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -181,6 +180,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 【生活情報】（70歳以上は子供の状況も含む）
 【仕事】職業・活動量
 
+---------------------------------------------
 身長:○cm　初診時:○kg　20歳時:○kg　max体重○kg(○歳)
 診察にあたっての要望：
 `;
@@ -259,10 +259,6 @@ ${getCurrentMonth()}：（受診理由1〜2行）
                 </div>
               </div>
             )}
-              <div style={{background:"#fff8e1",border:"2px solid #f59e0b",borderRadius:12,padding:"14px 18px",textAlign:"center"}}>
-                <div style={{fontSize:16,fontWeight:900,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
-                <div style={{fontSize:12,color:"#b45309",marginTop:4}}>問診は完了しています。ありがとうございました。</div>
-              </div>
             <label style={lbl({marginTop:8})}>自由記入欄（任意）</label>
             <textarea style={{...inp(),minHeight:60,resize:"vertical"}} placeholder="補足があれば記載（書かなくてもOK）" value={d.reason.summary} onChange={e=>up("reason","summary",e.target.value)}/>
           </div>
@@ -277,34 +273,28 @@ ${getCurrentMonth()}：（受診理由1〜2行）
               <button key={k} style={btn(d.disease[k],c)} onClick={()=>up("disease",k,!d.disease[k])}>{l}</button>
             ))}
           </div>
-          {isNurse && d.disease.hl && (
-            <div style={{background:"#fffff0",border:"2px solid #d69e2e",borderRadius:10,padding:"12px 16px",marginBottom:14}}>
-              <div style={{fontSize:13,fontWeight:800,color:"#744210",marginBottom:8}}>👩‍⚕️ 看護師確認事項</div>
-              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:14,color:"#744210",fontWeight:700}}>
-                <input type="checkbox" checked={d.disease.thyroidAdded} onChange={e=>up("disease","thyroidAdded",e.target.checked)} style={{width:18,height:18}}/>
-                ◎ 甲状腺3項目を採血に追加した
-              </label>
-            </div>
-          )}
-          {d.disease.hl && !isNurse && (
-            <div style={{background:"#fff8f0",border:"1.5px solid #e07000",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:13,color:"#a05000"}}>
-              ⚠️ 看護師が甲状腺3項目の追加採血を確認します
-            </div>
-          )}
+
+
           <div style={{...sBox({background:"#f0f8ff",border:"1.5px solid #bee3f8"}),marginTop:8}}>
             <div style={{fontSize:13,fontWeight:800,color:"#2b6cb0",marginBottom:4}}>🔍 エコー検査について</div>
             <div style={{fontSize:12,color:"#4a7fa8",marginBottom:12,lineHeight:1.7}}>当院では合併症検査として、頸動脈エコー・腹部エコー等を年に1回行っています。</div>
-            <label style={lbl({color:"#2b6cb0"})}>頚部エコー（必須・年1回）</label>
-            <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:12}}>
-              {["他院で施行済","健診で施行済"].map(v=>(
-                <button key={v} style={btn(d.disease.echoNeck===v,"#2b6cb0")} onClick={()=>up("disease","echoNeck",v)}>{v}</button>
-              ))}
-            </div>
-            <label style={lbl({color:"#2b6cb0"})}>腹部エコー</label>
-            <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
-              {["他院で施行済","健診で施行済","希望あり","希望なし"].map(v=>(
-                <button key={v} style={btn(d.disease.echoAbdomen===v,"#2b6cb0")} onClick={()=>up("disease","echoAbdomen",v)}>{v}</button>
-              ))}
+            <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+              <div style={{flex:1,minWidth:200}}>
+                <label style={lbl({color:"#2b6cb0"})}>頚部エコー（必須・年1回）</label>
+                <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                  {["他院で施行済","健診で施行済"].map(v=>(
+                    <button key={v} style={{...btn(d.disease.echoNeck===v,"#2b6cb0"),padding:"6px 10px",fontSize:12}} onClick={()=>up("disease","echoNeck",v)}>{v}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{flex:1,minWidth:200}}>
+                <label style={lbl({color:"#2b6cb0"})}>腹部エコー</label>
+                <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                  {["他院で施行済","健診で施行済","希望あり","希望なし"].map(v=>(
+                    <button key={v} style={{...btn(d.disease.echoAbdomen===v,"#2b6cb0"),padding:"6px 10px",fontSize:12}} onClick={()=>up("disease","echoAbdomen",v)}>{v}</button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -435,15 +425,10 @@ ${getCurrentMonth()}：（受診理由1〜2行）
             <div style={{fontSize:20,fontWeight:900,color:"#1a2a4a"}}>初診事前問診</div>
           </div>
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
-            {isNurse&&<span style={{fontSize:11,background:"#6b3fa8",color:"#fff",padding:"3px 10px",borderRadius:20,fontWeight:700}}>👩‍⚕️ 看護師モード</span>}
-            <span style={{fontSize:12,background:"#e8f8ee",color:"#2d8653",padding:"4px 14px",borderRadius:20,fontWeight:700}}>高血圧・脂質異常症</span>
+<span style={{fontSize:12,background:"#e8f8ee",color:"#2d8653",padding:"4px 14px",borderRadius:20,fontWeight:700}}>高血圧・脂質異常症</span>
           </div>
         </div>
-        <div style={{display:"flex",gap:8,marginTop:12,padding:"8px 12px",background:"#f0f4f8",borderRadius:10}}>
-          <span style={{fontSize:13,color:"#555",fontWeight:700,alignSelf:"center"}}>入力モード：</span>
-          <button style={btn(!isNurse,"#2d8653")} onClick={()=>setIsNurse(false)}>👤 患者入力</button>
-          <button style={btn(isNurse,"#6b3fa8")} onClick={()=>setIsNurse(true)}>👩‍⚕️ 看護師入力</button>
-        </div>
+
       </div>
 
       <div style={{maxWidth:680,margin:"0 auto"}}>
