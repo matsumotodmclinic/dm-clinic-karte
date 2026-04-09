@@ -161,6 +161,7 @@ export default function T1DIntakeTool() {
 - 該当しない項目は省略する
 - フォーマット記号（＃【】□♯）を使用する
 - 体重減少ありの場合は一番上に【⚠️ 体重減少あり・早急なインスリン導入を検討】と記載
+- 受診理由の直後、空行なしで＃1型糖尿病を続ける
 - 60歳未満はワクチン歴を省略、70歳未満は子供の状況を省略
 - 喫煙歴は「○本×○年（○歳〜）」の形式
 - 採血項目：GAD抗体・CPR・甲状腺3項目は初診時必須として記載
@@ -569,7 +570,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <label style={lbl()}>身長・体重</label>
           <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:20}}>
             {[["height","身長","cm"],["weightNow","現在の体重","kg"],["weight20","20歳時の体重","kg"],["weightMax","最大体重","kg"],["weightMaxAge","最大体重の年齢","歳"]].map(([k,l,u])=>(
-              <div key={k} style={{flex:"1 1 90px"}}>
+              <div key={k} style={{flex:"1 1 130px",maxWidth:"calc(20% - 8px)"}}>
                 <label style={lbl()}>{l}（{u}）</label>
                 <input style={inp()} type="number" placeholder={u} value={d.body[k]} onChange={e=>up("body",k,e.target.value)}/>
               </div>
