@@ -72,7 +72,7 @@ export default function PedT1DIntakeTool() {
 - 小児慢性申請状況を必ず記載する
 
 【患者情報JSON】
-${JSON.stringify(data,null,2)}
+${JSON.stringify({disease:data.disease,history:data.history,body:data.body,reason:data.reason,support:data.support,chronic:data.chronic},null,2)}
 
 【出力フォーマット】
 R${new Date().getFullYear()-2018}.${new Date().getMonth()+1}：（受診理由1〜2行）
