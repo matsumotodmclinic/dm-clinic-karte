@@ -88,7 +88,6 @@ function AlcoholRow({ item, index, onChange, onRemove, showRemove }) {
 export default function RHIntakeTool() {
   const [step, setStep]         = useState(0);
   const [data, setData]         = useState(initialData);
-  const [isNurse, setIsNurse]   = useState(false);
   const [result, setResult]     = useState("");
   const [loading, setLoading]   = useState(false);
   const [done, setDone]         = useState(false);
@@ -174,14 +173,15 @@ ${getCurrentMonth()}：
 【生活情報】（70歳以上は子供の状況も含む）
 【仕事】
 
+---------------------------------------------
 身長:○cm　初診時:○kg　20歳時:○kg　max体重○kg(○歳)
-
+---------------------------------------------
 〇どのような時に低血糖が生じるか？（選択した内容を記載）
 〇思い当たる原因は？（選択した内容を記載）
 〇症状：（選択した内容を記載）
 
 診察にあたっての要望：
-
+---------------------------------------------
 【事前聴取時 申し送り事項】
 （甲状腺追加・CGM/リブレ情報があれば記載）
 `;
@@ -207,11 +207,7 @@ ${getCurrentMonth()}：
 
       case 0: return (
         <div>
-          <div style={{display:"flex",gap:8,marginBottom:20,padding:"10px 14px",background:"#f0f4f8",borderRadius:10}}>
-            <span style={{fontSize:13,color:"#555",fontWeight:700,alignSelf:"center"}}>入力モード：</span>
-            <button style={btn(!isNurse,"#b45309")} onClick={()=>setIsNurse(false)}>👤 患者入力</button>
-            <button style={btn(isNurse,"#6b3fa8")} onClick={()=>setIsNurse(true)}>👩‍⚕️ 看護師入力</button>
-          </div>
+
           <div style={{...sBox({background:"#fef9f0",border:"2px solid #d69e2e"}),marginBottom:20}}>
             <div style={{fontSize:13,fontWeight:800,color:"#744210",marginBottom:6}}>💡 反応性低血糖とは</div>
             <div style={{fontSize:13,color:"#744210",lineHeight:1.7}}>食後数時間後に血糖値が下がりすぎることで、動悸・冷や汗・ふらつきなどの症状が出る状態です。</div>
@@ -237,9 +233,8 @@ ${getCurrentMonth()}：
             ))}
           </div>
           <input style={{...inp(),marginBottom:16}} placeholder="その他・補足" value={d.symptom.causeNote} onChange={e=>up("symptom","causeNote",e.target.value)}/>
-          {isNurse && (
-            <div style={{...sBox({background:"#fffff0",border:"2px solid #d69e2e"})}}>
-              <div style={{fontSize:13,fontWeight:800,color:"#744210",marginBottom:12}}>👩‍⚕️ 看護師申し送り事項</div>
+          <div style={{...sBox({background:"#fffff0",border:"2px solid #d69e2e"})}}>
+              <div style={{fontSize:13,fontWeight:800,color:"#744210",marginBottom:12}}>📋 スタッフ記入事項</div>
               <label style={lbl({color:"#744210"})}>甲状腺3項目の追加採血</label>
               <div style={{display:"flex",gap:3,marginBottom:12}}>
                 {["追加済","未追加"].map(v=>(
@@ -256,7 +251,6 @@ ${getCurrentMonth()}：
                 <input style={inp()} placeholder="例：1週後に初診予定" value={d.symptom.libreNote||""} onChange={e=>up("symptom","libreNote",e.target.value)}/>
               )}
             </div>
-          )}
         </div>
       );
 
@@ -389,8 +383,7 @@ ${getCurrentMonth()}：
             <div style={{fontSize:20,fontWeight:900,color:"#1a2a4a"}}>初診事前問診</div>
           </div>
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
-            {isNurse&&<span style={{fontSize:11,background:"#6b3fa8",color:"#fff",padding:"3px 10px",borderRadius:20,fontWeight:700}}>👩‍⚕️ 看護師モード</span>}
-            <span style={{fontSize:12,background:"#fffbf0",color:"#b45309",padding:"4px 14px",borderRadius:20,fontWeight:700,border:"1px solid #f0ddc0"}}>反応性低血糖</span>
+<span style={{fontSize:12,background:"#fffbf0",color:"#b45309",padding:"4px 14px",borderRadius:20,fontWeight:700,border:"1px solid #f0ddc0"}}>反応性低血糖</span>
           </div>
         </div>
       </div>
