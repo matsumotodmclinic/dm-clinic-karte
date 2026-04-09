@@ -46,7 +46,7 @@ const initialData = {
     vaccine65Prevena: "", vaccine65Herpes: "",
     livingSpouse: "", livingOther: "", livingCustom: "", childInfo: "",
     work: "していない", job: "", activity: "",
-    otherDiseases: [{name:"",hospital:"",hospitalOther:""}],
+    otherDiseases: [{name:"",hospital:"",hospitalOther:""},{name:"",hospital:"",hospitalOther:""},{name:"",hospital:"",hospitalOther:""},{name:"",hospital:"",hospitalOther:""},{name:"",hospital:"",hospitalOther:""}],
   },
   body: { height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "" },
 };
@@ -197,8 +197,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 【生活情報】（70歳以上は子供の状況も含む）
 【仕事】職業・活動量
 ---------------------------------------------
-頚部エコー：（他院で施行済の場合「他院施行済」、健診で施行済の場合「健診施行済」、行っていない場合「当院で施行予定」と記載）
-腹部エコー：（他院で施行済の場合「他院施行済」、健診で施行済の場合「健診施行済」、行っていない場合「当院で施行予定」と記載）
+頚部エコー：${data.history?.echoNeck||"未選択"}　腹部エコー：${data.history?.echoAbdomen||"未選択"}
 ---------------------------------------------
 身長:○cm　初診時:○kg　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
@@ -207,6 +206,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 （障害年金：厚生年金加入ありの場合）□障害年金の可能性あり→CPR結果を確認してください
 （デバイス希望がある場合）□使用希望デバイス：CGM=${data.reason.cgmWish||"なし"}　ポンプ=${data.reason.pumpWish||"なし"}
 □甲状腺3項目・GAD抗体・CPRを初診時採血
+（インスリン未使用の場合）□初回療養計画書を作成済
 【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
 ---------------------------------------------
 ${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲状腺項目追加してください　CPR0.5以下の方は今後半年ごとCPR測定を入れてください。
@@ -374,6 +374,12 @@ LINE登録ご案内→済　登録確認未・登録できない
               </label>
             </div>
           </div>
+          <label style={lbl()}>インスリン使用状況</label>
+          <div style={{display:"flex",flexWrap:"wrap",marginBottom:14}}>
+            {["インスリン使用中","インスリン未使用"].map(v=>(
+              <button key={v} style={btn(d.disease.insulinStatus===v,v==="インスリン使用中"?"#c53030":"#1a5fa8")} onClick={()=>up("disease","insulinStatus",v)}>{v}</button>
+            ))}
+          </div>
           <label style={lbl()}>合併する疾患</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:16}}>
             {[["ht","高血圧（HT）"],["hl","脂質異常症（HL）"]].map(([k,l])=>(
@@ -521,13 +527,15 @@ LINE登録ご案内→済　登録確認未・登録できない
           </div>
           {isOver60&&(<div style={sBox({border:"1.5px solid #bee3f8",background:"#ebf8ff"})}>
             <div style={{fontSize:13,fontWeight:800,color:"#2b6cb0",marginBottom:12}}>💉 ワクチン希望（60歳以上）</div>
-            <div style={{marginBottom:12}}>
-              <label style={lbl({color:"#2b6cb0"})}>プレベナー20</label>
-              <div style={{display:"flex",gap:4}}>{["希望あり","なし"].map(v=><button key={v} style={btn(d.history.vaccine65Prevena===v,"#2b6cb0")} onClick={()=>up("history","vaccine65Prevena",v)}>{v}</button>)}</div>
-            </div>
-            <div>
-              <label style={lbl({color:"#2b6cb0"})}>帯状疱疹ワクチン</label>
-              <div style={{display:"flex",gap:4}}>{["希望あり","なし"].map(v=><button key={v} style={btn(d.history.vaccine65Herpes===v,"#2b6cb0")} onClick={()=>up("history","vaccine65Herpes",v)}>{v}</button>)}</div>
+            <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+              <div style={{flex:1,minWidth:180}}>
+                <label style={lbl({color:"#2b6cb0"})}>プレベナー20</label>
+                <div style={{display:"flex",gap:4}}>{["希望あり","なし"].map(v=><button key={v} style={btn(d.history.vaccine65Prevena===v,"#2b6cb0")} onClick={()=>up("history","vaccine65Prevena",v)}>{v}</button>)}</div>
+              </div>
+              <div style={{flex:1,minWidth:180}}>
+                <label style={lbl({color:"#2b6cb0"})}>帯状疱疹ワクチン</label>
+                <div style={{display:"flex",gap:4}}>{["希望あり","なし"].map(v=><button key={v} style={btn(d.history.vaccine65Herpes===v,"#2b6cb0")} onClick={()=>up("history","vaccine65Herpes",v)}>{v}</button>)}</div>
+              </div>
             </div>
           </div>)}
           <label style={lbl()}>生活情報（同居・家族構成）</label>
