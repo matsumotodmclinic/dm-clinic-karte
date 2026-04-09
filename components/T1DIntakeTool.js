@@ -95,7 +95,6 @@ function AlcoholRow({ item, index, onChange, onRemove, showRemove }) {
 export default function T1DIntakeTool() {
   const [step, setStep]         = useState(0);
   const [data, setData]         = useState(initialData);
-  const [isNurse, setIsNurse]   = useState(false);
   const [result, setResult]     = useState("");
   const [loading, setLoading]   = useState(false);
   const [done, setDone]         = useState(false);
@@ -187,16 +186,18 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 ＃HT（該当時のみ）
 ＃HL（該当時のみ）
 
+---------------------------------------------
 【アレルギー歴】
 【FH】DM(-/+) HT(-/+) APO(-/+) IHD(-/+)
 【飲酒歴】
 【喫煙歴】
-【眼科通院歴】
+【眼科通院歴】（通院中の場合：眼科名と網膜症の状況を記載）
 【健診】
 【ワクチン歴】（60歳以上のみ）
 【生活情報】（70歳以上は子供の状況も含む）
 【仕事】職業・活動量
 
+---------------------------------------------
 身長:○cm　初診時:○kg　20歳時:○kg　max体重○kg(○歳)
 診察にあたっての要望：
 `;
@@ -222,11 +223,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 
       case 0: return (
         <div>
-          <div style={{display:"flex",gap:8,marginBottom:20,padding:"10px 14px",background:"#f0f4f8",borderRadius:10}}>
-            <span style={{fontSize:13,color:"#555",fontWeight:700,alignSelf:"center"}}>入力モード：</span>
-            <button style={btn(!isNurse,"#1a5fa8")} onClick={()=>setIsNurse(false)}>👤 患者入力</button>
-            <button style={btn(isNurse,"#6b3fa8")} onClick={()=>setIsNurse(true)}>👩‍⚕️ 看護師入力</button>
-          </div>
+  
           <div style={{background:"#fff5f5",border:"2px solid #e53e3e",borderRadius:12,padding:"16px 20px",marginBottom:20}}>
             <div style={{fontSize:15,fontWeight:900,color:"#c53030",marginBottom:6}}>⚠️ 最初に必ず確認してください</div>
             <div style={{fontSize:13,color:"#742a2a",lineHeight:1.7}}>
@@ -287,11 +284,32 @@ ${getCurrentMonth()}：（受診理由1〜2行）
             </div>
           </div>)}
           <div style={{marginTop:8}}>
-            <label style={lbl()}>使用したいデバイス（希望がある方）</label>
-            <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:14}}>
-              {["CGM（持続血糖測定器）を使いたい","インスリンポンプを使いたい"].map(v=>(
-                <button key={v} style={btn(d.reason.deviceWish.includes(v),"#0f9668")} onClick={()=>{const a=d.reason.deviceWish;up("reason","deviceWish",a.includes(v)?a.filter(x=>x!==v):[...a,v]);}}>{v}</button>
-              ))}
+            <label style={lbl()}>デバイスについて（現在使用中・希望があれば選択）</label>
+            <div style={{marginBottom:10}}>
+              <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>CGM（現在使用中）</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
+                {["フリースタイルリブレ","Dexcom G7","使用していない"].map(v=>(
+                  <button key={v} style={btn(d.reason.cgmCurrent===v,"#0f9668")} onClick={()=>up("reason","cgmCurrent",v)}>{v}</button>
+                ))}
+              </div>
+              <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>CGM（希望）</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
+                {["フリースタイルリブレ","Dexcom G7","希望なし"].map(v=>(
+                  <button key={v} style={btn(d.reason.cgmWish===v,"#0f9668")} onClick={()=>up("reason","cgmWish",v)}>{v}</button>
+                ))}
+              </div>
+              <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>インスリンポンプ（現在使用中）</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
+                {["ミニメド","メディセーフウィズ","使用していない"].map(v=>(
+                  <button key={v} style={btn(d.reason.pumpCurrent===v,"#553c9a")} onClick={()=>up("reason","pumpCurrent",v)}>{v}</button>
+                ))}
+              </div>
+              <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>インスリンポンプ（希望）</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                {["ミニメド","メディセーフウィズ","希望なし"].map(v=>(
+                  <button key={v} style={btn(d.reason.pumpWish===v,"#553c9a")} onClick={()=>up("reason","pumpWish",v)}>{v}</button>
+                ))}
+              </div>
             </div>
             <label style={lbl()}>自由記入欄（任意）</label>
             <textarea style={{...inp(),minHeight:60,resize:"vertical"}} placeholder="補足があれば記載（書かなくてもOK）" value={d.reason.summary} onChange={e=>up("reason","summary",e.target.value)}/>
@@ -329,15 +347,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
               <button key={k} style={btn(d.disease[k])} onClick={()=>up("disease",k,!d.disease[k])}>{l}</button>
             ))}
           </div>
-          {isNurse && (
-            <div style={{background:"#fffff0",border:"2px solid #d69e2e",borderRadius:10,padding:"12px 16px",marginBottom:14}}>
-              <div style={{fontSize:13,fontWeight:800,color:"#744210",marginBottom:8}}>👩‍⚕️ 看護師確認事項</div>
-              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:14,color:"#744210",fontWeight:700}}>
-                <input type="checkbox" checked={d.disease.thyroidChecked} onChange={e=>up("disease","thyroidChecked",e.target.checked)} style={{width:18,height:18}}/>
-                甲状腺3項目の採血を追加した
-              </label>
-            </div>
-          )}
+
           <div style={sBox({background:"#faf5ff",border:"1.5px solid #d6bcfa"})}>
             <div style={{fontSize:13,fontWeight:800,color:"#553c9a",marginBottom:10}}>💼 障害年金について</div>
             <label style={lbl({color:"#553c9a"})}>現在の受給状況</label>
@@ -357,16 +367,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
                     <button key={v} style={btn(d.disease.pensionKosei===v,"#553c9a")} onClick={()=>up("disease","pensionKosei",v)}>{v}</button>
                   ))}
                 </div>
-                {d.disease.pensionKosei==="はい（加入していた）"&&(
-                  <div>
-                    <label style={lbl({color:"#553c9a"})}>受給の可能性</label>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
-                      {["CPR次第","受給困難（×）"].map(v=>(
-                        <button key={v} style={btn(d.disease.pensionPossibility===v,"#553c9a")} onClick={()=>up("disease","pensionPossibility",v)}>{v}</button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+
               </div>
             )}
           </div>
@@ -444,9 +445,15 @@ ${getCurrentMonth()}：（受診理由1〜2行）
                   <button key={v} style={{...btn(d.history.eye===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","eye",v)}>{v}</button>
                 ))}
               </div>
-              <input style={inp()} placeholder="その他の眼科名を入力"
+              <input style={{...inp(),marginBottom:8}} placeholder="その他の眼科名を入力"
                 value={["上尾こいけ眼科","おが・おおぐし眼科","上尾中央総合病院","おおたけ眼科","こしの眼科"].includes(d.history.eye)?"":d.history.eye}
                 onChange={e=>up("history","eye",e.target.value)}/>
+              <label style={lbl({fontSize:11})}>糖尿病網膜症の状況（分かる範囲で）</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                {["網膜症なし","単純性網膜症","前増殖性網膜症","増殖性網膜症"].map(v=>(
+                  <button key={v} style={{...btn(d.history.retinopathy===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","retinopathy",v)}>{v}</button>
+                ))}
+              </div>
             </div>
           )}
           {d.history.eyeVisiting!=="通院中"&&<div style={{marginBottom:14}}/>}
@@ -526,8 +533,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
             <div style={{fontSize:20,fontWeight:900,color:"#1a2a4a"}}>初診事前問診</div>
           </div>
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
-            {isNurse&&<span style={{fontSize:11,background:"#6b3fa8",color:"#fff",padding:"3px 10px",borderRadius:20,fontWeight:700}}>👩‍⚕️ 看護師モード</span>}
-            <span style={{fontSize:12,background:"#fff5f5",color:"#c53030",padding:"4px 14px",borderRadius:20,fontWeight:700}}>1型糖尿病</span>
+<span style={{fontSize:12,background:"#fff5f5",color:"#c53030",padding:"4px 14px",borderRadius:20,fontWeight:700}}>1型糖尿病</span>
           </div>
         </div>
       </div>
