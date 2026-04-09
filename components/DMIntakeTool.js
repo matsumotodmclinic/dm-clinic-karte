@@ -840,9 +840,12 @@ LINE登録ご案内→済　登録確認未・登録できない
               <div style={{ background: "linear-gradient(135deg,#1a5fa8,#3b82f6)", borderRadius: 14, padding: "20px", marginBottom: 16, textAlign: "center" }}>
                 <div style={{ fontSize: 13, color: "#a8d4ff", marginBottom: 6, fontWeight: 700 }}>受付番号</div>
                 <div style={{ fontSize: 56, fontWeight: 900, color: "#fff", letterSpacing: "0.2em", lineHeight: 1 }}>{visitCode}</div>
-                <div style={{ fontSize: 13, color: "#c8e8ff", marginTop: 10 }}>この番号を診察時にお伝えください</div>
               </div>
             )}
+            <div style={{background:"#fff8e1",border:"2px solid #f59e0b",borderRadius:12,padding:"14px 18px",textAlign:"center"}}>
+              <div style={{fontSize:16,fontWeight:900,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
+              <div style={{fontSize:12,color:"#b45309",marginTop:4}}>問診は完了しています。ありがとうございました。</div>
+            </div>
 
             {data.alert.weightLoss === "あり" && (
               <div style={{ background: "#c53030", color: "#fff", borderRadius: 8, padding: "12px 16px", marginBottom: 12, fontSize: 14, fontWeight: 800 }}>
@@ -852,11 +855,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             <div style={{ background: "#f5f9f7", border: "1px solid #c0e8d8", borderRadius: 10, padding: "16px 18px", whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 2, color: "#1a3a2a", fontFamily: "monospace" }}>
               {result}
             </div>
-            {/* 患者向け返却メッセージ */}
-            <div style={{ background: "#fff8e1", border: "2px solid #f59e0b", borderRadius: 12, padding: "14px 18px", marginTop: 16, textAlign: "center" }}>
-              <div style={{ fontSize: 16, fontWeight: 900, color: "#92400e" }}>📋 タブレットを受付にお返しください</div>
-              <div style={{ fontSize: 12, color: "#b45309", marginTop: 4 }}>問診は完了しています。ありがとうございました。</div>
-            </div>
+
 
             {/* スタッフ向けボタン */}
             <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
