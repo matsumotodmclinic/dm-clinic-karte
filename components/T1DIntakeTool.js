@@ -196,10 +196,27 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 【ワクチン歴】（60歳以上のみ）
 【生活情報】（70歳以上は子供の状況も含む）
 【仕事】職業・活動量
-
+---------------------------------------------
+頚部エコー：（他院で施行済の場合「他院施行済」、健診で施行済の場合「健診施行済」、行っていない場合「当院で施行予定」と記載）
+腹部エコー：（他院で施行済の場合「他院施行済」、健診で施行済の場合「健診施行済」、行っていない場合「当院で施行予定」と記載）
 ---------------------------------------------
 身長:○cm　初診時:○kg　20歳時:○kg　max体重○kg(○歳)
-診察にあたっての要望：
+---------------------------------------------
+【事前聴取時　申し送り事項】
+（該当する申し送り事項を全て記載。なければ省略）
+【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
+---------------------------------------------
+${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲状腺項目追加してください　CPR0.5以下の方は今後半年ごとCPR測定を入れてください。
+
+
+
+
+アレルギー薬あれば赤字14フォント太字
+目標HbA1c　　　　%　目標体重　　　次回検討薬：
+DM基本セット
+1月follow
+曜希望
+LINE登録ご案内→済　登録確認未・登録できない
 `;
     try {
       const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages:[{role:"user",content:prompt}]})});
@@ -253,7 +270,20 @@ ${getCurrentMonth()}：（受診理由1〜2行）
           <label style={lbl()}>受診理由</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:14}}>
             {["紹介","検診異常","自主転院"].map(r=><button key={r} style={btn(d.reason.type===r)} onClick={()=>up("reason","type",r)}>{r}</button>)}
+            <button style={btn(d.reason.dmConcern,"#8e44ad")} onClick={()=>{up("reason","dmConcern",!d.reason.dmConcern);if(d.reason.type)up("reason","type","");}}>
+              {d.reason.dmConcern?"✓ 1型糖尿病が気になる":"1型糖尿病が気になる"}
+            </button>
           </div>
+          {d.reason.dmConcern&&(
+            <div style={{paddingLeft:12,borderLeft:"3px solid #8e44ad",marginBottom:14}}>
+              <label style={lbl({color:"#8e44ad"})}>気になる理由</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                {["家族に1型糖尿病の方がいる","急に体重が減った","喉が渇く・尿が多い","その他"].map(v=>(
+                  <button key={v} style={btn(d.reason.dmConcernReason===v,"#8e44ad")} onClick={()=>up("reason","dmConcernReason",v)}>{v}</button>
+                ))}
+              </div>
+            </div>
+          )}
           {d.reason.type==="紹介"&&(<div style={sBox()}>
             <label style={lbl()}>よく使う紹介元</label>
             <button style={{...btn(d.reason.referralQuickSelect,"#0f9668"),marginBottom:12,fontSize:14,padding:"10px 18px",border:d.reason.referralQuickSelect?"2px solid #0f9668":"2px dashed #0f9668",background:d.reason.referralQuickSelect?"#0f9668":"#f0fff8",color:d.reason.referralQuickSelect?"#fff":"#0f9668"}}
