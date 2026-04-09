@@ -12,53 +12,14 @@ const STEPS = [
 const NEARBY_HOSPITALS = ["自治医大さいたま医療センター", "埼玉県立小児医療センター", "その他", "不明"];
 const LIVING_WITH_SPOUSE = ["配偶者あり（両親同居）", "ひとり親家庭", "その他"];
 const LIVING_OTHERS = ["祖父母と同居", "兄弟・姉妹あり", "一人っ子", "その他"];
+const EYE_CLINICS = ["上尾こいけ眼科", "おが・おおぐし眼科", "上尾中央総合病院", "おおたけ眼科", "こしの眼科"];
 
 const initialData = {
-  reason: {
-    type: "", referralFrom: "", referralDept: "", referralQuickSelect: false,
-    referralDetail: "", transferFrom: "", transferDetail: "", summary: "",
-  },
-  disease: {
-    dm1type: "",
-    dmOnsetEra: "令和", dmOnset: "", dmOnsetUnknown: false,
-    ht: false, hl: false,
-    thyroidChecked: false,
-    bakusmi: "",           // バクスミー希望
-  },
-  support: {
-    familyMain: "",       // 主な管理者
-    familySubList: [],     // サポートする家族
-    familyNote: "",       // 補足
-    schoolStaff: [],       // 学校の協力スタッフ
-    schoolSupportPerson: [], // サポートしてくれる人
-    schoolSupportNote: "",
-    disclosed: "",
-    childGrade: "",        // 学年
-    childActivities: [],   // 部活・習い事
-    childActivityNote: "",
-    parentWorkMain: "",    // 主な保護者の仕事状況
-    parentWorkSub: "",
-    independenceLevel: "",
-    independenceNote: ""
-  },
-  chronic: {
-    status: "",            // 小児慢性申請状況
-    birthWeight: "",       // 出生体重
-    birthWeek: "",         // 出生週数
-    birthWeekDay: "",      // 出生週数（日）
-    birthCity: "",         // 出生時住民登録地
-    booklets: [],          // 手帳の取得内容
-    documents: [],         // 書類関係
-    residenceCity: "",     // 居住地（市町村）
-    paymentConfirmed: "",  // 支払い方法確認（申請済の方）
-  },
-  history: {
-    allergy: "なし", allergyDetail: "",
-    fh: { dm: false, dmWho: [], ht: false, apo: false, ihd: false },
-    eyeVisiting: "", eye: "",
-    livingSpouse: "", livingOther: "", livingCustom: "",
-    keyPerson: "",
-  },
+  reason: { type: "", referralFrom: "", referralDept: "", referralQuickSelect: false, referralDetail: "", transferFrom: "", transferDetail: "", summary: "" },
+  disease: { dm1type: "", dmOnsetEra: "令和", dmOnset: "", dmOnsetUnknown: false, ht: false, hl: false, thyroidChecked: false, bakusmi: "" },
+  support: { familyMain: "", familySubList: [], familyNote: "", schoolStaff: [], schoolSupportPerson: [], schoolSupportNote: "", disclosed: "", childGrade: "", childActivities: [], childActivityNote: "", parentWorkMain: "", parentWorkSub: "", independenceLevel: "", independenceNote: "" },
+  chronic: { status: "", birthWeight: "", birthWeek: "", birthWeekDay: "", birthCity: "", booklets: [], documents: [], residenceCity: "", paymentConfirmed: "" },
+  history: { allergy: "なし", allergyDetail: "", fh: { dm: false, dmWho: [], ht: false, apo: false, ihd: false }, eyeVisiting: "", eye: "", livingSpouse: "", livingOther: "", livingCustom: "", keyPerson: "" },
   body: { height: "", weightNow: "", concern: "" },
 };
 
@@ -86,6 +47,7 @@ export default function PedT1DIntakeTool() {
   const [result, setResult]   = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone]       = useState(false);
+  const [visitCode, setVisitCode] = useState("");
   const topRef = useRef(null);
 
   const scrollTop = () => { if(topRef.current) topRef.current.scrollIntoView({behavior:"smooth"}); };
@@ -93,6 +55,11 @@ export default function PedT1DIntakeTool() {
   const up  = (sec,f,v) => setData(p=>({...p,[sec]:{...p[sec],[f]:v}}));
   const upN = (sec,par,f,v) => setData(p=>({...p,[sec]:{...p[sec],[par]:{...p[sec][par],[f]:v}}}));
   const toggleArr = (sec,f,v) => setData(p=>{const a=p[sec][f];return{...p,[sec]:{...p[sec],[f]:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};});
+
+  const copyToClipboard = (text) => {
+    const copy = () => { const el=document.createElement('textarea');el.value=text;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);alert('コピーしました'); };
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>alert('コピーしました')).catch(copy);}else{copy();}
+  };
 
   const generateKarte = async () => {
     setLoading(true);
@@ -108,7 +75,7 @@ export default function PedT1DIntakeTool() {
 ${JSON.stringify(data,null,2)}
 
 【出力フォーマット】
-R8.4：（受診理由1〜2行）
+R${new Date().getFullYear()-2018}.${new Date().getMonth()+1}：（受診理由1〜2行）
 ＃1型糖尿病　（タイプ）（発症時期）
 ・GAD抗体：（初診時採血）
 ・CPR：（初診時採血）
@@ -142,7 +109,13 @@ R8.4：（受診理由1〜2行）
     try {
       const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
       const json = await res.json();
-      setResult(json.content?.[0]?.text||"生成に失敗しました");
+      const generated = json.content?.[0]?.text||"生成に失敗しました";
+      setResult(generated);
+
+      const saveRes = await fetch("/api/questionnaire",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({form_type:"小児1型糖尿病",form_data:data,age:null,generated_karte:generated})});
+      const saveJson = await saveRes.json();
+      if(saveJson.visit_code) setVisitCode(saveJson.visit_code);
+
       setDone(true);
       setTimeout(scrollTop,50);
     } catch(e){setResult("エラー: "+e.message);setDone(true);}
@@ -153,26 +126,18 @@ R8.4：（受診理由1〜2行）
     const d = data;
     switch(step) {
 
-      /* 0: 受診理由 */
       case 0: return (
         <div>
-          {/* 看護師確認事項 */}
           {isNurse && (
             <div style={{...sBox({background:"#fffff0",border:"2px solid #d69e2e"}),marginBottom:16}}>
               <div style={{fontSize:13,fontWeight:800,color:"#744210",marginBottom:10}}>👩‍⚕️ 受付時に保護者へ確認すること</div>
-              <div style={{fontSize:13,color:"#744210",lineHeight:2}}>
-                ①居住地（市町村）→ 受付メモへ記載<br/>
-                ②小児慢性の申請はしているか<br/>
-                ③申請済の方：前医での支払い方法を確認し算定へ連絡
-              </div>
+              <div style={{fontSize:13,color:"#744210",lineHeight:2}}>①居住地（市町村）→ 受付メモへ記載<br/>②小児慢性の申請はしているか<br/>③申請済の方：前医での支払い方法を確認し算定へ連絡</div>
             </div>
           )}
-
           <label style={lbl()}>受診理由</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:14}}>
             {["紹介","自主転院"].map(r=><button key={r} style={btn(d.reason.type===r)} onClick={()=>up("reason","type",r)}>{r}</button>)}
           </div>
-
           {d.reason.type==="紹介"&&(<div style={sBox()}>
             <label style={lbl()}>よく使う紹介元</label>
             <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:12}}>
@@ -192,7 +157,6 @@ R8.4：（受診理由1〜2行）
               {["血糖コントロール管理のため","専門的管理のため","安定していたため当院へ","内容不明"].map(v=><button key={v} style={btn(d.reason.referralDetail===v)} onClick={()=>up("reason","referralDetail",v)}>{v}</button>)}
             </div>
           </div>)}
-
           {d.reason.type==="自主転院"&&(<div style={sBox()}>
             <label style={lbl()}>転院元 医療機関名</label>
             <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}}>
@@ -200,21 +164,19 @@ R8.4：（受診理由1〜2行）
                 <button key={h} style={btn(d.reason.transferFrom===h,"#1a5fa8")} onClick={()=>up("reason","transferFrom",h)}>{h}</button>
               ))}
             </div>
-            <input style={{...inp(),marginBottom:12}} placeholder="その他の場合は入力（言いたくない場合は空欄でOK）" value={["自治医大さいたま医療センター","埼玉県立小児医療センター"].includes(d.reason.transferFrom)?"":d.reason.transferFrom} onChange={e=>up("reason","transferFrom",e.target.value)}/>
+            <input style={{...inp(),marginBottom:12}} placeholder="その他の場合は入力" value={["自治医大さいたま医療センター","埼玉県立小児医療センター"].includes(d.reason.transferFrom)?"":d.reason.transferFrom} onChange={e=>up("reason","transferFrom",e.target.value)}/>
             <label style={lbl()}>転院の理由</label>
             <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
               {["血糖コントロール改善しないため","転居のため","より専門的な治療を希望","その他"].map(v=><button key={v} style={btn(d.reason.transferDetail===v)} onClick={()=>up("reason","transferDetail",v)}>{v}</button>)}
             </div>
           </div>)}
-
           <div style={{marginTop:8}}>
             <label style={lbl()}>自由記入欄（任意）</label>
-            <textarea style={{...inp(),minHeight:60,resize:"vertical"}} placeholder="補足があれば記載（書かなくてもOK）" value={d.reason.summary} onChange={e=>up("reason","summary",e.target.value)}/>
+            <textarea style={{...inp(),minHeight:60,resize:"vertical"}} placeholder="補足があれば記載" value={d.reason.summary} onChange={e=>up("reason","summary",e.target.value)}/>
           </div>
         </div>
       );
 
-      /* 1: 1型糖尿病 */
       case 1: return (
         <div>
           <div style={{...sBox({background:"#f0f7ff",border:"2px solid #bcd4f8"}),marginBottom:16}}>
@@ -228,35 +190,25 @@ R8.4：（受診理由1〜2行）
               </div>
               <label style={lbl()}>発症時期</label>
               <div style={{marginBottom:6}}>
-                <EraYear era={d.disease.dmOnsetEra} year={d.disease.dmOnset}
-                  onEraChange={v=>up("disease","dmOnsetEra",v)}
-                  onYearChange={v=>up("disease","dmOnset",v)}
-                  disabled={d.disease.dmOnsetUnknown}/>
+                <EraYear era={d.disease.dmOnsetEra} year={d.disease.dmOnset} onEraChange={v=>up("disease","dmOnsetEra",v)} onYearChange={v=>up("disease","dmOnset",v)} disabled={d.disease.dmOnsetUnknown}/>
               </div>
               <label style={{fontSize:13,color:"#5580a8",display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}>
-                <input type="checkbox" checked={d.disease.dmOnsetUnknown} onChange={e=>up("disease","dmOnsetUnknown",e.target.checked)}/>
-                発症時期は不明（推定）
+                <input type="checkbox" checked={d.disease.dmOnsetUnknown} onChange={e=>up("disease","dmOnsetUnknown",e.target.checked)}/> 発症時期は不明（推定）
               </label>
             </div>
           </div>
-
-          {/* バクスミー */}
           <label style={lbl()}>バクスミー（グルカゴン）の希望</label>
           <div style={{display:"flex",gap:3,marginBottom:16}}>
             {["希望あり","希望なし"].map(v=>(
               <button key={v} style={btn(d.disease.bakusmi===v,"#e07000")} onClick={()=>up("disease","bakusmi",v)}>{v}</button>
             ))}
           </div>
-
-          {/* 合併疾患 */}
           <label style={lbl()}>合併する疾患</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:14}}>
             {[["ht","高血圧（HT）"],["hl","脂質異常症（HL）"]].map(([k,l])=>(
               <button key={k} style={btn(d.disease[k])} onClick={()=>up("disease",k,!d.disease[k])}>{l}</button>
             ))}
           </div>
-
-          {/* 看護師：甲状腺確認 */}
           {isNurse && (
             <div style={{background:"#fffff0",border:"2px solid #d69e2e",borderRadius:10,padding:"12px 16px",marginBottom:14}}>
               <div style={{fontSize:13,fontWeight:800,color:"#744210",marginBottom:8}}>👩‍⚕️ 看護師確認事項（初診時採血）</div>
@@ -266,23 +218,18 @@ R8.4：（受診理由1〜2行）
               </label>
             </div>
           )}
-
-          {/* 障害年金案内 */}
           <div style={{background:"#f5f5f5",border:"1.5px solid #ccc",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#666"}}>
             ℹ️ 障害年金：小児発症のため不可（カルテに自動記載）
           </div>
         </div>
       );
 
-      /* 2: 協力体制 */
       case 2: return (
         <div>
           <div style={{...sBox({background:"#f0fff4",border:"1.5px solid #9ae6b4"}),marginBottom:16}}>
             <div style={{fontSize:13,color:"#276749",fontWeight:700,marginBottom:4}}>👨‍👩‍👧 サポート体制の確認</div>
             <div style={{fontSize:12,color:"#276749"}}>お子さんの糖尿病管理に関わる体制を確認します</div>
           </div>
-
-          {/* ① 家族の協力体制 */}
           <label style={lbl()}>①家族の協力体制</label>
           <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>主な管理者</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:10}}>
@@ -293,40 +240,29 @@ R8.4：（受診理由1〜2行）
           <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>サポートする家族（複数選択可）</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
             {["母","父","祖母","祖父","兄弟・姉妹"].map(v=>(
-              <button key={v} style={btn(d.support.familySubList.includes(v),"#2d8653")}
-                onClick={()=>setData(p=>{const a=p.support.familySubList;return{...p,support:{...p.support,familySubList:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};})}>{v}</button>
+              <button key={v} style={btn(d.support.familySubList.includes(v),"#2d8653")} onClick={()=>setData(p=>{const a=p.support.familySubList;return{...p,support:{...p.support,familySubList:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};})}>{v}</button>
             ))}
           </div>
           <input style={{...inp(),marginBottom:14}} placeholder="補足（例：祖父母が近居でサポート）" value={d.support.familyNote} onChange={e=>up("support","familyNote",e.target.value)}/>
-
-          {/* ② 学校の協力体制 */}
           <label style={lbl()}>②学校の協力体制（複数選択可）</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
             {["担任が対応","養護教諭が対応","担任・養護教諭が連携","保健室で血糖測定可","給食対応あり","緊急時対応マニュアルあり"].map(v=>(
-              <button key={v} style={btn(d.support.schoolStaff.includes(v),"#2b6cb0")}
-                onClick={()=>setData(p=>{const a=p.support.schoolStaff;return{...p,support:{...p.support,schoolStaff:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};})}>{v}</button>
+              <button key={v} style={btn(d.support.schoolStaff.includes(v),"#2b6cb0")} onClick={()=>setData(p=>{const a=p.support.schoolStaff;return{...p,support:{...p.support,schoolStaff:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};})}>{v}</button>
             ))}
           </div>
-
-          {/* ③ 学校でサポートしてくれる人 */}
           <label style={lbl()}>③学校でサポートしてくれる人（複数選択可）</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
             {["担任","養護教諭","副担任","部活顧問","その他"].map(v=>(
-              <button key={v} style={btn(d.support.schoolSupportPerson.includes(v),"#2b6cb0")}
-                onClick={()=>setData(p=>{const a=p.support.schoolSupportPerson;return{...p,support:{...p.support,schoolSupportPerson:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};})}>{v}</button>
+              <button key={v} style={btn(d.support.schoolSupportPerson.includes(v),"#2b6cb0")} onClick={()=>setData(p=>{const a=p.support.schoolSupportPerson;return{...p,support:{...p.support,schoolSupportPerson:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};})}>{v}</button>
             ))}
           </div>
-          <input style={{...inp(),marginBottom:14}} placeholder="補足（例：担任の田中先生が特に協力的）" value={d.support.schoolSupportNote} onChange={e=>up("support","schoolSupportNote",e.target.value)}/>
-
-          {/* ④ 周囲への開示 */}
+          <input style={{...inp(),marginBottom:14}} placeholder="補足" value={d.support.schoolSupportNote} onChange={e=>up("support","schoolSupportNote",e.target.value)}/>
           <label style={lbl()}>④周囲に病気のことを話しているか</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:14}}>
             {["クラス全体に話している","一部の友人・先生のみ","先生のみ","話していない"].map(v=>(
               <button key={v} style={btn(d.support.disclosed===v)} onClick={()=>up("support","disclosed",v)}>{v}</button>
             ))}
           </div>
-
-          {/* 本人スケジュール */}
           <label style={lbl()}>本人のスケジュール</label>
           <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>学年</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:10}}>
@@ -337,13 +273,10 @@ R8.4：（受診理由1〜2行）
           <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>部活・習い事（複数選択可）</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
             {["なし","運動系部活","文化系部活","スポーツ教室","音楽・芸術","学習塾","その他"].map(v=>(
-              <button key={v} style={btn(d.support.childActivities.includes(v),"#553c9a")}
-                onClick={()=>setData(p=>{const a=p.support.childActivities;return{...p,support:{...p.support,childActivities:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};})}>{v}</button>
+              <button key={v} style={btn(d.support.childActivities.includes(v),"#553c9a")} onClick={()=>setData(p=>{const a=p.support.childActivities;return{...p,support:{...p.support,childActivities:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};})}>{v}</button>
             ))}
           </div>
           <input style={{...inp(),marginBottom:14}} placeholder="補足（例：週3回サッカー教室、帰宅17時）" value={d.support.childActivityNote} onChange={e=>up("support","childActivityNote",e.target.value)}/>
-
-          {/* 親のスケジュール */}
           <label style={lbl()}>親のスケジュール</label>
           <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>主な保護者（母）の仕事</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
@@ -357,8 +290,6 @@ R8.4：（受診理由1〜2行）
               <button key={v} style={btn(d.support.parentWorkSub===v)} onClick={()=>up("support","parentWorkSub",v)}>{v}</button>
             ))}
           </div>
-
-          {/* 自立度 */}
           <label style={lbl()}>注射・血糖測定の自立度</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
             {["本人が自己管理","親の補助あり","ほぼ親が実施"].map(v=>(
@@ -369,7 +300,6 @@ R8.4：（受診理由1〜2行）
         </div>
       );
 
-      /* 3: 小児慢性 */
       case 3: return (
         <div>
           <label style={lbl()}>小児慢性特定疾病助成制度の申請状況</label>
@@ -378,19 +308,12 @@ R8.4：（受診理由1〜2行）
               <button key={v} style={btn(d.chronic.status===v,v==="申請済"?"#0f9668":"#1a5fa8")} onClick={()=>up("chronic","status",v)}>{v}</button>
             ))}
           </div>
-
-          {/* 居住地 */}
           <label style={lbl()}>居住地（市町村）</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
             {["さいたま市","上尾市","桶川市","伊奈町","川越市","北本市","その他"].map(v=>(
               <button key={v} style={btn(d.chronic.residenceCity===v)} onClick={()=>up("chronic","residenceCity",v)}>{v}</button>
             ))}
           </div>
-          {d.chronic.residenceCity==="その他"&&(
-            <input style={{...inp(),marginBottom:14}} placeholder="市町村名を入力" value={d.chronic.residencyCityOther||""} onChange={e=>up("chronic","residencyCityOther",e.target.value)}/>
-          )}
-
-          {/* 申請済の場合：支払い確認 */}
           {d.chronic.status==="申請済"&&(
             <div style={sBox({background:"#f0fff4",border:"1.5px solid #9ae6b4",marginBottom:14})}>
               <div style={{fontSize:13,fontWeight:800,color:"#276749",marginBottom:8}}>✅ 申請済の方への確認</div>
@@ -403,15 +326,11 @@ R8.4：（受診理由1〜2行）
               <div style={{fontSize:12,color:"#276749"}}>※確認後、算定へ連絡してください</div>
             </div>
           )}
-
-          {/* 申請未の場合 */}
           {d.chronic.status==="申請未"&&(
             <div style={{background:"#fff8f0",border:"1.5px solid #e07000",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:13,color:"#a05000"}}>
-              ⚠️ 申請未の方には制度の説明と申請促しをお願いします（別テンプレ参照）
+              ⚠️ 申請未の方には制度の説明と申請促しをお願いします
             </div>
           )}
-
-          {/* 申請時必須：出生情報 */}
           {(d.chronic.status==="申請未"||d.chronic.status==="申請中")&&(
             <div style={sBox({background:"#fef9f0",border:"2px solid #d69e2e"})}>
               <div style={{fontSize:13,fontWeight:800,color:"#744210",marginBottom:12}}>📋 小児慢性申請時の必須事項</div>
@@ -438,12 +357,7 @@ R8.4：（受診理由1〜2行）
               </div>
             </div>
           )}
-
-          {/* 書類関係 */}
           <label style={lbl({marginTop:8})}>書類関係</label>
-          <div style={{fontSize:12,color:"#7a9abf",marginBottom:8,lineHeight:1.6}}>
-            毎年4月頃に必要な書類を選択してください（基本的に各学校側での運用）
-          </div>
           <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
             {["学校生活管理指導表","糖尿病緊急対応連絡票","バクスミーに関する指示書"].map(v=>(
               <button key={v} style={btn(d.chronic.documents.includes(v),"#553c9a")} onClick={()=>toggleArr("chronic","documents",v)}>{v}</button>
@@ -452,7 +366,6 @@ R8.4：（受診理由1〜2行）
         </div>
       );
 
-      /* 4: 生活・家族 */
       case 4: return (
         <div>
           <label style={lbl()}>アレルギー歴</label>
@@ -487,7 +400,18 @@ R8.4：（受診理由1〜2行）
               <button key={v} style={btn(d.history.eyeVisiting===v,v==="通院していない"?"#718096":"#1a5fa8")} onClick={()=>up("history","eyeVisiting",v)}>{v}</button>
             ))}
           </div>
-          {d.history.eyeVisiting==="通院中"&&<input style={{...inp(),marginBottom:14}} placeholder="例：○○眼科" value={d.history.eye} onChange={e=>up("history","eye",e.target.value)}/>}
+          {d.history.eyeVisiting==="通院中"&&(
+            <div style={{marginBottom:14}}>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:6}}>
+                {EYE_CLINICS.map(v=>(
+                  <button key={v} style={{...btn(d.history.eye===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","eye",v)}>{v}</button>
+                ))}
+              </div>
+              <input style={inp()} placeholder="その他の眼科名を入力"
+                value={EYE_CLINICS.includes(d.history.eye)?"":d.history.eye}
+                onChange={e=>up("history","eye",e.target.value)}/>
+            </div>
+          )}
           {d.history.eyeVisiting!=="通院中"&&<div style={{marginBottom:14}}/>}
 
           <label style={lbl()}>家族構成</label>
@@ -500,13 +424,11 @@ R8.4：（受診理由1〜2行）
             {LIVING_OTHERS.map(v=><button key={v} style={btn(d.history.livingOther===v)} onClick={()=>up("history","livingOther",v)}>{v}</button>)}
           </div>
           <input style={{...inp(),marginBottom:14}} placeholder="補足があれば（例：祖父母が近居で協力的）" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>
-
           <label style={lbl()}>キーパーソン</label>
           <input style={inp()} placeholder="例：母（主な管理者）・父（夜間対応）" value={d.history.keyPerson} onChange={e=>up("history","keyPerson",e.target.value)}/>
         </div>
       );
 
-      /* 5: 体格・要望 */
       case 5: return (
         <div>
           <label style={lbl()}>身長・体重</label>
@@ -578,11 +500,28 @@ R8.4：（受診理由1〜2行）
                 <div style={{fontSize:12,color:"#5a9a80"}}>内容確認後、電子カルテにコピーしてください</div>
               </div>
             </div>
+            {visitCode&&(
+              <div style={{background:"linear-gradient(135deg,#3182ce,#63b3ed)",borderRadius:14,padding:"20px",marginBottom:16,textAlign:"center"}}>
+                <div style={{fontSize:13,color:"#a8d4ff",marginBottom:6,fontWeight:700}}>受付番号</div>
+                <div style={{fontSize:56,fontWeight:900,color:"#fff",letterSpacing:"0.2em",lineHeight:1}}>{visitCode}</div>
+              </div>
+            )}
+            {visitCode && (
+              <div style={{background:"linear-gradient(135deg,#3182ce,#63b3ed)",borderRadius:14,padding:"20px",marginBottom:16,textAlign:"center"}}>
+                <div style={{fontSize:13,color:"rgba(255,255,255,0.7)",marginBottom:6,fontWeight:700}}>受付番号</div>
+                <div style={{fontSize:56,fontWeight:900,color:"#fff",letterSpacing:"0.2em",lineHeight:1}}>{visitCode}</div>
+              </div>
+            )}
+            <div style={{background:"#fff8e1",border:"2px solid #f59e0b",borderRadius:12,padding:"14px 18px",textAlign:"center"}}>
+              <div style={{fontSize:16,fontWeight:900,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
+              <div style={{fontSize:12,color:"#b45309",marginTop:4}}>問診は完了しています。ありがとうございました。</div>
+            </div>
             <div style={{background:"#f5f9f7",border:"1px solid #c0e8d8",borderRadius:10,padding:"16px 18px",whiteSpace:"pre-wrap",fontSize:13,lineHeight:2,color:"#1a3a2a",fontFamily:"monospace"}}>{result}</div>
-            <div style={{display:"flex",gap:10,marginTop:14}}>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#3182ce,#63b3ed)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer"}} onClick={()=>navigator.clipboard.writeText(result)}>📋 コピー</button>
+            <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#3182ce,#63b3ed)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer"}} onClick={()=>copyToClipboard(result)}>📋 コピー</button>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #3182ce",background:"#f0f7ff",color:"#3182ce",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setTimeout(scrollTop,50);}}>✏️ 修正する</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #d0dff5",background:"#f7faff",color:"#5580a8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setTimeout(scrollTop,50);}}>🔄 最初から</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #d0dff5",background:"#f7faff",color:"#5580a8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setVisitCode("");setTimeout(scrollTop,50);}}>🔄 最初から</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #9ae6b4",background:"#f0fff4",color:"#276749",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{window.location.href="/";}}>🏠 TOPへ</button>
             </div>
           </div>
         )}
