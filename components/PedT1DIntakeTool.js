@@ -420,14 +420,25 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
               <div style={{flex:3}}>
                 {i===0&&<label style={lbl()}>現在の通院先</label>}
-                {od.name?(
+                {od.name ? (
                   <div>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
-                      {["自治医大さいたま医療センター","上尾中央総合病院","埼玉県立がんセンター","通院なし","その他"].map(h=>(
-                        <button key={h} style={{...btn(od.hospital===h),padding:"5px 10px",fontSize:12}} onClick={()=>setData(p=>{const a=[...(p.history.otherDiseases||[])];a[i]={...a[i],hospital:h};return{...p,history:{...p.history,otherDiseases:a}};})}>{h}</button>
-                      ))}
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:4}}>
+                      <select style={{...inp(),flex:2,fontSize:12}} value={od.hospital||""}
+                        onChange={e=>setData(p=>{const a=[...(p.history.otherDiseases||[])];a[i]={...a[i],hospital:e.target.value,dept:""};return{...p,history:{...p.history,otherDiseases:a}};})} >
+                        <option value="">病院を選択</option>
+                        {["上尾中央総合病院","自治医大さいたま医療センター","埼玉県立がんセンター","加藤泌尿器科","通院なし","その他"].map(h=><option key={h} value={h}>{h}</option>)}
+                      </select>
+                      {od.hospital&&od.hospital!=="通院なし"&&od.hospital!=="加藤泌尿器科"&&od.hospital!=="その他"&&(
+                        <select style={{...inp(),flex:1,fontSize:12}} value={od.dept||""}
+                          onChange={e=>setData(p=>{const a=[...(p.history.otherDiseases||[])];a[i]={...a[i],dept:e.target.value};return{...p,history:{...p.history,otherDiseases:a}};})} >
+                          <option value="">科を選択</option>
+                          {({"上尾中央総合病院":["糖尿病内科","循環器内科","消化器内科","整形外科","神経内科","腎臓内科","その他"],"自治医大さいたま医療センター":["糖尿病内科","循環器内科","消化器内科","腎臓内科","神経内科","その他"],"埼玉県立がんセンター":["消化器外科","乳腺外科","泌尿器科","呼吸器外科","その他"]}[od.hospital]||["その他"]).map(d=><option key={d} value={d}>{d}</option>)}
+                        </select>
+                      )}
+                      {od.hospital==="その他"&&(
+                        <input style={{...inp(),flex:2,fontSize:12}} placeholder="病院名を入力" value={od.hospitalOther||""} onChange={e=>setData(p=>{const a=[...(p.history.otherDiseases||[])];a[i]={...a[i],hospitalOther:e.target.value};return{...p,history:{...p.history,otherDiseases:a}};})}/>
+                      )}
                     </div>
-                    {od.hospital==="その他"&&<input style={{...inp(),marginTop:6,fontSize:13}} placeholder="病院名" value={od.hospitalOther||""} onChange={e=>setData(p=>{const a=[...(p.history.otherDiseases||[])];a[i]={...a[i],hospitalOther:e.target.value};return{...p,history:{...p.history,otherDiseases:a}};})}/>}
                   </div>
                 ):<div style={{paddingTop:8,fontSize:12,color:"#b0c0d0"}}>病名を入力すると通院先が選べます</div>}
               </div>
