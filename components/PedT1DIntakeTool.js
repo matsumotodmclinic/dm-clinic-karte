@@ -56,6 +56,12 @@ export default function PedT1DIntakeTool() {
   const upN = (sec,par,f,v) => setData(p=>({...p,[sec]:{...p[sec],[par]:{...p[sec][par],[f]:v}}}));
   const toggleArr = (sec,f,v) => setData(p=>{const a=p[sec][f];return{...p,[sec]:{...p[sec],[f]:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};});
 
+
+  const getCurrentMonth = () => {
+    const now = new Date();
+    return `R${now.getFullYear()-2018}.${now.getMonth()+1}`;
+  };
+
   const copyToClipboard = (text) => {
     const copy = () => { const el=document.createElement('textarea');el.value=text;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);alert('コピーしました'); };
     if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>alert('コピーしました')).catch(copy);}else{copy();}
@@ -75,7 +81,7 @@ export default function PedT1DIntakeTool() {
 ${JSON.stringify({disease:data.disease,history:data.history,body:data.body,reason:data.reason,support:data.support,chronic:data.chronic},null,2)}
 
 【出力フォーマット】
-R${new Date().getFullYear()-2018}.${new Date().getMonth()+1}：（受診理由1〜2行）
+${getCurrentMonth()}：（受診理由1〜2行）
 ＃1型糖尿病　（タイプ）（発症時期）
 ・GAD抗体：（初診時採血）
 ・CPR：（初診時採血）
