@@ -65,6 +65,12 @@ export default function GDMIntakeTool() {
     return [base,custom].filter(Boolean).join("（")+(base&&custom?"）":"");
   };
 
+
+  const getCurrentMonth = () => {
+    const now = new Date();
+    return `R${now.getFullYear()-2018}.${now.getMonth()+1}`;
+  };
+
   const copyToClipboard = (text) => {
     const copy = () => { const el=document.createElement('textarea');el.value=text;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);alert('コピーしました'); };
     if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>alert('コピーしました')).catch(copy);}else{copy();}
@@ -88,7 +94,7 @@ export default function GDMIntakeTool() {
 ${JSON.stringify({disease:data.disease,history:data.history,body:data.body,reason:data.reason},null,2)}
 
 【出力フォーマット】
-R${new Date().getFullYear()-2018}.${new Date().getMonth()+1}：（受診理由1〜2行）
+${getCurrentMonth()}：（受診理由1〜2行）
 ＃妊娠糖尿病（または＃糖尿病合併妊娠）
 　現在${data.disease.currentWeek}週、${data.disease.dueDateEra}${data.disease.dueDateYear}年${data.disease.dueDateMonth}月
 　産科通院先：${data.disease.obHospital==="その他"?data.disease.obHospitalOther:data.disease.obHospital}
