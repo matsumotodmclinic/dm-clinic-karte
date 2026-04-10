@@ -19,7 +19,7 @@ const initialData = {
   disease: { dm1type: "", dmOnsetEra: "令和", dmOnset: "", dmOnsetUnknown: false, ht: false, hl: false, thyroidChecked: false, bakusmi: "" },
   support: { familyMain: "", familySubList: [], familyNote: "", schoolStaff: [], schoolSupportPerson: [], schoolSupportNote: "", disclosed: "", childGrade: "", childActivities: [], childActivityNote: "", parentWorkMain: "", parentWorkSub: "", independenceLevel: "", independenceNote: "" },
   chronic: { status: "", birthWeight: "", birthWeek: "", birthWeekDay: "", birthCity: "", booklets: [], documents: [], residenceCity: "", paymentConfirmed: "" },
-  history: { allergy: "なし", allergyDetail: "", fh: { dm: false, dmWho: [], dm1: false, collagen: false, collagenDetail: "", ht: false, apo: false, ihd: false }, eyeVisiting: "", eye: "", livingSpouse: "", livingOther: "", livingCustom: "", keyPerson: "" },
+  history: { allergy: "なし", allergyDetail: "", fh: { dm: false, dmWho: [], dm1: false, dm1Who: [], collagen: false, collagenWho: [], collagenDetail: "", ht: false, apo: false, ihd: false }, eyeVisiting: "", eye: "", livingSpouse: "", livingOther: "", livingCustom: "", keyPerson: "" },
   body: { height: "", weightNow: "", concern: "" },
 };
 
@@ -97,7 +97,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 ・居住地：（市町村）
 ---------------------------------------------
 【アレルギー歴】（なしまたは内容を同じ行に）
-【FH】DM(-/+) 1型糖尿病(-/+) 膠原病(-/+)（あれば病名も記載） HT(-/+) APO(-/+) IHD(-/+)
+【FH】DM(-/+、誰かも記載) 1型糖尿病(-/+、誰かも記載) 膠原病(-/+、誰か・病名も記載) HT(-/+) APO(-/+) IHD(-/+)
 【眼科通院歴】（通院中の場合：眼科名・網膜症の状況・緑内障の有無を記載）
 【協力体制】
 ①家族の協力体制：（内容）
@@ -453,12 +453,29 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
           )}
           {d.history.fh.dm1&&(
-            <div style={{paddingLeft:12,borderLeft:"3px solid #c53030",marginBottom:8}}>
-              <div style={{fontSize:12,color:"#c53030",fontWeight:700}}>⚠️ 1型糖尿病の家族歴あり→カルテに記載されます</div>
+            <div style={{paddingLeft:12,borderLeft:"3px solid #c53030",marginBottom:14}}>
+              <label style={lbl({color:"#c53030",fontSize:11})}>1型糖尿病：誰が（複数選択可）</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                {["父","母","祖父（父方）","祖母（父方）","祖父（母方）","祖母（母方）","兄弟・姉妹"].map(v=>(
+                  <button key={v} style={{...btn(d.history.fh.dm1Who.includes(v),"#c53030"),padding:"5px 10px",fontSize:12}}
+                    onClick={()=>setData(p=>{const a=p.history.fh.dm1Who;return{...p,history:{...p.history,fh:{...p.history.fh,dm1Who:a.includes(v)?a.filter(x=>x!==v):[...a,v]}}};})}>
+                    {v}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {d.history.fh.collagen&&(
             <div style={{paddingLeft:12,borderLeft:"3px solid #c05621",marginBottom:14}}>
+              <label style={lbl({color:"#c05621",fontSize:11})}>膠原病：誰が（複数選択可）</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
+                {["父","母","祖父（父方）","祖母（父方）","祖父（母方）","祖母（母方）","兄弟・姉妹"].map(v=>(
+                  <button key={v} style={{...btn(d.history.fh.collagenWho.includes(v),"#c05621"),padding:"5px 10px",fontSize:12}}
+                    onClick={()=>setData(p=>{const a=p.history.fh.collagenWho;return{...p,history:{...p.history,fh:{...p.history.fh,collagenWho:a.includes(v)?a.filter(x=>x!==v):[...a,v]}}};})}>
+                    {v}
+                  </button>
+                ))}
+              </div>
               <label style={lbl({color:"#c05621",fontSize:11})}>膠原病の具体的な病名</label>
               <input style={inp()} placeholder="例：関節リウマチ、SLE、シェーグレン症候群 など"
                 value={d.history.fh.collagenDetail||""}
