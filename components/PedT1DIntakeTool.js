@@ -19,7 +19,7 @@ const initialData = {
   disease: { dm1type: "", dmOnsetEra: "令和", dmOnset: "", dmOnsetUnknown: false, ht: false, hl: false, thyroidChecked: false, bakusmi: "" },
   support: { familyMain: "", familySubList: [], familyNote: "", schoolStaff: [], schoolSupportPerson: [], schoolSupportNote: "", disclosed: "", childGrade: "", childActivities: [], childActivityNote: "", parentWorkMain: "", parentWorkSub: "", independenceLevel: "", independenceNote: "" },
   chronic: { status: "", birthWeight: "", birthWeek: "", birthWeekDay: "", birthCity: "", booklets: [], documents: [], residenceCity: "", paymentConfirmed: "" },
-  history: { allergy: "なし", allergyDetail: "", fh: { dm: false, dmWho: [], ht: false, apo: false, ihd: false }, eyeVisiting: "", eye: "", livingSpouse: "", livingOther: "", livingCustom: "", keyPerson: "" },
+  history: { allergy: "なし", allergyDetail: "", fh: { dm: false, dmWho: [], dm1: false, collagen: false, collagenDetail: "", ht: false, apo: false, ihd: false }, eyeVisiting: "", eye: "", livingSpouse: "", livingOther: "", livingCustom: "", keyPerson: "" },
   body: { height: "", weightNow: "", concern: "" },
 };
 
@@ -79,6 +79,8 @@ export default function PedT1DIntakeTool() {
 - 各項目（・GAD抗体、・CPR等）の間は空行なし
 - 【アレルギー歴】【FH】【眼科通院歴】【協力体制】【本人のスケジュール】【親のスケジュール】【注射・血糖測定の自立度】【生活情報】の間は全て空行なし
 - ＃病名・＃HT・＃HLの間は空行なし。他院管理の疾患のみ1行空けてから記載する
+- 末尾に病名（＃1型糖尿病・＃HT・＃HL等）を繰り返し記載しない
+- アレルギー薬の記載以降は指定フォーマットのみを出力し、病名・診断名を追記しない
 
 【患者情報JSON】
 ${JSON.stringify({disease:data.disease,history:data.history,body:data.body,reason:data.reason,support:data.support,chronic:data.chronic},null,2)}
@@ -95,7 +97,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 ・居住地：（市町村）
 ---------------------------------------------
 【アレルギー歴】（なしまたは内容を同じ行に）
-【FH】DM(-/+) HT(-/+) APO(-/+) IHD(-/+)
+【FH】DM(-/+) 1型糖尿病(-/+) 膠原病(-/+)（あれば病名も記載） HT(-/+) APO(-/+) IHD(-/+)
 【眼科通院歴】（通院中の場合：眼科名・網膜症の状況・緑内障の有無を記載）
 【協力体制】
 ①家族の協力体制：（内容）
@@ -433,12 +435,12 @@ LINE登録ご案内→済　登録確認未・登録できない
 
           <label style={lbl({marginTop:8})}>家族歴（FH）</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:8}}>
-            {[["dm","糖尿病(DM)"],["ht","高血圧(HT)"],["apo","脳卒中(APO)"],["ihd","虚血性心疾患(IHD)"]].map(([k,l])=>(
+            {[["dm","糖尿病(DM)"],["dm1","1型糖尿病"],["collagen","膠原病"],["ht","高血圧(HT)"],["apo","脳卒中(APO)"],["ihd","虚血性心疾患(IHD)"]].map(([k,l])=>(
               <button key={k} style={btn(d.history.fh[k],"#6b3fa8")} onClick={()=>upN("history","fh",k,!d.history.fh[k])}>{l}</button>
             ))}
           </div>
           {d.history.fh.dm&&(
-            <div style={{paddingLeft:12,borderLeft:"3px solid #6b3fa8",marginBottom:14}}>
+            <div style={{paddingLeft:12,borderLeft:"3px solid #6b3fa8",marginBottom:8}}>
               <label style={lbl({color:"#6b3fa8",fontSize:11})}>糖尿病：誰が（複数選択可）</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
                 {["父","母","祖父（父方）","祖母（父方）","祖父（母方）","祖母（母方）","兄弟・姉妹"].map(v=>(
@@ -448,6 +450,19 @@ LINE登録ご案内→済　登録確認未・登録できない
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+          {d.history.fh.dm1&&(
+            <div style={{paddingLeft:12,borderLeft:"3px solid #c53030",marginBottom:8}}>
+              <div style={{fontSize:12,color:"#c53030",fontWeight:700}}>⚠️ 1型糖尿病の家族歴あり→カルテに記載されます</div>
+            </div>
+          )}
+          {d.history.fh.collagen&&(
+            <div style={{paddingLeft:12,borderLeft:"3px solid #c05621",marginBottom:14}}>
+              <label style={lbl({color:"#c05621",fontSize:11})}>膠原病の具体的な病名</label>
+              <input style={inp()} placeholder="例：関節リウマチ、SLE、シェーグレン症候群 など"
+                value={d.history.fh.collagenDetail||""}
+                onChange={e=>upN("history","fh","collagenDetail",e.target.value)}/>
             </div>
           )}
 
