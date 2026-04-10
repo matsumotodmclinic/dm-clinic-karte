@@ -19,7 +19,7 @@ const initialData = {
   disease: { dm1type: "", dmOnsetEra: "令和", dmOnset: "", dmOnsetUnknown: false, ht: false, hl: false, thyroidChecked: false, bakusmi: "" },
   support: { familyMain: "", familySubList: [], familyNote: "", schoolStaff: [], schoolSupportPerson: [], schoolSupportNote: "", disclosed: "", childGrade: "", childActivities: [], childActivityNote: "", parentWorkMain: "", parentWorkSub: "", independenceLevel: "", independenceNote: "" },
   chronic: { status: "", birthWeight: "", birthWeek: "", birthWeekDay: "", birthCity: "", booklets: [], documents: [], residenceCity: "", paymentConfirmed: "" },
-  history: { allergy: "なし", allergyDetail: "", fh: { dm: false, dmWho: [], dm1: false, dm1Who: [], collagen: false, collagenWho: [], collagenDetails: {}, ht: false, apo: false, ihd: false }, eyeVisiting: "", eye: "", livingSpouse: "", livingOther: "", livingCustom: "", keyPerson: "" },
+  history: { allergy: "なし", allergyDetail: "", fh: { dm: false, dmWho: [], dm1: false, dm1Who: [], collagen: false, collagenItems: [{who:"",disease:""}], ht: false, apo: false, ihd: false }, eyeVisiting: "", eye: "", livingSpouse: "", livingOther: "", livingCustom: "", keyPerson: "" },
   body: { height: "", weightNow: "", concern: "" },
 };
 
@@ -114,7 +114,13 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 身長:○cm　初診時:○kg
 ---------------------------------------------
 【事前聴取時　申し送り事項】
-（該当する申し送り事項を全て記載。なければ省略）
+□甲状腺3項目・GAD抗体・CPRを初診時採血
+（HTありの場合）□HTの確認のため、血圧手帳をお渡ししています。
+（HLありの場合）□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。
+（書類関係で「学校生活管理指導表」を選択した場合）□4月頃に処方
+（CGM希望がある場合）□デバイス希望：（現在→希望の形式で記載）
+（小児慢性申請済の場合）□小児慢性申請済・窓口負担を確認し算定へ連絡
+（その他申し送り事項があれば記載）
 【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
 ---------------------------------------------
 ${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲状腺項目追加してください　CPR0.5以下の方は今後半年ごとCPR測定を入れてください。
@@ -469,27 +475,20 @@ LINE登録ご案内→済　登録確認未・登録できない
           )}
           {d.history.fh.collagen&&(
             <div style={{paddingLeft:12,borderLeft:"3px solid #c05621",marginBottom:14}}>
-              <label style={lbl({color:"#c05621",fontSize:11})}>膠原病：誰が・どの病気か（選択後に病名を入力）</label>
-              <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:10}}>
-                {["父","母","祖父（父方）","祖母（父方）","祖父（母方）","祖母（母方）","兄弟・姉妹"].map(v=>(
-                  <button key={v} style={{...btn(d.history.fh.collagenWho.includes(v),"#c05621"),padding:"5px 10px",fontSize:12}}
-                    onClick={()=>setData(p=>{const a=p.history.fh.collagenWho;return{...p,history:{...p.history,fh:{...p.history.fh,collagenWho:a.includes(v)?a.filter(x=>x!==v):[...a,v]}}};})}>
-                    {v}
-                  </button>
-                ))}
-              </div>
-              {d.history.fh.collagenWho.length>0&&(
-                <div>
-                  {d.history.fh.collagenWho.map((person,i)=>(
-                    <div key={person} style={{display:"flex",gap:8,alignItems:"center",marginBottom:6}}>
-                      <span style={{fontSize:13,fontWeight:700,color:"#c05621",minWidth:80}}>{person}</span>
-                      <input style={{...inp(),flex:1}} placeholder="病名（例：関節リウマチ・SLE）"
-                        value={(d.history.fh.collagenDetails&&d.history.fh.collagenDetails[person])||""}
-                        onChange={e=>setData(p=>{const details={...(p.history.fh.collagenDetails||{})};details[person]=e.target.value;return{...p,history:{...p.history,fh:{...p.history.fh,collagenDetails:details}}};})}/>
-                    </div>
-                  ))}
+              <label style={lbl({color:"#c05621",fontSize:11})}>膠原病：誰が・どの病気か</label>
+              {(d.history.fh.collagenItems||[{who:"",disease:""}]).map((item,i)=>(
+                <div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
+                  <select style={{...inp(),width:140,fontSize:12}} value={item.who}
+                    onChange={e=>setData(p=>{const a=[...(p.history.fh.collagenItems||[])];a[i]={...a[i],who:e.target.value};return{...p,history:{...p.history,fh:{...p.history.fh,collagenItems:a}}};})} >
+                    <option value="">誰が</option>
+                    {["父","母","祖父（父方）","祖母（父方）","祖父（母方）","祖母（母方）","兄弟・姉妹"].map(v=><option key={v} value={v}>{v}</option>)}
+                  </select>
+                  <input style={{...inp(),flex:1,fontSize:12}} placeholder="病名（例：関節リウマチ）" value={item.disease||""}
+                    onChange={e=>setData(p=>{const a=[...(p.history.fh.collagenItems||[])];a[i]={...a[i],disease:e.target.value};return{...p,history:{...p.history,fh:{...p.history.fh,collagenItems:a}}};})}/>
+                  {i>0&&<button onClick={()=>setData(p=>{const a=(p.history.fh.collagenItems||[]).filter((_,j)=>j!==i);return{...p,history:{...p.history,fh:{...p.history.fh,collagenItems:a}}};})} style={{fontSize:12,color:"#e53e3e",background:"none",border:"none",cursor:"pointer",fontWeight:700,whiteSpace:"nowrap"}}>✕</button>}
                 </div>
-              )}
+              ))}
+              <button style={{...btn(false,"#c05621"),fontSize:12,marginTop:4}} onClick={()=>setData(p=>{const a=[...(p.history.fh.collagenItems||[]),{who:"",disease:""}];return{...p,history:{...p.history,fh:{...p.history.fh,collagenItems:a}}};})} >＋ 追加</button>
             </div>
           )}
 
