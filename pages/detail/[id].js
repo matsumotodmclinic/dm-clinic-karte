@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 
-const STATUS_LABEL = { new: '新規', checking: '確認中', done: '完了' };
-const STATUS_COLOR = { new: '#e53e3e', checking: '#d69e2e', done: '#38a169' };
-const STATUS_NEXT = { new: 'checking', checking: 'done' };
+// 確認中を削除：新規→完了の2ステップ
+const STATUS_LABEL = { new: '新規', done: '完了' };
+const STATUS_COLOR = { new: '#e53e3e', done: '#38a169' };
+const STATUS_NEXT  = { new: 'done' };
 
 export default function DetailPage() {
   const router = useRouter();
   const { id } = router.query;
-  const [record, setRecord] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [record, setRecord]     = useState(null);
+  const [loading, setLoading]   = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [karte, setKarte] = useState('');
+  const [karte, setKarte]       = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -43,6 +44,21 @@ export default function DetailPage() {
       body: JSON.stringify({ id }),
     });
     router.push('/list');
+  };
+
+  const copyToClipboard = (text) => {
+    const copy = () => {
+      const el = document.createElement('textarea');
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      alert('コピーしました');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(copy);
+    } else { copy(); }
   };
 
   const handleGenerate = async () => {
@@ -79,6 +95,9 @@ export default function DetailPage() {
     </div>
   );
 
+  const statusColor = STATUS_COLOR[record.status] || '#718096';
+  const statusLabel = STATUS_LABEL[record.status] || record.status;
+
   return (
     <div style={{ minHeight:'100vh', background:'#f7faff', fontFamily:"'Noto Sans JP',sans-serif", padding:'16px' }}>
       <div style={{ maxWidth:720, margin:'0 auto' }}>
@@ -99,21 +118,23 @@ export default function DetailPage() {
         <div style={{ background:'#fff', borderRadius:16, padding:'20px', marginBottom:12, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', textAlign:'center' }}>
           <div style={{ fontSize:13, color:'#7a9abf', marginBottom:4 }}>受付コード</div>
           <div style={{ fontSize:48, fontWeight:900, color:'#1a5fa8', letterSpacing:'0.15em' }}>{record.visit_code}</div>
-          <div style={{ fontSize:12, color:'#7a9abf', marginTop:4 }}>{record.form_type || 'DM基本'}{record.age ? `　${record.age}歳` : ''}</div>
+          <div style={{ fontSize:12, color:'#7a9abf', marginTop:4 }}>
+            {record.form_type || 'DM基本'}{record.age ? `　${record.age}歳` : ''}
+          </div>
         </div>
 
         {/* ステータス */}
         <div style={{ background:'#fff', borderRadius:16, padding:'16px 20px', marginBottom:12, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
           <div>
             <div style={{ fontSize:12, color:'#7a9abf', marginBottom:4 }}>ステータス</div>
-            <div style={{ padding:'6px 14px', borderRadius:20, background:STATUS_COLOR[record.status]+'20', color:STATUS_COLOR[record.status], fontWeight:700, fontSize:14, display:'inline-block' }}>
-              {STATUS_LABEL[record.status]}
+            <div style={{ padding:'6px 14px', borderRadius:20, background:statusColor+'20', color:statusColor, fontWeight:700, fontSize:14, display:'inline-block' }}>
+              {statusLabel}
             </div>
           </div>
           {STATUS_NEXT[record.status] && (
             <button onClick={handleStatusChange}
-              style={{ padding:'10px 18px', borderRadius:8, border:'none', background:'#1a5fa8', color:'#fff', fontWeight:700, fontSize:13, cursor:'pointer' }}>
-              → {STATUS_LABEL[STATUS_NEXT[record.status]]}に変更
+              style={{ padding:'10px 18px', borderRadius:8, border:'none', background:'#38a169', color:'#fff', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+              ✓ 完了にする
             </button>
           )}
         </div>
@@ -127,14 +148,11 @@ export default function DetailPage() {
                 {karte}
               </div>
               <div style={{ display:'flex', gap:8 }}>
-                <button
-                  onClick={() => navigator.clipboard.writeText(karte)}
+                <button onClick={() => copyToClipboard(karte)}
                   style={{ flex:1, padding:'12px', borderRadius:8, border:'none', background:'linear-gradient(135deg,#0f9668,#34d399)', color:'#fff', fontWeight:800, fontSize:14, cursor:'pointer' }}>
                   📋 コピー
                 </button>
-                <button
-                  onClick={handleGenerate}
-                  disabled={generating}
+                <button onClick={handleGenerate} disabled={generating}
                   style={{ padding:'12px 16px', borderRadius:8, border:'1.5px solid #d0dff5', background:'#f7faff', color:'#5580a8', fontWeight:700, fontSize:13, cursor:generating?'not-allowed':'pointer' }}>
                   {generating ? '生成中...' : '🔄 再生成'}
                 </button>
@@ -143,9 +161,7 @@ export default function DetailPage() {
           ) : (
             <div style={{ textAlign:'center', padding:'20px 0' }}>
               <div style={{ color:'#a0b8d0', marginBottom:16, fontSize:13 }}>カルテ文がまだ生成されていません</div>
-              <button
-                onClick={handleGenerate}
-                disabled={generating}
+              <button onClick={handleGenerate} disabled={generating}
                 style={{ padding:'12px 28px', borderRadius:8, border:'none', background:generating?'#8ab0d4':'linear-gradient(135deg,#1a5fa8,#6b9fd4)', color:'#fff', fontWeight:800, fontSize:14, cursor:generating?'not-allowed':'pointer' }}>
                 {generating ? '生成中...' : '✨ カルテ文を生成'}
               </button>
@@ -163,8 +179,7 @@ export default function DetailPage() {
 
         {/* 削除ボタン */}
         <div style={{ textAlign:'right', marginBottom:32 }}>
-          <button
-            onClick={handleDelete}
+          <button onClick={handleDelete}
             style={{ padding:'10px 20px', borderRadius:8, border:'1.5px solid #fed7d7', background:'#fff5f5', color:'#e53e3e', fontWeight:700, fontSize:13, cursor:'pointer' }}>
             🗑 このレコードを削除
           </button>
