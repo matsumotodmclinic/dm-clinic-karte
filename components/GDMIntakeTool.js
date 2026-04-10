@@ -83,6 +83,7 @@ export default function GDMIntakeTool() {
 【ルール】
 - 該当しない項目は省略する
 - フォーマット記号（＃【】□♯）を使用する
+- ＃病名・＃HT・＃HLの間は空行なし。他院管理の疾患のみ1行空けてから記載する
 - 妊娠糖尿病の場合は眼科通院歴・健診・ワクチン歴は記載不要
 - 糖尿病合併妊娠の場合はGAD追加を記載し、眼科通院歴も記載する
 - HLで甲状腺追加済の場合は「◎甲状腺3項目追加済」を記載
@@ -109,7 +110,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 【FH】DM(-/+) HT(-/+) APO(-/+) IHD(-/+)
 【飲酒歴】なし（妊娠中）
 【喫煙歴】（記載）
-（糖尿病合併妊娠の場合のみ）【眼科通院歴】
+（糖尿病合併妊娠の場合のみ）【眼科通院歴】（通院中の場合：眼科名・網膜症の状況・緑内障の有無を記載）
 【生活情報】（整形済みテキスト）
 【仕事】職業・活動量
 ---------------------------------------------
@@ -356,9 +357,21 @@ LINE登録ご案内→済　登録確認未・登録できない
                       <button key={v} style={{...btn(d.history.eye===v,"#1a5fa8"),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","eye",v)}>{v}</button>
                     ))}
                   </div>
-                  <input style={inp()} placeholder="その他の眼科名を入力"
+                  <input style={{...inp(),marginBottom:8}} placeholder="その他の眼科名を入力"
                     value={EYE_CLINICS.includes(d.history.eye)?"":d.history.eye}
                     onChange={e=>up("history","eye",e.target.value)}/>
+                  <label style={lbl({fontSize:11})}>糖尿病網膜症の状況（分かる範囲で）</label>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
+                    {["網膜症なし","単純性網膜症","前増殖性網膜症","増殖性網膜症"].map(v=>(
+                      <button key={v} style={{...btn(d.history.retinopathy===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","retinopathy",v)}>{v}</button>
+                    ))}
+                  </div>
+                  <label style={lbl({fontSize:11})}>緑内障の有無</label>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                    {["緑内障なし","緑内障あり"].map(v=>(
+                      <button key={v} style={{...btn(d.history.glaucoma===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","glaucoma",v)}>{v}</button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
