@@ -12,7 +12,7 @@ const STEPS = [
 const NEARBY_HOSPITALS = ["自治医大さいたま医療センター", "埼玉県立小児医療センター", "その他", "不明"];
 const LIVING_WITH_SPOUSE = ["配偶者あり（両親同居）", "ひとり親家庭", "その他"];
 const LIVING_OTHERS = ["祖父母と同居", "兄弟・姉妹あり", "一人っ子", "その他"];
-const EYE_CLINICS = ["上尾こいけ眼科", "おが・おおぐし眼科", "上尾中央総合病院", "おおたけ眼科", "こしの眼科"];
+const EYE_CLINICS = ["上尾こいけ眼科", "おが・おおぐし眼科", "上尾中央総合病院眼科", "おおたけ眼科", "こしの眼科"];
 
 const initialData = {
   reason: { type: "", referralFrom: "", referralDept: "", referralQuickSelect: false, referralDetail: "", transferFrom: "", transferDetail: "", summary: "" },
@@ -93,22 +93,18 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 ・書類関係：（選択された書類を全て記載）
 （「学校生活管理指導表」が含まれる場合）□4月頃に処方
 ・居住地：（市町村）
-
 ---------------------------------------------
 【アレルギー歴】
 【FH】DM(-/+) HT(-/+) APO(-/+) IHD(-/+)
 【眼科通院歴】
-
 【協力体制】
 ①家族の協力体制：
 ②学校の協力体制：
 ③学校でサポートしてくれる人：
 ④周囲への開示：
-
 【本人のスケジュール】
 【親のスケジュール】
 【注射・血糖測定の自立度】
-
 【生活情報】家族構成・キーパーソン
 ---------------------------------------------
 身長:○cm　初診時:○kg
@@ -419,8 +415,10 @@ LINE登録ご案内→済　登録確認未・登録できない
                   </div>
                 ):<div style={{paddingTop:8,fontSize:12,color:"#b0c0d0"}}>病名を入力すると通院先が選べます</div>}
               </div>
+              {i>0&&<button onClick={()=>setData(p=>{const a=(p.history.otherDiseases||[]).filter((_,j)=>j!==i);return{...p,history:{...p.history,otherDiseases:a}};})} style={{fontSize:12,color:"#e53e3e",background:"none",border:"none",cursor:"pointer",fontWeight:700,paddingTop:10}}>✕</button>}
             </div>
           ))}
+          <button style={{...btn(false,"#718096"),fontSize:13,marginBottom:14}} onClick={()=>setData(p=>{const a=[...(p.history.otherDiseases||[]),{name:"",hospital:"",hospitalOther:""}];return{...p,history:{...p.history,otherDiseases:a}};})}>＋ その他の病名を追加</button>
           <label style={lbl()}>アレルギー歴</label>
           <div style={{display:"flex",gap:8,marginBottom:8}}>
             {["なし","あり"].map(v=><button key={v} style={btn(d.history.allergy===v)} onClick={()=>up("history","allergy",v)}>{v}</button>)}
