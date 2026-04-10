@@ -74,8 +74,7 @@ export default function PedT1DIntakeTool() {
 【ルール】
 - 該当しない項目は省略する
 - フォーマット記号（＃【】□♯・）を使用する
-- 障害年金は小児発症のため不可と記載する
-- 小児慢性申請状況を必ず記載する
+- - 小児慢性申請状況を必ず記載する
 
 【患者情報JSON】
 ${JSON.stringify({disease:data.disease,history:data.history,body:data.body,reason:data.reason,support:data.support,chronic:data.chronic},null,2)}
@@ -86,7 +85,6 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 ・GAD抗体：（初診時採血）
 ・CPR：（初診時採血）
 ・甲状腺検査：（確認済/初診時採血）
-・障害年金：小児発症のため不可
 ・バクスミー希望：あり/なし
 ・小児慢性特定疾病助成制度：（申請状況）
 　（申請ありの場合：出生体重・出生週数・出生時住民登録地・手帳取得内容）
@@ -96,7 +94,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 ---------------------------------------------
 【アレルギー歴】
 【FH】DM(-/+) HT(-/+) APO(-/+) IHD(-/+)
-【眼科通院歴】
+【眼科通院歴】（通院中の場合：眼科名・網膜症の状況・緑内障の有無を記載）
 【協力体制】
 ①家族の協力体制：
 ②学校の協力体制：
@@ -160,7 +158,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           {d.reason.type==="紹介"&&(<div style={sBox()}>
             <label style={lbl()}>よく使う紹介元</label>
             <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:12}}>
-              {[["自治医大さいたま医療センター","小児科"],["埼玉県立小児医療センター","小児科"]].map(([hosp,dept])=>(
+              {[["自治医大さいたま医療センター","糖尿病内科"],["自治医大さいたま医療センター","小児科"],["埼玉県立小児医療センター","小児科"]].map(([hosp,dept])=>(
                 <button key={hosp} style={{...btn(d.reason.referralFrom===hosp,"#0f9668"),fontSize:13,padding:"9px 16px",border:d.reason.referralFrom===hosp?"2px solid #0f9668":"2px dashed #0f9668",background:d.reason.referralFrom===hosp?"#0f9668":"#f0fff8",color:d.reason.referralFrom===hosp?"#fff":"#0f9668"}}
                   onClick={()=>setData(p=>({...p,reason:{...p.reason,referralFrom:hosp,referralDept:dept,referralQuickSelect:true}}))}>
                   {d.reason.referralFrom===hosp?"✓ ":""}{hosp}
@@ -236,7 +234,6 @@ LINE登録ご案内→済　登録確認未・登録できない
           </div>
 
           <div style={{background:"#f5f5f5",border:"1.5px solid #ccc",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#666"}}>
-            ℹ️ 障害年金：小児発症のため不可（カルテに自動記載）
           </div>
         </div>
       );
@@ -462,9 +459,15 @@ LINE登録ご案内→済　登録確認未・登録できない
                 value={EYE_CLINICS.includes(d.history.eye)?"":d.history.eye}
                 onChange={e=>up("history","eye",e.target.value)}/>
               <label style={lbl({fontSize:11})}>糖尿病網膜症の状況（分かる範囲で）</label>
-              <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
                 {["網膜症なし","単純性網膜症","前増殖性網膜症","増殖性網膜症"].map(v=>(
                   <button key={v} style={{...btn(d.history.retinopathy===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","retinopathy",v)}>{v}</button>
+                ))}
+              </div>
+              <label style={lbl({fontSize:11})}>緑内障の有無</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                {["緑内障なし","緑内障あり"].map(v=>(
+                  <button key={v} style={{...btn(d.history.glaucoma===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","glaucoma",v)}>{v}</button>
                 ))}
               </div>
             </div>
