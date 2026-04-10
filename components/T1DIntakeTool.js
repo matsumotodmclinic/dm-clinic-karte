@@ -160,6 +160,7 @@ export default function T1DIntakeTool() {
 【ルール】
 - 該当しない項目は省略する
 - フォーマット記号（＃【】□♯）を使用する
+- ＃病名・＃HT・＃HLの間は空行なし。他院管理の疾患のみ1行空けてから記載する
 - 体重減少ありの場合は一番上に【⚠️ 体重減少あり・早急なインスリン導入を検討】と記載
 - 受診理由の直後、空行なしで＃1型糖尿病を続ける
 - ＃1型糖尿病・＃HT・＃HLは空行なしで続ける
@@ -185,6 +186,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 ・GAD抗体：（初診時採血）
 ・CPR：（初診時採血）
 ・甲状腺検査：（${data.disease.thyroidChecked?"初診時採血済":"初診時採血"}）
+・障害年金：DM診断時厚生年金加入（${data.disease.pensionKosei==="はい（加入していた）"?"有":data.disease.pensionKosei==="いいえ（未加入）"?"無":"不明"}）→${data.disease.pensionStatus==="受給中"?"受給中":data.disease.pensionKosei==="はい（加入していた）"?"CPR次第":"受給困難（×）"}
 
 ＃HT（該当時のみ）
 ＃HL（該当時のみ）
@@ -194,7 +196,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 【FH】DM(-/+) HT(-/+) APO(-/+) IHD(-/+)
 【飲酒歴】
 【喫煙歴】
-【眼科通院歴】（通院中の場合：眼科名と網膜症の状況を記載）
+【眼科通院歴】（通院中の場合：眼科名・網膜症の状況・緑内障の有無を記載）
 【健診】
 【ワクチン歴】（60歳以上のみ）
 【生活情報】（70歳以上は子供の状況も含む）
@@ -277,8 +279,11 @@ LINE登録ご案内→済　登録確認未・登録できない
         <div>
           <label style={lbl()}>受診理由</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:14}}>
-            {["紹介","検診異常","自主転院"].map(r=><button key={r} style={btn(d.reason.type===r)} onClick={()=>up("reason","type",r)}>{r}</button>)}
-            <button style={btn(d.reason.dmConcern,"#8e44ad")} onClick={()=>{up("reason","dmConcern",!d.reason.dmConcern);if(d.reason.type)up("reason","type","");}}>
+            {["紹介","検診異常","自主転院"].map(r=><button key={r} style={btn(d.reason.type===r)} onClick={()=>setData(p=>({...p,reason:{...p.reason,type:r,dmConcern:false}}))}>{r}</button>)}
+            <button style={btn(d.reason.dmConcern,"#8e44ad")} onClick={()=>{
+              const next=!d.reason.dmConcern;
+              setData(p=>({...p,reason:{...p.reason,dmConcern:next,type:next?"":p.reason.type}}));
+            }}>
               {d.reason.dmConcern?"✓ 1型糖尿病が気になる":"1型糖尿病が気になる"}
             </button>
           </div>
@@ -294,10 +299,14 @@ LINE登録ご案内→済　登録確認未・登録できない
           )}
           {d.reason.type==="紹介"&&(<div style={sBox()}>
             <label style={lbl()}>よく使う紹介元</label>
-            <button style={{...btn(d.reason.referralQuickSelect,"#0f9668"),marginBottom:12,fontSize:14,padding:"10px 18px",border:d.reason.referralQuickSelect?"2px solid #0f9668":"2px dashed #0f9668",background:d.reason.referralQuickSelect?"#0f9668":"#f0fff8",color:d.reason.referralQuickSelect?"#fff":"#0f9668"}}
-              onClick={()=>{const n=!d.reason.referralQuickSelect;setData(p=>({...p,reason:{...p.reason,referralQuickSelect:n,referralFrom:n?"上尾中央総合病院":"",referralDept:n?"糖尿病内科":""}}));}}>
-              {d.reason.referralQuickSelect?"✓ ":""}上尾中央総合病院・糖尿病内科
-            </button>
+            <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:12}}>
+              {[["上尾中央総合病院","糖尿病内科"],["自治医大さいたま医療センター","糖尿病内科"],["自治医大さいたま医療センター","小児科"],["埼玉県立小児医療センター","小児科"]].map(([hosp,dept])=>(
+                <button key={hosp+dept} style={{...btn(d.reason.referralFrom===hosp&&d.reason.referralDept===dept,"#0f9668"),fontSize:12,padding:"7px 12px",border:d.reason.referralFrom===hosp&&d.reason.referralDept===dept?"2px solid #0f9668":"2px dashed #0f9668",background:d.reason.referralFrom===hosp&&d.reason.referralDept===dept?"#0f9668":"#f0fff8",color:d.reason.referralFrom===hosp&&d.reason.referralDept===dept?"#fff":"#0f9668"}}
+                  onClick={()=>setData(p=>({...p,reason:{...p.reason,referralFrom:hosp,referralDept:dept,referralQuickSelect:true,dmConcern:false}}))}>
+                  {d.reason.referralFrom===hosp&&d.reason.referralDept===dept?"✓ ":""}{hosp}・{dept}
+                </button>
+              ))}
+            </div>
             {!d.reason.referralQuickSelect&&(<div style={{display:"flex",gap:10,marginBottom:12}}>
               <div style={{flex:2}}><label style={lbl()}>病院名</label><input style={inp()} placeholder="病院名" value={d.reason.referralFrom} onChange={e=>up("reason","referralFrom",e.target.value)}/></div>
               <div style={{flex:1}}><label style={lbl()}>科名</label><input style={inp()} placeholder="例：糖尿病内科" value={d.reason.referralDept} onChange={e=>up("reason","referralDept",e.target.value)}/></div>
@@ -520,9 +529,15 @@ LINE登録ご案内→済　登録確認未・登録できない
                 value={["上尾こいけ眼科","おが・おおぐし眼科","上尾中央総合病院眼科","おおたけ眼科","こしの眼科"].includes(d.history.eye)?"":d.history.eye}
                 onChange={e=>up("history","eye",e.target.value)}/>
               <label style={lbl({fontSize:11})}>糖尿病網膜症の状況（分かる範囲で）</label>
-              <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
                 {["網膜症なし","単純性網膜症","前増殖性網膜症","増殖性網膜症"].map(v=>(
                   <button key={v} style={{...btn(d.history.retinopathy===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","retinopathy",v)}>{v}</button>
+                ))}
+              </div>
+              <label style={lbl({fontSize:11})}>緑内障の有無</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                {["緑内障なし","緑内障あり"].map(v=>(
+                  <button key={v} style={{...btn(d.history.glaucoma===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","glaucoma",v)}>{v}</button>
                 ))}
               </div>
             </div>
