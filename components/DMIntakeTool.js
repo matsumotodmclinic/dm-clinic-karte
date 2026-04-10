@@ -379,8 +379,10 @@ LINE登録ご案内→済　登録確認未・登録できない
         <div>
           <label style={lbl()}>受診理由</label>
           <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 14 }}>
-            {["紹介", "検診異常", "自主転院"].map(r => <button key={r} style={btn(d.reason.type === r)} onClick={() => up("reason", "type", r)}>{r}</button>)}
-            <button style={btn(d.reason.dmConcern, '#8e44ad')} onClick={() => { up('reason', 'dmConcern', !d.reason.dmConcern); if(d.reason.type) up('reason', 'type', ''); }}>
+            {["紹介", "検診異常", "自主転院"].map(r => (
+              <button key={r} style={btn(d.reason.type === r)} onClick={() => setData(p => ({ ...p, reason: { ...p.reason, type: r, dmConcern: false } }))}>{r}</button>
+            ))}
+            <button style={btn(d.reason.dmConcern, '#8e44ad')} onClick={() => setData(p => ({ ...p, reason: { ...p.reason, dmConcern: !p.reason.dmConcern, type: !p.reason.dmConcern ? '' : p.reason.type } }))}>
               {d.reason.dmConcern ? '✓ 糖尿病か気になる' : '糖尿病か気になる'}
             </button>
           </div>
@@ -401,26 +403,42 @@ LINE登録ご案内→済　登録確認未・登録できない
 
           {d.reason.type === "紹介" && (
             <div style={sBox()}>
+              {/* 上尾中央総合病院（病院選択＋科選択） */}
               <label style={lbl()}>よく使う紹介元</label>
-              <button style={{ ...btn(d.reason.referralQuickSelect, "#0f9668"), marginBottom: 12, fontSize: 14, padding: "10px 18px", border: d.reason.referralQuickSelect ? "2px solid #0f9668" : "2px dashed #0f9668", background: d.reason.referralQuickSelect ? "#0f9668" : "#f0fff8", color: d.reason.referralQuickSelect ? "#fff" : "#0f9668" }}
-                onClick={() => { const n = !d.reason.referralQuickSelect; setData(p => ({ ...p, reason: { ...p.reason, referralQuickSelect: n, referralFrom: n ? "上尾中央総合病院" : "", referralDept: n ? "糖尿病内科" : "" } })); }}>
-                {d.reason.referralQuickSelect ? "✓ " : ""}上尾中央総合病院・糖尿病内科
-              </button>
-              <label style={lbl({ marginTop: 8 })}>よく使う病院（クイック選択）</label>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
-                {[["上尾中央総合病院","糖尿病内科"],["上尾中央総合病院","循環器内科"],["上尾中央総合病院","消化器内科"],["加藤泌尿器科","泌尿器科"]].map(([hosp,dept])=>(
-                  <button key={hosp+dept} style={{...btn(d.reason.referralFrom===hosp&&d.reason.referralDept===dept,"#0f9668"),fontSize:12,padding:"7px 12px",border:d.reason.referralFrom===hosp&&d.reason.referralDept===dept?"2px solid #0f9668":"2px dashed #0f9668",background:d.reason.referralFrom===hosp&&d.reason.referralDept===dept?"#0f9668":"#f0fff8",color:d.reason.referralFrom===hosp&&d.reason.referralDept===dept?"#fff":"#0f9668"}}
-                    onClick={()=>setData(p=>({...p,reason:{...p.reason,referralFrom:hosp,referralDept:dept,referralQuickSelect:true}}))}>
-                    {d.reason.referralFrom===hosp&&d.reason.referralDept===dept?"✓ ":""}{hosp}・{dept}
-                  </button>
-                ))}
-              </div>
-              {!d.reason.referralQuickSelect && (
-                <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-                  <div style={{ flex: 2 }}><label style={lbl()}>病院名</label><input style={inp()} placeholder="病院名" value={d.reason.referralFrom} onChange={e => up("reason", "referralFrom", e.target.value)} /></div>
-                  <div style={{ flex: 1 }}><label style={lbl()}>科名</label><input style={inp()} placeholder="例：糖尿病内科" value={d.reason.referralDept} onChange={e => up("reason", "referralDept", e.target.value)} /></div>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 12, color: "#1a5fa8", fontWeight: 700, marginBottom: 6 }}>🏥 上尾中央総合病院</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 4 }}>
+                  {["糖尿病内科", "循環器内科", "消化器内科"].map(dept => {
+                    const selected = d.reason.referralFrom === "上尾中央総合病院" && d.reason.referralDept === dept;
+                    return (
+                      <button key={dept} style={{ ...btn(selected, "#0f9668"), fontSize: 13, padding: "8px 16px", border: selected ? "2px solid #0f9668" : "2px dashed #0f9668", background: selected ? "#0f9668" : "#f0fff8", color: selected ? "#fff" : "#0f9668" }}
+                        onClick={() => setData(p => ({ ...p, reason: { ...p.reason, referralFrom: "上尾中央総合病院", referralDept: dept, referralQuickSelect: true } }))}>
+                        {selected ? "✓ " : ""}{dept}
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
+              {/* 開業医 */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 12, color: "#1a5fa8", fontWeight: 700, marginBottom: 6 }}>🏪 開業医</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                  {["加藤泌尿器科"].map(hosp => {
+                    const selected = d.reason.referralFrom === hosp;
+                    return (
+                      <button key={hosp} style={{ ...btn(selected, "#0f9668"), fontSize: 13, padding: "8px 16px", border: selected ? "2px solid #0f9668" : "2px dashed #0f9668", background: selected ? "#0f9668" : "#f0fff8", color: selected ? "#fff" : "#0f9668" }}
+                        onClick={() => setData(p => ({ ...p, reason: { ...p.reason, referralFrom: hosp, referralDept: "", referralQuickSelect: true } }))}>
+                        {selected ? "✓ " : ""}{hosp}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* その他・手入力 */}
+              <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+                <div style={{ flex: 2 }}><label style={lbl()}>その他の病院名</label><input style={inp()} placeholder="上記以外の場合は入力" value={d.reason.referralQuickSelect ? "" : d.reason.referralFrom} onChange={e => setData(p => ({ ...p, reason: { ...p.reason, referralFrom: e.target.value, referralDept: "", referralQuickSelect: false } }))} /></div>
+                <div style={{ flex: 1 }}><label style={lbl()}>科名</label><input style={inp()} placeholder="例：糖尿病内科" value={d.reason.referralQuickSelect ? d.reason.referralDept : d.reason.referralDept} onChange={e => up("reason", "referralDept", e.target.value)} /></div>
+              </div>
               <label style={lbl()}>紹介の理由</label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                 {["血糖コントロール不良のため", "安定していたため当院へ", "専門的管理のため", "内容不明"].map(v => <button key={v} style={btn(d.reason.referralDetail === v)} onClick={() => up("reason", "referralDetail", v)}>{v}</button>)}
