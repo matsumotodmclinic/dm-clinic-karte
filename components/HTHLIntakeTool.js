@@ -22,7 +22,7 @@ const ALCOHOL_TYPES = [
 
 const initialData = {
   reason: { type: "", referralFrom: "", referralDept: "", referralQuickSelect: false, referralDetail: "", transferFrom: "", transferDetail: "", checkupType: "", concern: false, concernType: "", summary: "" },
-  disease: { igt: false, ht: false, hl: false, thyroidAdded: false, echoNeck: "", echoAbdomen: "", otherDisease: "", otherDiseases: [{name:"",hospital:"",hospitalOther:""},{name:"",hospital:"",hospitalOther:""},{name:"",hospital:"",hospitalOther:""},{name:"",hospital:"",hospitalOther:""},{name:"",hospital:"",hospitalOther:""}] },
+  disease: { igt: false, ht: false, hl: false, thyroidAdded: false, echoNeck: "", echoAbdomen: "", otherDisease: "", otherDiseases: [{name:"",hospital:"",hospitalOther:""}] },
   history: {
     age: "", allergy: "なし", allergyDetail: "",
     fh: { dm: false, dmWho: [], ht: false, hl: false, apo: false, ihd: false },
@@ -208,6 +208,7 @@ ${getCurrentMonth()}：
 
 アレルギー薬あれば赤字14フォント太字
 目標HbA1c　　　　%　目標体重　　　次回検討薬：
+基本採血なし
 1月follow
 曜希望
 LINE登録ご案内→済　登録確認未・登録できない
@@ -302,8 +303,8 @@ LINE登録ご案内→済　登録確認未・登録できない
 
 
           <label style={lbl({marginTop:8})}>その他の病名・既往歴</label>
-          <div style={{fontSize:12,color:"#7a9abf",marginBottom:8}}>例：慢性腎臓病、甲状腺疾患、うつ病 など（最大5件）</div>
-          {(d.disease.otherDiseases||[]).map((od,i)=>(
+          <div style={{fontSize:12,color:"#7a9abf",marginBottom:8}}>例：慢性腎臓病、甲状腺疾患、うつ病 など</div>
+          {(d.disease.otherDiseases||[{name:"",hospital:"",hospitalOther:""}]).map((od,i)=>(
             <div key={i} style={{display:"flex",gap:8,marginBottom:8,alignItems:"flex-start"}}>
               <div style={{flex:"0 0 20px",paddingTop:10,fontSize:13,color:"#8899aa",fontWeight:700}}>{i+1}</div>
               <div style={{flex:2}}>
@@ -315,7 +316,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                 {od.name?(
                   <div>
                     <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
-                      {["自治医大さいたま医療センター","上尾中央総合病院","埼玉県立がんセンター","通院なし","その他"].map(h=>(
+                      {["自治医大さいたま医療センター","上尾中央総合病院","埼玉県立がんせンター","通院なし","その他"].map(h=>(
                         <button key={h} style={{...btn(od.hospital===h),padding:"5px 10px",fontSize:12}} onClick={()=>setData(p=>{const a=[...(p.disease.otherDiseases||[])];a[i]={...a[i],hospital:h};return{...p,disease:{...p.disease,otherDiseases:a}};})}>{h}</button>
                       ))}
                     </div>
@@ -323,8 +324,10 @@ LINE登録ご案内→済　登録確認未・登録できない
                   </div>
                 ):<div style={{paddingTop:8,fontSize:12,color:"#b0c0d0"}}>病名を入力すると通院先が選べます</div>}
               </div>
+              {i>0&&<button onClick={()=>setData(p=>{const a=(p.disease.otherDiseases||[]).filter((_,j)=>j!==i);return{...p,disease:{...p.disease,otherDiseases:a}};})} style={{fontSize:12,color:"#e53e3e",background:"none",border:"none",cursor:"pointer",fontWeight:700,paddingTop:10}}>✕</button>}
             </div>
           ))}
+          <button style={{...btn(false,"#718096"),fontSize:13,marginBottom:14}} onClick={()=>setData(p=>{const a=[...(p.disease.otherDiseases||[]),{name:"",hospital:"",hospitalOther:""}];return{...p,disease:{...p.disease,otherDiseases:a}};})}>＋ その他の病名を追加</button>
                     <div style={{...sBox({background:"#f0f8ff",border:"1.5px solid #bee3f8"}),marginTop:8}}>
             <div style={{fontSize:13,fontWeight:800,color:"#2b6cb0",marginBottom:4}}>🔍 エコー検査について</div>
             <div style={{fontSize:12,color:"#4a7fa8",marginBottom:12,lineHeight:1.7}}>当院では合併症検査として、頸動脈エコー・腹部エコー等を年に1回行っています。</div>
