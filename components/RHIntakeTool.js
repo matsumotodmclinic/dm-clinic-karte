@@ -164,6 +164,9 @@ ${JSON.stringify(data,null,2)}
 【出力フォーマット】
 ${getCurrentMonth()}：
 ♯反応性低血糖疑い
+・低血糖が生じるタイミング：${(data.symptom.timing||[]).join("、")}${data.symptom.timingNote?"（"+data.symptom.timingNote+"）":""}
+・症状：${(data.symptom.symptoms||[]).join("、")}${data.symptom.symptomsNote?"（"+data.symptom.symptomsNote+"）":""}
+・思い当たる原因：${(data.symptom.cause||[]).join("、")}${data.symptom.causeNote?"（"+data.symptom.causeNote+"）":""}
 
 【アレルギー歴】
 【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)
@@ -174,8 +177,7 @@ ${getCurrentMonth()}：
 【生活情報】（70歳以上は子供の状況も含む）
 【仕事】職業・活動量
 ---------------------------------------------
-頚部エコー：（他院で施行済の場合「他院施行済」、健診で施行済の場合「健診施行済」、行っていない場合「当院で施行予定」と記載）
-腹部エコー：（他院で施行済の場合「他院施行済」、健診で施行済の場合「健診施行済」、行っていない場合「当院で施行予定」と記載）
+頚部エコー：当院で施行予定　腹部エコー：当院で施行予定
 ---------------------------------------------
 身長:○cm　初診時:○kg　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
