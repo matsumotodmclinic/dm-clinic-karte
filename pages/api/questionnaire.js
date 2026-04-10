@@ -13,7 +13,6 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const { age, form_type, form_data, generated_karte } = req.body
 
-    // visit_code生成（重複チェックあり）
     let visit_code
     let attempts = 0
     while (attempts < 10) {
@@ -23,16 +22,11 @@ export default async function handler(req, res) {
         .select('id')
         .eq('visit_code', code)
         .single()
-      if (!data) {
-        visit_code = code
-        break
-      }
+      if (!data) { visit_code = code; break }
       attempts++
     }
 
-    if (!visit_code) {
-      return res.status(500).json({ error: 'コード生成に失敗しました' })
-    }
+    if (!visit_code) return res.status(500).json({ error: 'コード生成に失敗しました' })
 
     const { data, error } = await supabase
       .from('questionnaires')
@@ -51,9 +45,7 @@ export default async function handler(req, res) {
       .select('*')
       .order('created_at', { ascending: false })
 
-    if (visit_code) {
-      query = query.ilike('visit_code', `%${visit_code}%`)
-    }
+    if (visit_code) query = query.ilike('visit_code', `%${visit_code}%`)
 
     const { data, error } = await query
     if (error) return res.status(500).json({ error: error.message })
@@ -76,8 +68,9 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'DELETE') {
-    const { id, deleteAll } = req.body
+    const { id, deleteAll, deleteToday, date } = req.body
 
+    // 完了済みを一括削除
     if (deleteAll) {
       const { error } = await supabase
         .from('questionnaires')
@@ -87,6 +80,21 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
+    // 当日の完了分を削除
+    if (deleteToday && date) {
+      const startOfDay = `${date}T00:00:00.000Z`
+      const endOfDay = `${date}T23:59:59.999Z`
+      const { error } = await supabase
+        .from('questionnaires')
+        .delete()
+        .eq('status', 'done')
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay)
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ ok: true })
+    }
+
+    // 個別削除
     const { error } = await supabase
       .from('questionnaires')
       .delete()
