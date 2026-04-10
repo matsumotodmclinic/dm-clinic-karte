@@ -46,7 +46,7 @@ const initialData = {
     vaccine65Prevena: "", vaccine65Herpes: "",
     livingSpouse: "", livingOther: "", livingCustom: "", childInfo: "",
     work: "していない", job: "", activity: "",
-    otherDiseases: [{name:"",hospital:"",hospitalOther:""},{name:"",hospital:"",hospitalOther:""},{name:"",hospital:"",hospitalOther:""},{name:"",hospital:"",hospitalOther:""},{name:"",hospital:"",hospitalOther:""}],
+    otherDiseases: [{name:"",hospital:"",hospitalOther:""}],
   },
   body: { height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "" },
 };
@@ -162,6 +162,8 @@ export default function T1DIntakeTool() {
 - フォーマット記号（＃【】□♯）を使用する
 - 体重減少ありの場合は一番上に【⚠️ 体重減少あり・早急なインスリン導入を検討】と記載
 - 受診理由の直後、空行なしで＃1型糖尿病を続ける
+- ＃1型糖尿病・＃HT・＃HLは空行なしで続ける
+- 他院で管理中の疾患（既往歴）は空行を1行入れてから記載する
 - 60歳未満はワクチン歴を省略、70歳未満は子供の状況を省略
 - 喫煙歴は「○本×○年（○歳〜）」の形式
 - 採血項目：GAD抗体・CPR・甲状腺3項目は初診時必須として記載
@@ -208,6 +210,8 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 （デバイス希望がある場合）□使用希望デバイス：CGM=${data.reason.cgmWish||"なし"}　ポンプ=${data.reason.pumpWish||"なし"}
 □甲状腺3項目・GAD抗体・CPRを初診時採血
 （インスリン未使用の場合）□初回療養計画書を作成済
+（CGM希望がある場合）□CGM：${data.reason.cgmCurrent&&data.reason.cgmCurrent!=="使用していない"?data.reason.cgmCurrent+"使用中→":""} ${data.reason.cgmWish&&data.reason.cgmWish!=="希望なし"?data.reason.cgmWish:""}
+（ポンプ希望がある場合）□インスリンポンプ：${data.reason.pumpCurrent&&data.reason.pumpCurrent!=="使用していない"?data.reason.pumpCurrent+"使用中→":""} ${data.reason.pumpWish&&data.reason.pumpWish!=="希望なし"?data.reason.pumpWish:""}
 【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
 ---------------------------------------------
 ${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲状腺項目追加してください　CPR0.5以下の方は今後半年ごとCPR測定を入れてください。
@@ -447,8 +451,10 @@ LINE登録ご案内→済　登録確認未・登録できない
                   </div>
                 ):<div style={{paddingTop:8,fontSize:12,color:"#b0c0d0"}}>病名を入力すると通院先が選べます</div>}
               </div>
+              {i>0&&<button onClick={()=>setData(p=>{const a=(p.history.otherDiseases||[]).filter((_,j)=>j!==i);return{...p,history:{...p.history,otherDiseases:a}};})} style={{fontSize:12,color:"#e53e3e",background:"none",border:"none",cursor:"pointer",fontWeight:700,paddingTop:10}}>✕</button>}
             </div>
           ))}
+          <button style={{...btn(false,"#718096"),fontSize:13,marginBottom:14}} onClick={()=>setData(p=>{const a=[...(p.history.otherDiseases||[]),{name:"",hospital:"",hospitalOther:""}];return{...p,history:{...p.history,otherDiseases:a}};})}>＋ その他の病名を追加</button>
           <label style={lbl()}>アレルギー歴</label>
           <div style={{display:"flex",gap:8,marginBottom:8}}>
             {["なし","あり"].map(v=><button key={v} style={btn(d.history.allergy===v)} onClick={()=>up("history","allergy",v)}>{v}</button>)}
@@ -506,12 +512,12 @@ LINE登録ご案内→済　登録確認未・登録できない
           {d.history.eyeVisiting==="通院中"&&(
             <div style={{marginBottom:14}}>
               <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:6}}>
-                {["上尾こいけ眼科","おが・おおぐし眼科","上尾中央総合病院","おおたけ眼科","こしの眼科"].map(v=>(
+                {["上尾こいけ眼科","おが・おおぐし眼科","上尾中央総合病院眼科","おおたけ眼科","こしの眼科"].map(v=>(
                   <button key={v} style={{...btn(d.history.eye===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","eye",v)}>{v}</button>
                 ))}
               </div>
               <input style={{...inp(),marginBottom:8}} placeholder="その他の眼科名を入力"
-                value={["上尾こいけ眼科","おが・おおぐし眼科","上尾中央総合病院","おおたけ眼科","こしの眼科"].includes(d.history.eye)?"":d.history.eye}
+                value={["上尾こいけ眼科","おが・おおぐし眼科","上尾中央総合病院眼科","おおたけ眼科","こしの眼科"].includes(d.history.eye)?"":d.history.eye}
                 onChange={e=>up("history","eye",e.target.value)}/>
               <label style={lbl({fontSize:11})}>糖尿病網膜症の状況（分かる範囲で）</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
