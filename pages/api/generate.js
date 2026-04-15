@@ -1,7 +1,483 @@
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return res.status(405).end()
+
+  const { form_data, form_type } = req.body
+  if (!form_data) return res.status(400).json({ error: 'form_data is required' })
+
+  const d = form_data
+
+  // ── 共通ヘルパー ──────────────────────────────────────
+
+  const getCurrentMonth = () => {
+    const now = new Date()
+    return `R${now.getFullYear() - 2018}.${now.getMonth() + 1}`
   }
+
+  const ALCOHOL_TYPES = [
+    { key: 'beer',   label: 'ビール' },
+    { key: 'happo',  label: '発泡酒' },
+    { key: 'wine',   label: 'ワイン' },
+    { key: 'shochu', label: '焼酎' },
+    { key: 'sake',   label: '日本酒' },
+    { key: 'whisky', label: 'ウイスキー' },
+  ]
+
+  const buildAlcohol = () => {
+    if (!d.history) return ''
+    if (d.history.alcoholNone) return 'なし'
+    const items = (d.history.alcoholItems || []).filter(a => a.type && a.amount)
+    if (!items.length) return ''
+    return items.map(a => {
+      const t = ALCOHOL_TYPES.find(x => x.key === a.type)
+      return `${t?.label || a.type}${a.amount}${a.freq ? `（${a.freq}）` : ''}`
+    }).join('、')
+  }
+
+  const buildSmoking = () => {
+    if (!d.history) return ''
+    const s = d.history
+    if (s.smoking === 'なし') return 'なし'
+    const base = `${s.smokingAmount}本×${s.smokingYears}年（${s.smokingStartAge}歳〜）`
+    return s.smoking === '禁煙済' ? `${base}、${s.smokingQuitEra}${s.smokingQuitYear}年に禁煙` : base
+  }
+
+  const buildLiving = () => {
+    // DM基本は d.lifestyle、T1D/HTHL/RH/GDM は d.history に格納
+    const src = d.lifestyle || d.history || {}
+    if (!src.livingSpouse && !src.livingOther) return ''
+    const { livingSpouse, livingOther, livingCustom } = src
+    const hasSpouse = livingSpouse === '配偶者あり'
+    const other = (livingOther === '子供と同居なし' || !livingOther) ? '' : livingOther
+    const custom = livingCustom || ''
+    let base = ''
+    if (hasSpouse && !other) base = '夫婦2人暮らし'
+    else if (hasSpouse && other) base = `夫婦2人暮らし＋${other}`
+    else if (!hasSpouse && other) base = other
+    else if (livingSpouse) base = livingSpouse
+    return [base, custom].filter(Boolean).join('（') + (base && custom ? '）' : '')
+  }
+
+  const dmOnsetText = () => {
+    if (!d.disease) return ''
+    if (d.disease.dmOnsetUnknown) return ''
+    if (!d.disease.dmOnset) return ''
+    return `（${d.disease.dmOnsetEra}${d.disease.dmOnset}年）`
+  }
+
+  const echoLine = (neck, abdomen) => {
+    const conv = v =>
+      v === '行っていない' ? '当院で施行予定'
+      : v === '他院で施行済' ? '他院施行済'
+      : v === '健診で施行済' ? '健診施行済'
+      : v || '当院で施行予定'
+    return `頚部エコー：${conv(neck)}　腹部エコー：${conv(abdomen)}`
+  }
+
+  const COMMON_FOOTER = `${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲状腺項目追加してください　CPR0.5以下の方は今後半年ごとCPR測定を入れてください。
+
+
+
+
+アレルギー薬あれば赤字14フォント太字
+目標HbA1c　　　　%　目標体重　　　次回検討薬：`
+
+  // ── フォームタイプ別プロンプト生成 ──────────────────────
+
+  let prompt = ''
+  let max_tokens = 1500
+
+  // ────── DM基本 ──────
+  if (form_type === 'DM基本') {
+    const echoNeck = d.disease?.echoNeck === '行っていない' ? '当院で施行予定' : d.disease?.echoNeck || '未記入'
+    const echoAbdomen = d.disease?.echoAbdomen === '行っていない' ? '当院で施行予定' : d.disease?.echoAbdomen || '未記入'
+
+    prompt = `あなたはまつもと糖尿病クリニックの電子カルテ記載AIです。
+以下の患者情報をもとに、クリニックのフォーマット通りにカルテ記載文を生成してください。
+
+【ルール】
+- 注意書き・内部メモは出力しない
+- 該当しない項目は省略する
+- フォーマット記号（＃【】□♯）を使用する
+- ＃病名・＃HT・＃HLの間は空行なし。他院管理の疾患のみ1行空けてから記載する
+- 体重減少ありの場合は一番上に【⚠️ 体重減少あり・早急なインスリン導入を検討】と記載
+- 60歳未満はワクチン歴を省略、70歳未満は子供の状況を省略
+- 喫煙歴は「○本×○年（○歳〜）」の形式
+- 重要既往歴には「治療した病院 → 現在通院先」を記載
+- ＃糖尿病の右に発症時期を記載（例：＃糖尿病（令和2年））
+- 受診理由の直後に改行なしで＃糖尿病を続ける
+
+【整形済みデータ】
+飲酒歴：${buildAlcohol()}
+喫煙歴：${buildSmoking()}
+生活情報：${buildLiving()}
+発症時期テキスト：${dmOnsetText()}
+頚部エコー：${echoNeck}
+腹部エコー：${echoAbdomen}
+
+【患者情報JSON】
+${JSON.stringify(d, null, 2)}
+
+【追加情報】
+現在日時：${getCurrentMonth()}
+体重減少：${d.alert?.weightLoss || ''}
+HTあり：${d.disease?.ht || false}
+HLあり：${d.disease?.hl || false}
+
+【出力フォーマット（必ずこの順序で。該当なければ省略）】
+（体重減少が「あり」かつ3kg以上の場合のみ）【⚠️ 体重減少あり・早急なインスリン導入を検討】
+
+${getCurrentMonth()}：（受診理由サマリー1〜2行。記載なければ省略）
+＃糖尿病${dmOnsetText()}（サマリーの直後、空行なし）
+＃HT（該当時のみ）
+＃HL（該当時のみ）
+◎甲状腺3項目追加済（HL+甲状腺追加済の場合のみ）
+
+♯胃癌（胃切除後：治療種類・範囲・時期・治療病院→通院先・内服薬）（該当時のみ）
+♯膵臓癌（術後：治療種類・時期・治療病院→通院先・内服薬）（該当時のみ）
+♯IHD：PCI後（時期・治療病院→通院先・抗血小板薬）（該当時のみ）
+♯脳梗塞後（時期・治療病院→通院先・抗血小板薬）（該当時のみ）
+（その他既往があれば記載）
+
+【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載）
+【FH】DM(-/+) HT(-/+) APO(-/+) IHD(-/+)（FH DMの場合は誰かも記載）
+【飲酒歴】（整形済みテキスト）
+【喫煙歴】（整形済みテキスト）
+【眼科通院歴】（通院中の場合：眼科名・網膜症の状況・緑内障の有無を記載）
+【健診】
+【ワクチン歴】（60歳以上のみ）
+【生活情報】（整形済みテキスト。70歳以上は子供の状況も含む）
+【仕事】職業・活動量
+---------------------------------------------
+頚部エコー：${echoNeck}
+腹部エコー：${echoAbdomen}
+---------------------------------------------
+身長:○cm　初診時:○kg　20歳時:○kg　max体重○kg(○歳)
+---------------------------------------------
+【事前聴取時　申し送り事項】
+（体重減少ありかつ3kg以上の場合）□体重減少あり（3ヶ月以内に3kg以上）インスリン導入要検討
+（HTありの場合）□HTの確認のため、血圧手帳をお渡ししています。
+（HLありの場合）□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。
+（インスリン未使用の場合）□生活習慣病療養計画書を作成済
+【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
+---------------------------------------------
+${COMMON_FOOTER}
+DM基本セット
+1月follow
+曜希望
+LINE登録ご案内→済　登録確認未・登録できない`
+    max_tokens = 1500
+
+  // ────── 1型糖尿病 ──────
+  } else if (form_type === '1型糖尿病') {
+    prompt = `あなたは糖尿病専門クリニックの電子カルテ記載AIです。以下の患者情報をもとに、1型糖尿病のカルテ記載文を生成してください。
+
+【ルール】
+- 該当しない項目は省略する
+- フォーマット記号（＃【】□♯）を使用する
+- ＃病名・＃HT・＃HLの間は空行なし。他院管理の疾患のみ1行空けてから記載する
+- 体重減少ありの場合は一番上に【⚠️ 体重減少あり・早急なインスリン導入を検討】と記載
+- 受診理由の直後、空行なしで＃1型糖尿病を続ける
+- ＃1型糖尿病・＃HT・＃HLは空行なしで続ける
+- 60歳未満はワクチン歴を省略、70歳未満は子供の状況を省略
+- 喫煙歴は「○本×○年（○歳〜）」の形式
+- 採血項目：GAD抗体・CPR・甲状腺3項目は初診時必須として記載
+
+【整形済みデータ】
+飲酒歴：${buildAlcohol()}
+喫煙歴：${buildSmoking()}
+生活情報：${buildLiving()}
+発症時期：${dmOnsetText()}
+
+【患者情報JSON】
+${JSON.stringify(d, null, 2)}
+
+【出力フォーマット】
+（体重減少ありなら）【⚠️ 体重減少あり・早急なインスリン導入を検討】
+
+${getCurrentMonth()}：（受診理由1〜2行）
+＃1型糖尿病（${d.disease?.dm1type || 'タイプ不明'}）${dmOnsetText()}
+・GAD抗体：（初診時採血）
+・CPR：（初診時採血）
+・甲状腺検査：（${d.disease?.thyroidChecked ? '初診時採血済' : '初診時採血'}）
+・障害年金：DM診断時厚生年金加入（${d.disease?.pensionKosei === 'はい（加入していた）' ? '有' : d.disease?.pensionKosei === 'いいえ（未加入）' ? '無' : '不明'}）→${d.disease?.pensionStatus === '受給中' ? '受給中' : d.disease?.pensionKosei === 'はい（加入していた）' ? 'CPR次第' : '受給困難（×）'}
+
+＃HT（HTありの場合のみ、空行なし）
+＃HL（HLありの場合のみ、空行なし）
+
+【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載）
+【FH】DM(-/+) HT(-/+) APO(-/+) IHD(-/+)（FH DMの場合は誰かも記載）
+【飲酒歴】（整形済みテキスト）
+【喫煙歴】（整形済みテキスト）
+【眼科通院歴】（通院中の場合：眼科名・網膜症の状況・緑内障の有無を記載）
+【健診】
+【ワクチン歴】（60歳以上のみ）
+【生活情報】（整形済みテキスト。70歳以上は子供の状況も含む）
+【仕事】職業・活動量
+---------------------------------------------
+頚部エコー：当院で施行予定　腹部エコー：当院で施行予定
+---------------------------------------------
+身長:○cm　初診時:○kg　20歳時:○kg　max体重○kg(○歳)
+---------------------------------------------
+【事前聴取時　申し送り事項】
+（体重減少ありの場合）□体重減少あり（3ヶ月以内に3kg以上）インスリン導入要検討
+（障害年金：厚生年金加入ありの場合）□障害年金の可能性あり→CPR結果を確認してください
+□甲状腺3項目・GAD抗体・CPRを初診時採血
+（インスリン未使用の場合）□初回療養計画書を作成済
+（CGM希望がある場合）□CGM：${d.reason?.cgmCurrent && d.reason.cgmCurrent !== '使用していない' ? d.reason.cgmCurrent + '使用中→' : ''}${d.reason?.cgmWish && d.reason.cgmWish !== '希望なし' ? d.reason.cgmWish : ''}
+（ポンプ希望がある場合）□インスリンポンプ：${d.reason?.pumpCurrent && d.reason.pumpCurrent !== '使用していない' ? d.reason.pumpCurrent + '使用中→' : ''}${d.reason?.pumpWish && d.reason.pumpWish !== '希望なし' ? d.reason.pumpWish : ''}
+【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
+---------------------------------------------
+${COMMON_FOOTER}
+DM基本セット
+1月follow
+曜希望
+LINE登録ご案内→済　登録確認未・登録できない`
+    max_tokens = 1500
+
+  // ────── 高血圧・脂質異常症 ──────
+  } else if (form_type === '高血圧・脂質異常症') {
+    const otherDiseasesText = (d.disease?.otherDiseases || [])
+      .filter(x => x.name)
+      .map(x => x.name + (x.hospital ? `（${x.hospital}）` : ''))
+      .join('、') || 'なし'
+
+    prompt = `あなたはまつもと糖尿病クリニックの電子カルテ記載AIです。以下の患者情報をもとに、高血圧・脂質異常症のカルテ記載文を生成してください。
+
+【ルール】
+- 該当しない項目は省略する
+- フォーマット記号（＃【】□♯）を使用する
+- ＃病名・＃HT・＃HLの間は空行なし。他院管理の疾患のみ1行空けてから記載する
+- 60歳未満はワクチン歴を省略、70歳未満は子供の状況を省略
+- 喫煙歴は「○本×○年（○歳〜）」の形式
+- HLで甲状腺追加済の場合は「◎甲状腺3項目追加済」を記載
+
+【整形済みデータ】
+飲酒歴：${buildAlcohol()}
+喫煙歴：${buildSmoking()}
+生活情報：${buildLiving()}
+頚部エコー：${d.disease?.echoNeck || '未選択'}
+腹部エコー：${d.disease?.echoAbdomen || '未選択'}
+その他の病名・既往歴：${otherDiseasesText}
+
+【患者情報JSON】
+${JSON.stringify(d, null, 2)}
+
+【出力フォーマット】
+${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の場合は気になる理由も含めて記載）
+＃IGT（該当時のみ、受診理由の直後、空行なし）
+＃HT（該当時のみ、空行なし）
+＃HL（該当時のみ、空行なし）
+◎甲状腺3項目追加済（HL+甲状腺追加済の場合のみ）
+（その他病名があれば「♯病名（通院先）」の形式で記載、空行なし）
+
+【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載）
+【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)（FH DMの場合は誰かも記載）
+【飲酒歴】（整形済みテキスト）
+【喫煙歴】（整形済みテキスト）
+【健診】
+【ワクチン歴】（60歳以上のみ）
+【生活情報】（整形済みテキスト。70歳以上は子供の状況も含む）
+【仕事】職業・活動量
+---------------------------------------------
+${echoLine(d.disease?.echoNeck, d.disease?.echoAbdomen)}
+---------------------------------------------
+身長:○cm　初診時:○kg　20歳時:○kg　max体重○kg(○歳)
+---------------------------------------------
+【事前聴取時　申し送り事項】
+（HLありの場合）□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。
+□初回療養計画書を作成済
+【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
+---------------------------------------------
+${getCurrentMonth()}：
+
+
+
+
+アレルギー薬あれば赤字14フォント太字
+目標HbA1c　　　　%　目標体重　　　次回検討薬：
+基本採血なし
+1月follow
+曜希望
+LINE登録ご案内→済　登録確認未・登録できない`
+    max_tokens = 1500
+
+  // ────── 妊娠糖尿病 ──────
+  } else if (form_type === '妊娠糖尿病') {
+    prompt = `あなたは糖尿病専門クリニックの電子カルテ記載AIです。以下の患者情報をもとに、妊娠糖尿病のカルテ記載文を生成してください。
+
+【ルール】
+- 該当しない項目は省略する
+- フォーマット記号（＃【】□♯）を使用する
+- ＃病名・＃HT・＃HLの間は空行なし。他院管理の疾患のみ1行空けてから記載する
+- 妊娠糖尿病の場合は眼科通院歴・健診・ワクチン歴は記載不要
+- 糖尿病合併妊娠の場合はGAD追加を記載し、眼科通院歴も記載する
+- HLで甲状腺追加済の場合は「◎甲状腺3項目追加済」を記載
+- 受診理由の直後、空行なしで＃妊娠糖尿病または＃糖尿病合併妊娠を続ける
+- 各項目間に空行を入れない
+
+【整形済みデータ】
+生活情報：${buildLiving()}
+
+【患者情報JSON】
+${JSON.stringify({ disease: d.disease, history: d.history, body: d.body, reason: d.reason }, null, 2)}
+
+【出力フォーマット】
+${getCurrentMonth()}：（受診理由1〜2行）
+＃妊娠糖尿病（または＃糖尿病合併妊娠）
+　現在${d.disease?.currentWeek || ''}週、${d.disease?.dueDateEra || '令和'}${d.disease?.dueDateYear || ''}年${d.disease?.dueDateMonth || ''}月
+　産科通院先：${d.disease?.obHospital === 'その他' ? d.disease?.obHospitalOther || '' : d.disease?.obHospital || ''}
+　過去の妊娠糖尿病歴：（あれば記載）
+＃HT（該当時のみ）
+＃HL（該当時のみ）
+◎甲状腺3項目追加済（該当時のみ）
+
+【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載）
+【FH】DM(-/+) HT(-/+) APO(-/+) IHD(-/+)
+【飲酒歴】なし（妊娠中）
+【喫煙歴】（記載）
+（糖尿病合併妊娠の場合のみ）【眼科通院歴】（通院中の場合：眼科名・網膜症の状況・緑内障の有無を記載）
+【生活情報】（整形済みテキスト）
+【仕事】職業・活動量
+---------------------------------------------
+${echoLine(d.disease?.echoNeck, d.disease?.echoAbdomen)}
+---------------------------------------------
+身長:○cm　初診時:○kg　妊娠前:○kg　20歳時:○kg　max体重○kg(○歳)
+---------------------------------------------
+【事前聴取時　申し送り事項】
+□リブレ（自費CGM）取り付けに同意済
+（喫煙「あり」の場合）□喫煙確認あり・指導必要
+【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
+---------------------------------------------
+${COMMON_FOOTER}
+DM基本セット
+1月follow
+曜希望
+LINE登録ご案内→済　登録確認未・登録できない`
+    max_tokens = 2000
+
+  // ────── 反応性低血糖 ──────
+  } else if (form_type === '反応性低血糖') {
+    prompt = `あなたは糖尿病専門クリニックの電子カルテ記載AIです。以下の患者情報をもとに、反応性低血糖のカルテ記載文を生成してください。
+
+【ルール】
+- 該当しない項目は省略する
+- フォーマット記号（♯【】）を使用する
+- 甲状腺3項目追加済の場合は申し送り事項に記載
+- CGM/リブレ装着情報も申し送り事項に記載
+- 60歳未満はワクチン歴を省略、70歳未満は子供の状況を省略
+
+【整形済みデータ】
+飲酒歴：${buildAlcohol()}
+喫煙歴：${buildSmoking()}
+生活情報：${buildLiving()}
+
+【患者情報JSON】
+${JSON.stringify(d, null, 2)}
+
+【出力フォーマット】
+${getCurrentMonth()}：
+♯反応性低血糖疑い
+・低血糖が生じるタイミング：${(d.symptom?.timing || []).join('、')}${d.symptom?.timingNote ? `（${d.symptom.timingNote}）` : ''}
+・症状：${(d.symptom?.symptoms || []).join('、')}${d.symptom?.symptomsNote ? `（${d.symptom.symptomsNote}）` : ''}
+・思い当たる原因：${(d.symptom?.cause || []).join('、')}${d.symptom?.causeNote ? `（${d.symptom.causeNote}）` : ''}
+
+【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載）
+【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)
+【飲酒歴】（整形済みテキスト）
+【喫煙歴】（整形済みテキスト）
+【健診】
+【ワクチン歴】（60歳以上のみ）
+【生活情報】（整形済みテキスト。70歳以上は子供の状況も含む）
+【仕事】職業・活動量
+---------------------------------------------
+頚部エコー：当院で施行予定　腹部エコー：当院で施行予定
+---------------------------------------------
+身長:○cm　初診時:○kg　20歳時:○kg　max体重○kg(○歳)
+---------------------------------------------
+【事前聴取時　申し送り事項】
+（甲状腺3項目追加済の場合）□甲状腺3項目追加採血済
+（リブレ装着済の場合）□自費CGM（リブレ）装着済
+【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
+---------------------------------------------
+${COMMON_FOOTER}
+DM基本セット
+1月follow
+曜希望
+LINE登録ご案内→済　登録確認未・登録できない`
+    max_tokens = 1500
+
+  // ────── 小児1型糖尿病 ──────
+  } else if (form_type === '小児1型糖尿病') {
+    prompt = `あなたは糖尿病専門クリニックの電子カルテ記載AIです。以下の患者情報をもとに、小児1型糖尿病のカルテ記載文を生成してください。
+
+【ルール】
+- 該当しない項目は省略する
+- フォーマット記号（＃【】□♯・）を使用する
+- 小児慢性申請状況を必ず記載する
+- 受診理由の直後、空行なしで＃1型糖尿病を続ける
+- 各項目（・GAD抗体、・CPR等）の間は空行なし
+- 【アレルギー歴】【FH】【眼科通院歴】【協力体制】【本人のスケジュール】【親のスケジュール】【注射・血糖測定の自立度】【生活情報】の間は全て空行なし
+- ＃病名・＃HT・＃HLの間は空行なし。他院管理の疾患のみ1行空けてから記載する
+- ＃HT・＃HLは必ず＃1型糖尿病の直後に記載し、末尾には絶対に記載しない
+- アレルギー薬の記載以降は指定フォーマットのみを出力し、病名・診断名を追記しない
+
+【患者情報JSON】
+${JSON.stringify({ disease: d.disease, history: d.history, body: d.body, reason: d.reason, support: d.support, chronic: d.chronic }, null, 2)}
+
+【出力フォーマット（空行は一切入れないこと）】
+${getCurrentMonth()}：（受診理由1〜2行）
+＃1型糖尿病（タイプ）（発症時期）
+＃HT（HTありの場合のみ。当院管理なら「＃HT」、他院管理なら「＃HT（他院管理）」）
+＃HL（HLありの場合のみ。当院管理なら「＃HL」、他院管理なら「＃HL（他院管理）」）
+・GAD抗体：（初診時採血）
+・CPR：（初診時採血）
+・甲状腺検査：（確認済/初診時採血）
+・バクスミー希望：あり/なし
+・小児慢性特定疾病助成制度：（申請状況）（申請ありの場合：出生体重・出生週数・出生時住民登録地・手帳取得内容）
+・書類関係：（選択された書類を全て記載）（「学校生活管理指導表」が含まれる場合）□4月頃に処方
+・居住地：（市町村）
+---------------------------------------------
+【アレルギー歴】（なしまたは内容を同じ行に）
+【FH】DM(-/+、誰かも記載) 1型糖尿病(-/+、誰かも記載) 膠原病(-/+、誰が・どの病気かも記載) HT(-/+) APO(-/+) IHD(-/+)
+【眼科通院歴】（通院中の場合：眼科名・網膜症の状況・緑内障の有無を記載）
+【協力体制】
+①家族の協力体制：（内容）
+②学校の協力体制：（内容）
+③学校でサポートしてくれる人：（内容）
+④周囲への開示：（内容）
+【本人のスケジュール】（内容）
+【親のスケジュール】（内容）
+【注射・血糖測定の自立度】（内容）
+【生活情報】家族構成・キーパーソン：（内容）
+---------------------------------------------
+身長:○cm　初診時:○kg
+---------------------------------------------
+【事前聴取時　申し送り事項】
+□甲状腺3項目・GAD抗体・CPRを初診時採血
+（HTありの場合）□HTの確認のため、血圧手帳をお渡ししています。
+（HLありの場合）□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。
+（書類関係で「学校生活管理指導表」を選択した場合）□4月頃に処方
+（小児慢性申請済の場合）□小児慢性申請済・窓口負担を確認し算定へ連絡
+【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
+---------------------------------------------
+${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲状腺項目追加してください　CPR0.5以下の方は今後半年ごとCPR測定を入れてください。
+
+
+
+
+アレルギー薬あれば赤字14フォント太字
+目標HbA1c　　　　%　目標体重　　　次回検討薬：
+DM基本セット
+1月follow
+曜希望
+LINE登録ご案内→済　登録確認未・登録できない`
+    max_tokens = 2000
+
+  } else {
+    return res.status(400).json({ error: `未対応のform_type: ${form_type}` })
+  }
+
+  // ── API呼び出し ──────────────────────────────────────
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -11,12 +487,17 @@ export default async function handler(req, res) {
         'x-api-key': process.env.ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify(req.body),
-    });
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    })
 
-    const data = await response.json();
-    res.status(response.status).json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const data = await response.json()
+    const karte = data.content?.[0]?.text || '生成に失敗しました'
+    return res.status(200).json({ karte })
+  } catch (e) {
+    return res.status(500).json({ error: e.message })
   }
 }
