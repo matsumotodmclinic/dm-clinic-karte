@@ -167,7 +167,9 @@ export default function DMIntakeTool() {
   const [result, setResult]     = useState("");
   const [loading, setLoading]   = useState(false);
   const [done, setDone]         = useState(false);
-  const [visitCode, setVisitCode] = useState(""); // ★ 追加
+  const [visitCode, setVisitCode] = useState("");
+  const [showKarte, setShowKarte] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const topRef = useRef(null);
 
   const scrollTop = () => {
@@ -227,6 +229,20 @@ export default function DMIntakeTool() {
     const month = now.getMonth() + 1;
     const reiwaYear = year - 2018;
     return `R${reiwaYear}.${month}`;
+  };
+
+  const handleSaveRetry = async () => {
+    setSaveError(false);
+    try {
+      const saveRes = await fetch("/api/questionnaire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ form_type: "DM基本", form_data: data, age: data.history.age || null, generated_karte: result }),
+      });
+      const saveJson = await saveRes.json();
+      if (saveJson.visit_code) setVisitCode(saveJson.visit_code);
+      else setSaveError(true);
+    } catch (e) { setSaveError(true); }
   };
 
   const generateKarte = async () => {
@@ -318,7 +334,7 @@ LINE登録ご案内→済　登録確認未・登録できない
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
-          max_tokens: 1200,
+          max_tokens: 1500,
           messages: [{ role: "user", content: prompt }]
         })
       });
@@ -326,21 +342,17 @@ LINE登録ご案内→済　登録確認未・登録できない
       const generated = json.content?.[0]?.text || "生成に失敗しました";
       setResult(generated);
 
-      // ② Supabaseに保存してvisit_codeを受け取る ★ 追加
-      const saveRes = await fetch("/api/questionnaire", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          form_type: "DM基本",
-          form_data: data,
-          age: data.history.age || null,
-          generated_karte: generated,
-        }),
-      });
-      const saveJson = await saveRes.json();
-      if (saveJson.visit_code) {
-        setVisitCode(saveJson.visit_code); // ★ visit_codeをセット
-      }
+      // Supabaseに保存してvisit_codeを受け取る
+      try {
+        const saveRes = await fetch("/api/questionnaire", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ form_type: "DM基本", form_data: data, age: data.history.age || null, generated_karte: generated }),
+        });
+        const saveJson = await saveRes.json();
+        if (saveJson.visit_code) setVisitCode(saveJson.visit_code);
+        else setSaveError(true);
+      } catch (saveErr) { setSaveError(true); }
 
       setDone(true);
       setTimeout(scrollTop, 50);
@@ -366,7 +378,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <label style={lbl()}>最近、体重が減っていますか？</label>
           <div style={{ display: "flex", gap: 8 }}>
             {["あり", "なし", "不明"].map(v => (
-              <button key={v} style={btn(d.alert.weightLoss === v, v === "あり" ? "#e53e3e" : "#1a5fa8")} onClick={() => { up("alert", "weightLoss", v); if (v === "あり") setIsNurse(true); }}>
+              <button key={v} style={btn(d.alert.weightLoss === v, v === "あり" ? "#e53e3e" : "#1a5fa8")} onClick={() => { up("alert", "weightLoss", v); }}>
                 {v === "あり" ? "⚠️ あり" : v}
               </button>
             ))}
@@ -794,7 +806,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           {d.lifestyle.livingOther === "その他" && (
             <input style={{ ...inp(), marginBottom: 8 }} placeholder="例：兄弟と同居" value={d.lifestyle.livingCustom} onChange={e => up("lifestyle", "livingCustom", e.target.value)} />
           )}
-          <input style={{ ...inp(), marginBottom: 8 }} placeholder="補足があれば（例：夫は要介護・義母と同居）" value={d.lifestyle.livingOther !== "その他" ? d.lifestyle.livingCustom : ""} onChange={e => up("lifestyle", "livingCustom", e.target.value)} />
+          <input style={{ ...inp(), marginBottom: 8 }} placeholder="補足があれば（例：夫は要介護・義母と同居）" value={d.lifestyle.livingCustom} onChange={e => up("lifestyle", "livingCustom", e.target.value)} />
 
           {isOver70 && (
             <div style={sBox({ border: "1.5px solid #fbd38d", background: "#fffaf0" })}>
@@ -843,6 +855,14 @@ LINE登録ご案内→済　登録確認未・登録できない
   /* ── render ── */
   return (
     <div ref={topRef} style={{ minHeight: "100vh", background: "linear-gradient(135deg,#e8f0fe 0%,#f0f7ff 60%,#e8f4fd 100%)", fontFamily: "'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif", padding: "20px 16px" }}>
+
+      <style>{`@keyframes kinkSpin{to{transform:rotate(360deg)}}`}</style>
+      {loading && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.52)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:9999}}>
+          <div style={{width:54,height:54,border:'5px solid rgba(255,255,255,0.25)',borderTopColor:'#fff',borderRadius:'50%',animation:'kinkSpin 0.8s linear infinite'}}/>
+          <div style={{color:'#fff',fontWeight:800,fontSize:17,marginTop:22,textAlign:'center',lineHeight:1.8}}>カルテを作成しています...<br/>少々お待ちください</div>
+        </div>
+      )}
       <div style={{ maxWidth: 720, margin: "0 auto 18px" }}>
         {data.alert.weightLoss === "あり" && !done && (
           <div style={{ background: "#c53030", color: "#fff", borderRadius: 10, padding: "12px 18px", marginBottom: 12, fontWeight: 900, fontSize: 14 }}>
@@ -901,7 +921,12 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
             </div>
 
-            {/* ★ visit_code 表示 */}
+            {saveError && (
+              <div style={{background:"#fff5f5",border:"2px solid #feb2b2",borderRadius:10,padding:"14px 16px",marginBottom:12,textAlign:"center"}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#c53030",marginBottom:8}}>⚠️ 受付番号の登録に失敗しました。スタッフへ口頭でお知らせください。</div>
+                <button onClick={handleSaveRetry} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#e53e3e",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer"}}>🔄 再試行</button>
+              </div>
+            )}
             {visitCode && (
               <div style={{ background: "linear-gradient(135deg,#1a5fa8,#3b82f6)", borderRadius: 14, padding: "20px", marginBottom: 16, textAlign: "center" }}>
                 <div style={{ fontSize: 13, color: "#a8d4ff", marginBottom: 6, fontWeight: 700 }}>受付番号</div>
@@ -918,9 +943,16 @@ LINE登録ご案内→済　登録確認未・登録できない
                 🚨 体重減少あり ― 医師への至急申し送りが必要です
               </div>
             )}
-            <div style={{ background: "#f5f9f7", border: "1px solid #c0e8d8", borderRadius: 10, padding: "16px 18px", whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 2, color: "#1a3a2a", fontFamily: "monospace" }}>
-              {result}
+            <div style={{marginBottom:4}}>
+              <button onClick={()=>setShowKarte(v=>!v)} style={{width:"100%",padding:"11px",borderRadius:8,border:"1.5px solid #c0e8d8",background:showKarte?"#e8f5f0":"#f5f9f7",color:"#276749",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                {showKarte?"▲ カルテ文を閉じる（スタッフ用）":"▼ スタッフ用カルテを確認する"}
+              </button>
             </div>
+            {showKarte && (
+              <div style={{background:"#f5f9f7",border:"1px solid #c0e8d8",borderRadius:10,padding:"16px 18px",whiteSpace:"pre-wrap",fontSize:13,lineHeight:2,color:"#1a3a2a",fontFamily:"monospace",marginBottom:8}}>
+                {result}
+              </div>
+            )}
 
 
             {/* スタッフ向けボタン */}
@@ -933,7 +965,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #1a5fa8", background: "#f0f7ff", color: "#1a5fa8", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
                 onClick={() => { setDone(false); setStep(0); setTimeout(scrollTop, 50); }}>✏️ 修正する</button>
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #d0dff5", background: "#f7faff", color: "#5580a8", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
-                onClick={() => { setDone(false); setStep(0); setData(initialData); setResult(""); setVisitCode(""); setTimeout(scrollTop, 50); }}>🔄 最初から</button>
+                onClick={() => { setDone(false); setStep(0); setData(initialData); setResult(""); setVisitCode(""); setShowKarte(false); setSaveError(false); setTimeout(scrollTop, 50); }}>🔄 最初から</button>
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #9ae6b4", background: "#f0fff4", color: "#276749", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
                 onClick={() => { window.location.href = "/"; }}>🏠 TOPへ</button>
             </div>
