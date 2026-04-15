@@ -70,6 +70,16 @@ export default async function handler(req, res) {
   if (req.method === 'DELETE') {
     const { id, deleteAll, deleteToday, date } = req.body
 
+    // ステータス問わず全削除
+    if (req.body.deleteAllRegardless) {
+      const { error } = await supabase
+        .from('questionnaires')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000') // 全件対象のダミー条件
+      if (error) return res.status(500).json({ error: error.message })
+      return res.status(200).json({ ok: true })
+    }
+
     // 完了済みを一括削除
     if (deleteAll) {
       const { error } = await supabase
