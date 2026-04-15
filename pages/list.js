@@ -76,6 +76,15 @@ export default function ListPage() {
 
   const handleSearch = (e) => { e.preventDefault(); fetchRecords(search); };
 
+  const handleDeleteAllRegardless = async () => {
+    if (!confirm('⚠️ ステータスに関わらず全件削除します。この操作は元に戻せません。本当によろしいですか？')) return;
+    await fetch('/api/questionnaire', {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deleteAllRegardless: true }),
+    });
+    fetchRecords();
+  };
+
   const handleDeleteDone = async () => {
     if (!confirm('完了済みをすべて削除しますか？')) return;
     await fetch('/api/questionnaire', { method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({deleteAll:true}) });
@@ -159,7 +168,11 @@ export default function ListPage() {
         </form>
 
         {/* 削除ボタン */}
-        <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginBottom:12 }}>
+        <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginBottom:12, flexWrap:'wrap' }}>
+          <button onClick={handleDeleteAllRegardless}
+            style={{ padding:'7px 14px', borderRadius:8, border:'1.5px solid #c53030', background:'#fff5f5', color:'#c53030', fontWeight:700, fontSize:12, cursor:'pointer' }}>
+            🗑️ 全件削除
+          </button>
           <button onClick={handleDeleteToday}
             style={{ padding:'7px 14px', borderRadius:8, border:'1.5px solid #fbd38d', background:'#fffaf0', color:'#c05621', fontWeight:700, fontSize:12, cursor:'pointer' }}>
             🗑️ 当日完了分を削除{todayDoneCount > 0 ? `（${todayDoneCount}件）` : ''}
