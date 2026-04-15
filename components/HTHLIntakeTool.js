@@ -85,6 +85,8 @@ export default function HTHLIntakeTool() {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [visitCode, setVisitCode] = useState("");
+  const [showKarte, setShowKarte] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const topRef = useRef(null);
 
   const scrollTop = () => { if(topRef.current) topRef.current.scrollIntoView({behavior:"smooth"}); };
@@ -145,6 +147,16 @@ export default function HTHLIntakeTool() {
     } else { copy(); }
   };
 
+  const handleSaveRetry = async () => {
+    setSaveError(false);
+    try {
+      const saveRes = await fetch("/api/questionnaire",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({form_type:"高血圧・脂質異常症",form_data:data,age:data.history.age||null,generated_karte:result})});
+      const saveJson = await saveRes.json();
+      if(saveJson.visit_code) setVisitCode(saveJson.visit_code);
+      else setSaveError(true);
+    } catch(e) { setSaveError(true); }
+  };
+
   const generateKarte = async () => {
     setLoading(true);
     const prompt = `あなたはまつもと糖尿病クリニックの電子カルテ記載AIです。以下の患者情報をもとに、高血圧・脂質異常症のカルテ記載文を生成してください。
@@ -179,9 +191,6 @@ ${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の�
 ＃HT（該当時のみ、空行なし）
 ＃HL（該当時のみ、空行なし）
 （その他病名があれば「♯病名（通院先）」の形式で記載、空行なし）
-＃HT（該当時のみ）
-＃HL（該当時のみ）
-（その他病名があれば「♯病名（通院先）」の形式で記載）
 
 【アレルギー歴】
 【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)
@@ -215,18 +224,17 @@ ${getCurrentMonth()}：
 LINE登録ご案内→済　登録確認未・登録できない
 `;
     try {
-      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
+      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
       const json = await res.json();
       const generated = json.content?.[0]?.text||"生成に失敗しました";
       setResult(generated);
 
-      const saveRes = await fetch("/api/questionnaire", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ form_type:"高血圧・脂質異常症", form_data:data, age:data.history.age||null, generated_karte:generated }),
-      });
-      const saveJson = await saveRes.json();
-      if(saveJson.visit_code) setVisitCode(saveJson.visit_code);
+      try {
+        const saveRes = await fetch("/api/questionnaire",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({form_type:"高血圧・脂質異常症",form_data:data,age:data.history.age||null,generated_karte:generated})});
+        const saveJson = await saveRes.json();
+        if(saveJson.visit_code) setVisitCode(saveJson.visit_code);
+        else setSaveError(true);
+      } catch(saveErr) { setSaveError(true); }
 
       setDone(true);
       setTimeout(scrollTop,50);
@@ -423,7 +431,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           </div>)}
           <label style={lbl()}>健診の種類</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:14}}>
-            {["市の健診","会社の健診","人間ドック"].map(v=><button key={v} style={btn(d.history.checkup.includes(v))} onClick={()=>toggleArr("history","checkup",v)}>{v}</button>)}
+            {["市の健診","会社の健診","人間ドック","なし"].map(v=><button key={v} style={btn(d.history.checkup.includes(v))} onClick={()=>toggleArr("history","checkup",v)}>{v}</button>)}
           </div>
           {isOver60&&(<div style={sBox({border:"1.5px solid #bee3f8",background:"#ebf8ff"})}>
             <div style={{fontSize:13,fontWeight:800,color:"#2b6cb0",marginBottom:12}}>💉 ワクチン希望（60歳以上）</div>
@@ -444,8 +452,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           </div>
           <label style={lbl({marginTop:8})}>子供・その他との同居</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>{LIVING_OTHERS.map(v=><button key={v} style={btn(d.history.livingOther===v)} onClick={()=>up("history","livingOther",v)}>{v}</button>)}</div>
-          {d.history.livingOther==="その他"&&<input style={{...inp(),marginBottom:6}} placeholder="例：兄弟と同居" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>}
-          <input style={{...inp(),marginBottom:8}} placeholder="補足があれば（例：夫は要介護）" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>
+          <input style={{...inp(),marginBottom:8}} placeholder="その他の場合や補足があれば（例：兄弟と同居・夫は要介護）" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>
           {isOver70&&(<div style={sBox({border:"1.5px solid #fbd38d",background:"#fffaf0"})}>
             <div style={{fontSize:13,fontWeight:800,color:"#c05621",marginBottom:8}}>👨‍👩‍👧 お子さんの状況（70歳以上）</div>
             <input style={inp()} placeholder="例：子供は近居（さいたま市）　例：子供なし" value={d.history.childInfo} onChange={e=>up("history","childInfo",e.target.value)}/>
@@ -484,6 +491,14 @@ LINE登録ご案内→済　登録確認未・登録できない
 
   return (
     <div ref={topRef} style={{minHeight:"100vh",background:"linear-gradient(135deg,#e8f4fd 0%,#f0f7ff 60%,#edf7ee 100%)",fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif",padding:"20px 16px"}}>
+
+      <style>{`@keyframes kinkSpin{to{transform:rotate(360deg)}}`}</style>
+      {loading && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.52)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:9999}}>
+          <div style={{width:54,height:54,border:'5px solid rgba(255,255,255,0.25)',borderTopColor:'#fff',borderRadius:'50%',animation:'kinkSpin 0.8s linear infinite'}}/>
+          <div style={{color:'#fff',fontWeight:800,fontSize:17,marginTop:22,textAlign:'center',lineHeight:1.8}}>カルテを作成しています...<br/>少々お待ちください</div>
+        </div>
+      )}
       <div style={{maxWidth:680,margin:"0 auto 18px"}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <div style={{width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#2d8653,#48bb78)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>🏥</div>
@@ -528,7 +543,13 @@ LINE登録ご案内→済　登録確認未・登録できない
                 <div style={{fontSize:12,color:"#5a9a80"}}>内容確認後、電子カルテにコピーしてください</div>
               </div>
             </div>
-            {visitCode && (
+            {saveError && (
+              <div style={{background:"#fff5f5",border:"2px solid #feb2b2",borderRadius:10,padding:"14px 16px",marginBottom:12,textAlign:"center"}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#c53030",marginBottom:8}}>⚠️ 受付番号の登録に失敗しました。スタッフへ口頭でお知らせください。</div>
+                <button onClick={handleSaveRetry} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#e53e3e",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer"}}>🔄 再試行</button>
+              </div>
+            )}
+                        {visitCode && (
               <div style={{background:"linear-gradient(135deg,#2d8653,#48bb78)",borderRadius:14,padding:"20px",marginBottom:16,textAlign:"center"}}>
                 <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",marginBottom:6,fontWeight:700}}>受付番号</div>
                 <div style={{fontSize:56,fontWeight:900,color:"#fff",letterSpacing:"0.2em",lineHeight:1}}>{visitCode}</div>
@@ -539,12 +560,21 @@ LINE登録ご案内→済　登録確認未・登録できない
               <div style={{fontSize:16,fontWeight:900,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
               <div style={{fontSize:12,color:"#b45309",marginTop:4}}>問診は完了しています。ありがとうございました。</div>
             </div>
-            <div style={{background:"#f5f9f7",border:"1px solid #c0e8d8",borderRadius:10,padding:"16px 18px",whiteSpace:"pre-wrap",fontSize:13,lineHeight:2,color:"#1a3a2a",fontFamily:"monospace"}}>{result}</div>
+                        <div style={{marginBottom:4}}>
+              <button onClick={()=>setShowKarte(v=>!v)} style={{width:"100%",padding:"11px",borderRadius:8,border:"1.5px solid #c0e8d8",background:showKarte?"#e8f5f0":"#f5f9f7",color:"#276749",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                {showKarte?"▲ カルテ文を閉じる（スタッフ用）":"▼ スタッフ用カルテを確認する"}
+              </button>
+            </div>
+            {showKarte && (
+              <div style={{background:"#f5f9f7",border:"1px solid #c0e8d8",borderRadius:10,padding:"16px 18px",whiteSpace:"pre-wrap",fontSize:13,lineHeight:2,color:"#1a3a2a",fontFamily:"monospace",marginBottom:8}}>
+                {result}
+              </div>
+            )}
 
             <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#2d8653,#48bb78)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer"}} onClick={()=>copyToClipboard(result)}>📋 コピー</button>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #2d8653",background:"#f0f7ff",color:"#2d8653",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setTimeout(scrollTop,50);}}>✏️ 修正する</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #d0dff5",background:"#f7faff",color:"#5580a8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setVisitCode("");setTimeout(scrollTop,50);}}>🔄 最初から</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #d0dff5",background:"#f7faff",color:"#5580a8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setVisitCode("");setShowKarte(false);setSaveError(false);setTimeout(scrollTop,50);}}>🔄 最初から</button>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #9ae6b4",background:"#f0fff4",color:"#276749",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{window.location.href="/";}}>🏠 TOPへ</button>
             </div>
           </div>
