@@ -150,7 +150,7 @@ DM基本セット
 LINE登録ご案内→済　登録確認未・登録できない
 `;
     try {
-      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,messages:[{role:"user",content:prompt}]})});
+      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:2000,messages:[{role:"user",content:prompt}]})});
       const json = await res.json();
       const generated = json.content?.[0]?.text||"生成に失敗しました";
       setResult(generated);
