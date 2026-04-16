@@ -864,12 +864,14 @@ LINE登録ご案内→済　登録確認未・登録できない
             {["している","していない"].map(v => <button key={v} style={btn(d.lifestyle.work === v)} onClick={() => up("lifestyle","work",v)}>{v}</button>)}
           </div>
           {d.lifestyle.work === "している" && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 8 }}>
-            {["会社員（デスクワーク）","会社員（現場・営業）","自営業","パート・アルバイト","医療・福祉職","教育職（教師・保育士）","飲食・サービス業","農業・林業・漁業","専業主婦・主夫","学生"].map(v=>(
-              <button key={v} style={{...btn(d.lifestyle.job===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("lifestyle","job",v)}>{v}</button>
-            ))}
-          </div>
-          <input style={{ ...inp(), marginBottom: 14 }} placeholder="職業（例：会社員・自営業・パート）" value={d.lifestyle.job} onChange={e => up("lifestyle","job",e.target.value)} />
+            <div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 8 }}>
+                {["会社員（デスクワーク）","会社員（現場・営業）","自営業","パート・アルバイト","医療・福祉職","教育職（教師・保育士）","飲食・サービス業","農業・林業・漁業","専業主婦・主夫","学生"].map(v=>(
+                  <button key={v} style={btn(d.lifestyle.job===v,"#1a5fa8",{padding:"6px 10px",fontSize:12})} onClick={()=>up("lifestyle","job",v)}>{v}</button>
+                ))}
+              </div>
+              <input style={{ ...inp(), marginBottom: 14 }} placeholder="職業（例：会社員・自営業・パート）)" value={d.lifestyle.job} onChange={e => up("lifestyle","job",e.target.value)} />
+            </div>
           )}
 
           <label style={lbl()}>活動量</label>
