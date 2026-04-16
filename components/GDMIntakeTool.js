@@ -455,12 +455,16 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             {["している","していない","産休中"].map(v=><button key={v} style={btn(d.history.work===v)} onClick={()=>up("history","work",v)}>{v}</button>)}
           </div>
-          {d.history.work==="している"&&(<div>          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 8 }}>
-            {["会社員（デスクワーク）","会社員（現場・営業）","自営業","パート・アルバイト","医療・福祉職","教育職（教師・保育士）","飲食・サービス業","農業・林業・漁業","専業主婦・主夫","学生"].map(v=>(
-              <button key={v} style={{...btn(d.history.job===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","job",v)}>{v}</button>
-            ))}
-          </div>
-          <input style={{...inp(),marginBottom:14}} placeholder="職業（例：会社員・パート）" value={d.history.job} onChange={e=>up("history","job",e.target.value)}/></div>)}
+          {d.history.work==="している"&&(
+            <div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
+                {["会社員（デスクワーク）","会社員（現場・営業）","自営業","パート・アルバイト","医療・福祉職","教育職（教師・保育士）","飲食・サービス業","農業・林業・漁業","専業主婦・主夫","学生"].map(v=>(
+                  <button key={v} style={{...btn(d.history.job===v,"#c05c8a"),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","job",v)}>{v}</button>
+                ))}
+              </div>
+              <input style={{...inp(),marginBottom:14}} placeholder="職業（例：会社員・パート）" value={d.history.job} onChange={e=>up("history","job",e.target.value)}/>
+            </div>
+          )}
 
           <label style={lbl()}>活動量</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
