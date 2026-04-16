@@ -43,10 +43,10 @@ const initialData = {
   disease: {
     dmOnsetEra: "令和", dmOnset: "", dmOnsetUnknown: false,
     ht: false, hl: false, thyroidAdded: false, insulinUse: false,
-    gastricCancer:  { selected: false, resection: "", surgeryType: "", surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", meds: "" },
-    pancreasCancer: { selected: false, surgeryType: "", surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", meds: "" },
-    ihd:            { selected: false, treatment: "", surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", meds: "" },
-    stroke:         { selected: false, surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", meds: "" },
+    gastricCancer:  { selected: false, resection: "", surgeryType: "", surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", visitFreq: "", meds: "" },
+    pancreasCancer: { selected: false, surgeryType: "", surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", visitFreq: "", meds: "" },
+    ihd:            { selected: false, treatment: "", surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", visitFreq: "", meds: "" },
+    stroke:         { selected: false, surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", visitFreq: "", meds: "" },
     echoNeck: "", echoAbdomen: "",
     otherDiseases: [emptyOtherDisease()],
   },
@@ -125,6 +125,20 @@ function DetailBox({ title, color, data, onChange, showResection }) {
       </div>
       <HospitalPicker label="治療を行った病院" value={data.treatedHospital} otherValue={data.treatedHospitalOther} onSelect={v => onChange("treatedHospital", v)} onOtherChange={v => onChange("treatedHospitalOther", v)} color={color} />
       <HospitalPicker label="現在の通院先" value={data.visitingHospital} otherValue={data.visitingHospitalOther} onSelect={v => onChange("visitingHospital", v)} onOtherChange={v => onChange("visitingHospitalOther", v)} color={color} includeNone />
+      {/* 通院頻度 */}
+      {data.visitingHospital && data.visitingHospital !== "通院なし" && (
+        <div style={{ marginBottom: 12 }}>
+          <label style={lbl({ color })}>通院頻度</label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 6 }}>
+            {["1ヶ月に1回", "2ヶ月に1回", "3ヶ月に1回", "半年に1回", "1年に1回"].map(v => (
+              <button key={v} style={{ ...btn(data.visitFreq === v, color), padding: "6px 10px", fontSize: 12 }} onClick={() => onChange("visitFreq", v)}>{v}</button>
+            ))}
+          </div>
+          <input style={{ ...inp(), fontSize: 12 }} placeholder="その他（例：○ヶ月に1回）"
+            value={["1ヶ月に1回","2ヶ月に1回","3ヶ月に1回","半年に1回","1年に1回"].includes(data.visitFreq) ? "" : data.visitFreq}
+            onChange={e => onChange("visitFreq", e.target.value)} />
+        </div>
+      )}
       <div>
         <label style={lbl({ color })}>内服薬（分かる範囲で）</label>
         <input style={inp()} placeholder="例：アスピリン100mg・クロピドグレル・不明" value={data.meds} onChange={e => onChange("meds", e.target.value)} />
@@ -187,6 +201,9 @@ export default function DMIntakeTool() {
   const delAl = (i) => setData(p => ({ ...p, history: { ...p.history, alcoholItems: p.history.alcoholItems.filter((_, j) => j !== i) } }));
 
   const age       = parseInt(data.history.age) || 0;
+  const bmi = data.body.height && data.body.weightNow
+    ? (parseFloat(data.body.weightNow) / Math.pow(parseFloat(data.body.height)/100, 2)).toFixed(1)
+    : null;
   const isOver60  = age >= 60;
   const isOver70  = age >= 70;
 
@@ -553,6 +570,19 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
               <HospitalPicker label="治療を行った病院" value={d.disease.ihd.treatedHospital} otherValue={d.disease.ihd.treatedHospitalOther} onSelect={v => upN("disease", "ihd", "treatedHospital", v)} onOtherChange={v => upN("disease", "ihd", "treatedHospitalOther", v)} color="#8e44ad" />
               <HospitalPicker label="現在の通院先" value={d.disease.ihd.visitingHospital} otherValue={d.disease.ihd.visitingHospitalOther} onSelect={v => upN("disease", "ihd", "visitingHospital", v)} onOtherChange={v => upN("disease", "ihd", "visitingHospitalOther", v)} color="#8e44ad" includeNone />
+              {d.disease.ihd.visitingHospital && d.disease.ihd.visitingHospital !== "通院なし" && (
+                <div style={{ marginBottom: 12 }}>
+                  <label style={lbl({ color: "#8e44ad" })}>通院頻度</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 6 }}>
+                    {["1ヶ月に1回","2ヶ月に1回","3ヶ月に1回","半年に1回","1年に1回"].map(v=>(
+                      <button key={v} style={{...btn(d.disease.ihd.visitFreq===v,"#8e44ad"),padding:"6px 10px",fontSize:12}} onClick={()=>upN("disease","ihd","visitFreq",v)}>{v}</button>
+                    ))}
+                  </div>
+                  <input style={{...inp(),fontSize:12}} placeholder="その他（例：○ヶ月に1回）"
+                    value={["1ヶ月に1回","2ヶ月に1回","3ヶ月に1回","半年に1回","1年に1回"].includes(d.disease.ihd.visitFreq)?"":d.disease.ihd.visitFreq}
+                    onChange={e=>upN("disease","ihd","visitFreq",e.target.value)}/>
+                </div>
+              )}
               <div>
                 <label style={lbl({ color: "#8e44ad" })}>内服薬（分かる範囲で）</label>
                 <input style={inp()} placeholder="例：アスピリン・クロピドグレル・不明" value={d.disease.ihd.meds} onChange={e => upN("disease", "ihd", "meds", e.target.value)} />
@@ -576,6 +606,19 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
               <HospitalPicker label="治療を行った病院" value={d.disease.stroke.treatedHospital} otherValue={d.disease.stroke.treatedHospitalOther} onSelect={v => upN("disease","stroke","treatedHospital",v)} onOtherChange={v => upN("disease","stroke","treatedHospitalOther",v)} color="#8e44ad" />
               <HospitalPicker label="現在の通院先" value={d.disease.stroke.visitingHospital} otherValue={d.disease.stroke.visitingHospitalOther} onSelect={v => upN("disease","stroke","visitingHospital",v)} onOtherChange={v => upN("disease","stroke","visitingHospitalOther",v)} color="#8e44ad" includeNone />
+              {d.disease.stroke.visitingHospital && d.disease.stroke.visitingHospital !== "通院なし" && (
+                <div style={{ marginBottom: 12 }}>
+                  <label style={lbl({ color: "#8e44ad" })}>通院頻度</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 6 }}>
+                    {["1ヶ月に1回","2ヶ月に1回","3ヶ月に1回","半年に1回","1年に1回"].map(v=>(
+                      <button key={v} style={{...btn(d.disease.stroke.visitFreq===v,"#8e44ad"),padding:"6px 10px",fontSize:12}} onClick={()=>upN("disease","stroke","visitFreq",v)}>{v}</button>
+                    ))}
+                  </div>
+                  <input style={{...inp(),fontSize:12}} placeholder="その他（例：○ヶ月に1回）"
+                    value={["1ヶ月に1回","2ヶ月に1回","3ヶ月に1回","半年に1回","1年に1回"].includes(d.disease.stroke.visitFreq)?"":d.disease.stroke.visitFreq}
+                    onChange={e=>upN("disease","stroke","visitFreq",e.target.value)}/>
+                </div>
+              )}
               <div>
                 <label style={lbl({ color: "#8e44ad" })}>内服薬（分かる範囲で）</label>
                 <input style={inp()} placeholder="例：アスピリン・クロピドグレル・不明" value={d.disease.stroke.meds} onChange={e => upN("disease","stroke","meds",e.target.value)} />
@@ -744,14 +787,14 @@ LINE登録ご案内→済　登録確認未・登録できない
                 onChange={e => up("history", "eye", e.target.value)} />
               <label style={lbl({ fontSize: 11 })}>糖尿病網膜症の状況（分かる範囲で）</label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 8 }}>
-                {["網膜症なし", "単純性網膜症", "前増殖性網膜症", "増殖性網膜症"].map(v => (
+                {["網膜症なし", "単純性網膜症", "前増殖性網膜症", "増殖性網膜症", "不明"].map(v => (
                   <button key={v} style={{ ...btn(d.history.retinopathy === v), padding: "6px 10px", fontSize: 12 }}
                     onClick={() => up("history", "retinopathy", v)}>{v}</button>
                 ))}
               </div>
               <label style={lbl({ fontSize: 11 })}>緑内障の有無</label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                {["緑内障なし", "緑内障あり"].map(v => (
+                {["緑内障なし", "緑内障あり", "不明"].map(v => (
                   <button key={v} style={{ ...btn(d.history.glaucoma === v), padding: "6px 10px", fontSize: 12 }}
                     onClick={() => up("history", "glaucoma", v)}>{v}</button>
                 ))}
@@ -821,7 +864,12 @@ LINE登録ご案内→済　登録確認未・登録できない
             {["している","していない"].map(v => <button key={v} style={btn(d.lifestyle.work === v)} onClick={() => up("lifestyle","work",v)}>{v}</button>)}
           </div>
           {d.lifestyle.work === "している" && (
-            <input style={{ ...inp(), marginBottom: 14 }} placeholder="職業（例：会社員・自営業・パート）" value={d.lifestyle.job} onChange={e => up("lifestyle","job",e.target.value)} />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 8 }}>
+            {["会社員（デスクワーク）","会社員（現場・営業）","自営業","パート・アルバイト","医療・福祉職","教育職（教師・保育士）","飲食・サービス業","農業・林業・漁業","専業主婦・主夫","学生"].map(v=>(
+              <button key={v} style={{...btn(d.lifestyle.job===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("lifestyle","job",v)}>{v}</button>
+            ))}
+          </div>
+          <input style={{ ...inp(), marginBottom: 14 }} placeholder="職業（例：会社員・自営業・パート）" value={d.lifestyle.job} onChange={e => up("lifestyle","job",e.target.value)} />
           )}
 
           <label style={lbl()}>活動量</label>
@@ -843,6 +891,11 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
             ))}
           </div>
+          {bmi && (
+            <div style={{ marginBottom: 16, padding: "10px 16px", background: "#e8f0fe", borderRadius: 8, fontSize: 14, fontWeight: 700, color: "#1a5fa8" }}>
+              BMI：{bmi}　{parseFloat(bmi)<18.5?"（低体重）":parseFloat(bmi)<25?"（普通体重）":parseFloat(bmi)<30?"（肥満1度）":"（肥満2度以上）"}
+            </div>
+          )}
           <label style={lbl()}>診察への要望・聞きたいこと</label>
           <textarea style={{ ...inp(), minHeight: 80, resize: "vertical" }} placeholder="自由にご記入ください（なければ空欄）" value={d.body.concern} onChange={e => up("body","concern",e.target.value)} />
         </div>
