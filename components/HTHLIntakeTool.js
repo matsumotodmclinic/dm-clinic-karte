@@ -90,6 +90,8 @@ export default function HTHLIntakeTool() {
   const topRef = useRef(null);
 
   const scrollTop = () => { if(topRef.current) topRef.current.scrollIntoView({behavior:"smooth"}); };
+  const bmi = data.body.height && data.body.weightNow
+    ? (parseFloat(data.body.weightNow)/Math.pow(parseFloat(data.body.height)/100,2)).toFixed(1) : null;
   const goStep = (n) => { setStep(n); setTimeout(scrollTop, 50); };
   const up = (sec,f,v) => setData(p=>({...p,[sec]:{...p[sec],[f]:v}}));
   const upN = (sec,par,f,v) => setData(p=>({...p,[sec]:{...p[sec],[par]:{...p[sec][par],[f]:v}}}));
@@ -461,7 +463,12 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             {["している","していない"].map(v=><button key={v} style={btn(d.history.work===v)} onClick={()=>up("history","work",v)}>{v}</button>)}
           </div>
-          {d.history.work==="している"&&<input style={{...inp(),marginBottom:14}} placeholder="職業（例：会社員・自営業・パート）" value={d.history.job} onChange={e=>up("history","job",e.target.value)}/>}
+          {d.history.work==="している"&&(<div>          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 8 }}>
+            {["会社員（デスクワーク）","会社員（現場・営業）","自営業","パート・アルバイト","医療・福祉職","教育職（教師・保育士）","飲食・サービス業","農業・林業・漁業","専業主婦・主夫","学生"].map(v=>(
+              <button key={v} style={{...btn(d.history.job===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","job",v)}>{v}</button>
+            ))}
+          </div>
+          <input style={{...inp(),marginBottom:14}} placeholder="職業（例：会社員・自営業・パート）" value={d.history.job} onChange={e=>up("history","job",e.target.value)}/></div>)}
           <label style={lbl()}>活動量</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
             {["体を動かしていることが多い","立っていることが多い","座っていることが多い"].map(v=><button key={v} style={btn(d.history.activity===v)} onClick={()=>up("history","activity",v)}>{v}</button>)}
@@ -480,6 +487,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
             ))}
           </div>
+          {bmi&&(<div style={{marginBottom:16,padding:"10px 16px",background:"#e8f8ee",borderRadius:8,fontSize:14,fontWeight:700,color:"#2d8653"}}>BMI：{bmi}　{parseFloat(bmi)<18.5?"（低体重）":parseFloat(bmi)<25?"（普通体重）":parseFloat(bmi)<30?"（肥満1度）":"（肥満2度以上）"}</div>)}
           <label style={lbl()}>診察への要望・聞きたいこと</label>
           <textarea style={{...inp(),minHeight:80,resize:"vertical"}} placeholder="自由にご記入ください（なければ空欄）" value={d.body.concern} onChange={e=>up("body","concern",e.target.value)}/>
         </div>
