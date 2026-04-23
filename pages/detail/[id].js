@@ -13,6 +13,7 @@ export default function DetailPage() {
   const [loading, setLoading]   = useState(true);
   const [generating, setGenerating] = useState(false);
   const [karte, setKarte]       = useState('');
+  const [saveMsg, setSaveMsg]   = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -59,6 +60,18 @@ export default function DetailPage() {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(copy);
     } else { copy(); }
+  };
+
+  const handleSaveKarte = async () => {
+    try {
+      const res = await fetch('/api/questionnaire', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, generated_karte: karte }),
+      });
+      if (res.ok) { setSaveMsg('✓ 保存しました'); setTimeout(() => setSaveMsg(''), 2500); }
+      else { setSaveMsg('保存に失敗しました'); setTimeout(() => setSaveMsg(''), 3000); }
+    } catch (e) { setSaveMsg('保存に失敗しました'); setTimeout(() => setSaveMsg(''), 3000); }
   };
 
   const handleGenerate = async () => {
@@ -144,18 +157,22 @@ export default function DetailPage() {
           <div style={{ fontSize:14, fontWeight:800, color:'#1a2a4a', marginBottom:12 }}>カルテ記載文</div>
           {karte ? (
             <>
-              <div style={{ background:'#f5f9f7', border:'1px solid #c0e8d8', borderRadius:10, padding:'16px', whiteSpace:'pre-wrap', fontSize:13, lineHeight:2, color:'#1a3a2a', fontFamily:'monospace', marginBottom:12 }}>
-                {karte}
-              </div>
-              <div style={{ display:'flex', gap:8 }}>
+              <textarea value={karte} onChange={e => setKarte(e.target.value)}
+                style={{ width:'100%', minHeight:320, background:'#f5f9f7', border:'1px solid #c0e8d8', borderRadius:10, padding:'16px', fontSize:13, lineHeight:2, color:'#1a3a2a', fontFamily:'monospace', marginBottom:12, resize:'vertical', boxSizing:'border-box' }} />
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
                 <button onClick={() => copyToClipboard(karte)}
-                  style={{ flex:1, padding:'12px', borderRadius:8, border:'none', background:'linear-gradient(135deg,#0f9668,#34d399)', color:'#fff', fontWeight:800, fontSize:14, cursor:'pointer' }}>
+                  style={{ flex:'1 1 140px', padding:'12px', borderRadius:8, border:'none', background:'linear-gradient(135deg,#0f9668,#34d399)', color:'#fff', fontWeight:800, fontSize:14, cursor:'pointer' }}>
                   📋 コピー
+                </button>
+                <button onClick={handleSaveKarte}
+                  style={{ flex:'1 1 140px', padding:'12px', borderRadius:8, border:'1.5px solid #0f9668', background:'#f0fff4', color:'#0f9668', fontWeight:800, fontSize:14, cursor:'pointer' }}>
+                  💾 編集を保存
                 </button>
                 <button onClick={handleGenerate} disabled={generating}
                   style={{ padding:'12px 16px', borderRadius:8, border:'1.5px solid #d0dff5', background:'#f7faff', color:'#5580a8', fontWeight:700, fontSize:13, cursor:generating?'not-allowed':'pointer' }}>
                   {generating ? '生成中...' : '🔄 再生成'}
                 </button>
+                {saveMsg && <span style={{ fontSize:13, fontWeight:700, color:saveMsg.startsWith('✓')?'#0f9668':'#c53030' }}>{saveMsg}</span>}
               </div>
             </>
           ) : (

@@ -1,4 +1,10 @@
 import { useState, useRef } from "react";
+import { useRouter } from "next/router";
+
+const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
+const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ"];
+const CHILD_LOCATIONS = ["近居（同一市区町村）", "近隣（同一都道府県）", "遠方（他都道府県）", "子供なし"];
+const CHILD_GENDERS = ["息子", "娘", "両方"];
 
 const STEPS = [
   { id: "alert",   title: "重要確認" },
@@ -44,11 +50,11 @@ const initialData = {
     eyeVisiting: "", eye: "",
     checkup: [],
     vaccine65Prevena: "", vaccine65Herpes: "",
-    livingSpouse: "", livingOther: "", livingCustom: "", childInfo: "",
-    work: "していない", job: "", activity: "",
+    livingSpouse: "", livingOther: "", livingCustom: "", childInfo: "", childLocation: "", childGender: [],
+    work: "していない", job: [], jobNote: "", activity: "",
     otherDiseases: [{name:"",hospital:"",hospitalOther:""}],
   },
-  body: { height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "" },
+  body: { height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
 };
 
 const inp = (x={}) => ({ padding:"9px 12px", border:"1.5px solid #d0dff5", borderRadius:8, fontSize:14, color:"#1a2a3a", background:"#f7faff", outline:"none", boxSizing:"border-box", fontFamily:"inherit", width:"100%", ...x });
@@ -94,14 +100,17 @@ function AlcoholRow({ item, index, onChange, onRemove, showRemove }) {
 }
 
 export default function T1DIntakeTool() {
+  const router = useRouter();
   const [step, setStep]         = useState(0);
   const [data, setData]         = useState(initialData);
   const [result, setResult]     = useState("");
   const [loading, setLoading]   = useState(false);
   const [done, setDone]         = useState(false);
   const [visitCode, setVisitCode] = useState("");
+  const [recordId, setRecordId] = useState("");
   const [showKarte, setShowKarte] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
   const topRef = useRef(null);
 
   const scrollTop = () => { if(topRef.current) topRef.current.scrollIntoView({behavior:"smooth"}); };
@@ -147,6 +156,30 @@ export default function T1DIntakeTool() {
     if(data.disease.dmOnsetUnknown||!data.disease.dmOnset) return "";
     return `（${data.disease.dmOnsetEra}${data.disease.dmOnset}年）`;
   };
+  const buildWeekday = () => {
+    const days = data.body.preferredDays || [];
+    if (!days.length) return "曜希望";
+    if (days.includes("指定なし")) return "曜希望：指定なし";
+    return `${days.join("・")}曜希望`;
+  };
+  const buildJob = () => {
+    const jobs = Array.isArray(data.history.job) ? data.history.job : (data.history.job ? [data.history.job] : []);
+    const note = data.history.jobNote || "";
+    return [jobs.join("、"), note].filter(Boolean).join("・");
+  };
+  const buildChildInfo = () => {
+    const { childInfo, childLocation, childGender } = data.history;
+    const parts = [];
+    if (childLocation) {
+      if (childLocation === "子供なし") parts.push("子供なし");
+      else {
+        const who = (childGender || []).includes("両方") ? "息子・娘" : (childGender || []).join("・");
+        parts.push(`${who || "子供"}は${childLocation}`);
+      }
+    }
+    if (childInfo) parts.push(childInfo);
+    return parts.join("、");
+  };
   const getCurrentMonth = () => {
     const now = new Date();
     return `R${now.getFullYear()-2018}.${now.getMonth()+1}`;
@@ -162,9 +195,18 @@ export default function T1DIntakeTool() {
     try {
       const saveRes = await fetch("/api/questionnaire",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({form_type:"1型糖尿病",form_data:data,age:data.history?.age||null,generated_karte:result})});
       const saveJson = await saveRes.json();
-      if(saveJson.visit_code) setVisitCode(saveJson.visit_code);
+      if(saveJson.visit_code) { setVisitCode(saveJson.visit_code); if (saveJson.id) setRecordId(saveJson.id); }
       else setSaveError(true);
     } catch(e) { setSaveError(true); }
+  };
+
+  const saveEditedKarte = async () => {
+    if (!recordId) { setSaveMsg("保存先IDが見つかりません"); setTimeout(() => setSaveMsg(""), 3000); return; }
+    try {
+      const res = await fetch("/api/questionnaire", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: recordId, generated_karte: result }) });
+      if (res.ok) { setSaveMsg("✓ 保存しました"); setTimeout(() => setSaveMsg(""), 2500); }
+      else { setSaveMsg("保存に失敗しました"); setTimeout(() => setSaveMsg(""), 3000); }
+    } catch (e) { setSaveMsg("保存に失敗しました"); setTimeout(() => setSaveMsg(""), 3000); }
   };
 
   const generateKarte = async () => {
@@ -187,7 +229,13 @@ export default function T1DIntakeTool() {
 飲酒歴：${buildAlcohol()}
 喫煙歴：${buildSmoking()}
 生活情報：${buildLiving()}
+子供の状況：${buildChildInfo()}
+職業：${buildJob()}
 発症時期：${dmOnsetText()}
+希望曜日：${buildWeekday()}
+医師性別希望：${data.body.doctorGender || "指定なし"}
+患者フラグ：${data.body.patientFlag || "通常"}
+新患2枠取得：${data.body.doubleSlot ? "取得済" : "なし"}
 
 【患者情報JSON】
 ${JSON.stringify(data,null,2)}
@@ -216,7 +264,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 【生活情報】（70歳以上は子供の状況も含む）
 【仕事】職業・活動量
 ---------------------------------------------
-頚部エコー：${data.history?.echoNeck||"未選択"}　腹部エコー：${data.history?.echoAbdomen||"未選択"}
+頚部エコー：当院で施行予定　腹部エコー：当院で施行予定（必ず1行に横配置）
 ---------------------------------------------
 身長:○cm　初診時:○kg　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
@@ -228,6 +276,10 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 （インスリン未使用の場合）□初回療養計画書を作成済
 （CGM希望がある場合）□CGM：${data.reason.cgmCurrent&&data.reason.cgmCurrent!=="使用していない"?data.reason.cgmCurrent+"使用中→":""} ${data.reason.cgmWish&&data.reason.cgmWish!=="希望なし"?data.reason.cgmWish:""}
 （ポンプ希望がある場合）□インスリンポンプ：${data.reason.pumpCurrent&&data.reason.pumpCurrent!=="使用していない"?data.reason.pumpCurrent+"使用中→":""} ${data.reason.pumpWish&&data.reason.pumpWish!=="希望なし"?data.reason.pumpWish:""}
+（新患2枠取得済の場合）□新患2枠取得済み
+（医師性別指定ありの場合）□${data.body.doctorGender}
+（患者フラグが「○患者疑い（話が長い方）」の場合）□○患者疑い（対応注意）
+（患者フラグが「●患者疑い（出禁対象）」の場合）□●患者疑い（出禁対象・要確認）
 【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
 ---------------------------------------------
 ${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲状腺項目追加してください　CPR0.5以下の方は今後半年ごとCPR測定を入れてください。
@@ -239,7 +291,7 @@ ${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲
 目標HbA1c　　　　%　目標体重　　　次回検討薬：
 DM基本セット
 1月follow
-曜希望
+${buildWeekday()}
 LINE登録ご案内→済　登録確認未・登録できない
 `;
     try {
@@ -251,7 +303,7 @@ LINE登録ご案内→済　登録確認未・登録できない
       try {
         const saveRes = await fetch("/api/questionnaire",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({form_type:"1型糖尿病",form_data:data,age:data.history?.age||null,generated_karte:generated})});
         const saveJson = await saveRes.json();
-        if(saveJson.visit_code) setVisitCode(saveJson.visit_code);
+        if(saveJson.visit_code) { setVisitCode(saveJson.visit_code); if (saveJson.id) setRecordId(saveJson.id); }
         else setSaveError(true);
       } catch(saveErr) { setSaveError(true); }
       } catch(e) { console.error('Save error:', e); }
@@ -496,7 +548,23 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{display:"flex",gap:8,marginBottom:8}}>
             {["なし","あり"].map(v=><button key={v} style={btn(d.history.allergy===v)} onClick={()=>up("history","allergy",v)}>{v}</button>)}
           </div>
-          {d.history.allergy==="あり"&&<input style={{...inp(),marginBottom:14}} placeholder="内容（例：ペニシリン系・造影剤）" value={d.history.allergyDetail} onChange={e=>up("history","allergyDetail",e.target.value)}/>}
+          {d.history.allergy==="あり"&&(
+            <div style={{marginBottom:14}}>
+              <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:6}}>
+                {ALLERGY_QUICK.map(v=>{
+                  const selected = (d.history.allergyDetail||"").includes(v);
+                  return (
+                    <button key={v} style={btn(selected,"#c53030")} onClick={()=>{
+                      const cur = d.history.allergyDetail||"";
+                      if(selected){ const next = cur.split(/[・、,]/).map(s=>s.trim()).filter(s=>s&&s!==v).join("・"); up("history","allergyDetail",next); }
+                      else { up("history","allergyDetail",cur?`${cur}・${v}`:v); }
+                    }}>{selected?"✓ ":""}{v}</button>
+                  );
+                })}
+              </div>
+              <input style={inp()} placeholder="内容（例：ペニシリン系・造影剤）" value={d.history.allergyDetail} onChange={e=>up("history","allergyDetail",e.target.value)}/>
+            </div>
+          )}
           <label style={lbl({marginTop:10})}>家族歴（FH）</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:16}}>
             {[["dm","糖尿病(DM)"],["ht","高血圧(HT)"],["apo","脳卒中(APO)"],["ihd","虚血性心疾患(IHD)"]].map(([k,l])=>(
@@ -599,7 +667,28 @@ LINE登録ご案内→済　登録確認未・登録できない
           <input style={{...inp(),marginBottom:8}} placeholder="その他の場合や補足があれば（例：兄弟と同居・夫は要介護）" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>
           {isOver70&&(<div style={sBox({border:"1.5px solid #fbd38d",background:"#fffaf0"})}>
             <div style={{fontSize:13,fontWeight:800,color:"#c05621",marginBottom:8}}>👨‍👩‍👧 お子さんの状況（70歳以上）</div>
-            <input style={inp()} placeholder="例：子供は近居（さいたま市）　例：子供なし" value={d.history.childInfo} onChange={e=>up("history","childInfo",e.target.value)}/>
+            {d.history.livingOther==="子供と同居なし"&&(
+              <div style={{marginBottom:10}}>
+                <label style={lbl({color:"#c05621",fontSize:11})}>お子さんの居住地</label>
+                <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
+                  {CHILD_LOCATIONS.map(v=>(
+                    <button key={v} style={btn(d.history.childLocation===v,"#c05621")} onClick={()=>up("history","childLocation",v)}>{v}</button>
+                  ))}
+                </div>
+                {d.history.childLocation&&d.history.childLocation!=="子供なし"&&(
+                  <>
+                    <label style={lbl({color:"#c05621",fontSize:11})}>息子・娘（複数選択可）</label>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                      {CHILD_GENDERS.map(v=>(
+                        <button key={v} style={btn((d.history.childGender||[]).includes(v),"#c05621")} onClick={()=>toggleArr("history","childGender",v)}>{v}</button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            <label style={lbl({color:"#c05621",fontSize:11})}>補足（任意）</label>
+            <input style={inp()} placeholder="例：子供は近居（さいたま市）" value={d.history.childInfo} onChange={e=>up("history","childInfo",e.target.value)}/>
           </div>)}
           <label style={lbl({marginTop:8})}>仕事</label>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
@@ -607,12 +696,13 @@ LINE登録ご案内→済　登録確認未・登録できない
           </div>
           {d.history.work==="している"&&(
             <div>
+              <div style={{fontSize:11,color:"#888",marginBottom:4}}>複数選択可</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
                 {["会社員（デスクワーク）","会社員（現場・営業）","自営業","パート・アルバイト","医療・福祉職","教育職（教師・保育士）","飲食・サービス業","農業・林業・漁業","専業主婦・主夫","学生"].map(v=>(
-                  <button key={v} style={{...btn(d.history.job===v,"#1a5fa8"),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","job",v)}>{v}</button>
+                  <button key={v} style={{...btn((d.history.job||[]).includes(v),"#1a5fa8"),padding:"6px 10px",fontSize:12}} onClick={()=>toggleArr("history","job",v)}>{v}</button>
                 ))}
               </div>
-              <input style={{...inp(),marginBottom:14}} placeholder="職業（例：会社員・自営業・パート）" value={d.history.job} onChange={e=>up("history","job",e.target.value)}/>
+              <input style={{...inp(),marginBottom:14}} placeholder="補足・その他（例：週3日リモート）" value={d.history.jobNote} onChange={e=>up("history","jobNote",e.target.value)}/>
             </div>
           )}
           <label style={lbl()}>活動量</label>
@@ -634,8 +724,32 @@ LINE登録ご案内→済　登録確認未・登録できない
             ))}
           </div>
           {bmi&&(<div style={{marginBottom:16,padding:"10px 16px",background:"#fff5f5",borderRadius:8,fontSize:14,fontWeight:700,color:"#c53030"}}>BMI：{bmi}　{parseFloat(bmi)<18.5?"（低体重）":parseFloat(bmi)<25?"（普通体重）":parseFloat(bmi)<30?"（肥満1度）":"（肥満2度以上）"}</div>)}
+          <label style={lbl()}>希望曜日（複数選択可）</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:14}}>
+            {WEEKDAYS.map(v=>(
+              <button key={v} style={btn((d.body.preferredDays||[]).includes(v),"#c53030")} onClick={()=>toggleArr("body","preferredDays",v)}>{v}</button>
+            ))}
+          </div>
+          <label style={lbl()}>医師の性別希望</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:14}}>
+            {["指定なし","女性医師希望","男性医師希望"].map(v=>(
+              <button key={v} style={btn(d.body.doctorGender===v,"#c53030")} onClick={()=>up("body","doctorGender",v)}>{v}</button>
+            ))}
+          </div>
           <label style={lbl()}>診察への要望・聞きたいこと</label>
           <textarea style={{...inp(),minHeight:80,resize:"vertical"}} placeholder="自由にご記入ください（なければ空欄）" value={d.body.concern} onChange={e=>up("body","concern",e.target.value)}/>
+          <div style={sBox({background:"#fff8f0",border:"1.5px dashed #fbd38d",marginTop:14})}>
+            <div style={{fontSize:12,fontWeight:800,color:"#c05621",marginBottom:8}}>🔒 スタッフ入力欄（患者は操作不要）</div>
+            <label style={lbl({color:"#c05621",fontSize:11})}>患者フラグ</label>
+            <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:10}}>
+              {["通常","○患者疑い（話が長い方）","●患者疑い（出禁対象）"].map(v=>(
+                <button key={v} style={btn(d.body.patientFlag===v,"#c05621",{fontSize:12})} onClick={()=>up("body","patientFlag",v)}>{v}</button>
+              ))}
+            </div>
+            <label style={{fontSize:13,color:"#c05621",display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}>
+              <input type="checkbox" checked={!!d.body.doubleSlot} onChange={e=>up("body","doubleSlot",e.target.checked)}/> 新患2枠取得済み
+            </label>
+          </div>
         </div>
       );
 
@@ -660,6 +774,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           </div>
         )}
         <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={()=>router.push("/")} style={{padding:"6px 10px",borderRadius:8,border:"1.5px solid #fed7d7",background:"#fff",color:"#c53030",fontWeight:700,fontSize:12,cursor:"pointer"}}>← トップ</button>
           <div style={{width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#c53030,#fc8181)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>🏥</div>
           <div>
             <div style={{fontSize:11,color:"#c53030",fontWeight:700,letterSpacing:"0.08em"}}>まつもと糖尿病クリニック</div>
@@ -673,9 +788,9 @@ LINE登録ご案内→済　登録確認未・登録できない
 
       <div style={{maxWidth:700,margin:"0 auto"}}>
         {!done&&(<div style={{display:"flex",gap:4,marginBottom:18}}>
-          {STEPS.map((s,i)=>(<div key={s.id} style={{flex:1,textAlign:"center"}}>
-            <div style={{height:4,borderRadius:2,background:i<=step?"#c53030":"#d0dff5",marginBottom:4,transition:"background 0.3s"}}/>
-            <div style={{fontSize:10,color:i<=step?"#c53030":"#b0c8e0",fontWeight:i===step?700:400}}>{s.title}</div>
+          {STEPS.map((s,i)=>(<div key={s.id} onClick={()=>goStep(i)} style={{flex:1,textAlign:"center",cursor:"pointer",userSelect:"none"}}>
+            <div style={{height:4,borderRadius:2,background:i===step?"#c53030":i<step?"#fc8181":"#d0dff5",marginBottom:4,transition:"background 0.3s"}}/>
+            <div style={{fontSize:10,color:i===step?"#c53030":i<step?"#fc8181":"#b0c8e0",fontWeight:i===step?800:i<step?600:400}}>{i<step?"✓ ":""}{s.title}</div>
           </div>))}
         </div>)}
 
@@ -729,15 +844,19 @@ LINE登録ご案内→済　登録確認未・登録できない
               </button>
             </div>
             {showKarte && (
-              <div style={{background:"#f5f9f7",border:"1px solid #c0e8d8",borderRadius:10,padding:"16px 18px",whiteSpace:"pre-wrap",fontSize:13,lineHeight:2,color:"#1a3a2a",fontFamily:"monospace",marginBottom:8}}>
-                {result}
+              <div style={{marginBottom:8}}>
+                <textarea value={result} onChange={e=>setResult(e.target.value)} style={{width:"100%",minHeight:320,background:"#f5f9f7",border:"1px solid #c0e8d8",borderRadius:10,padding:"16px 18px",fontSize:13,lineHeight:2,color:"#1a3a2a",fontFamily:"monospace",resize:"vertical",boxSizing:"border-box"}}/>
+                <div style={{display:"flex",gap:8,marginTop:8,alignItems:"center"}}>
+                  <button onClick={saveEditedKarte} style={{padding:"10px 18px",borderRadius:8,border:"none",background:"#0f9668",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer"}}>💾 編集内容を保存</button>
+                  {saveMsg && <span style={{fontSize:13,fontWeight:700,color:saveMsg.startsWith("✓")?"#0f9668":"#c53030"}}>{saveMsg}</span>}
+                </div>
               </div>
             )}
 
             <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#c53030,#fc8181)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer"}} onClick={()=>copyToClipboard(result)}>📋 コピー</button>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #c53030",background:"#fff5f5",color:"#c53030",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setTimeout(scrollTop,50);}}>✏️ 修正する</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #d0dff5",background:"#f7faff",color:"#5580a8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setVisitCode("");setShowKarte(false);setSaveError(false);setTimeout(scrollTop,50);}}>🔄 最初から</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #d0dff5",background:"#f7faff",color:"#5580a8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setVisitCode("");setRecordId("");setSaveMsg("");setShowKarte(false);setSaveError(false);setTimeout(scrollTop,50);}}>🔄 最初から</button>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #9ae6b4",background:"#f0fff4",color:"#276749",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{window.location.href="/";}}>🏠 TOPへ</button>
             </div>
           </div>
