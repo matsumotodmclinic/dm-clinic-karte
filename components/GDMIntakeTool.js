@@ -120,6 +120,8 @@ export default function GDMIntakeTool() {
 
   const generateKarte = async () => {
     setLoading(true);
+    const bmiNow = data.body.height && data.body.weightNow
+      ? (parseFloat(data.body.weightNow)/Math.pow(parseFloat(data.body.height)/100,2)).toFixed(1) : null;
     const prompt = `あなたは糖尿病専門クリニックの電子カルテ記載AIです。以下の患者情報をもとに、妊娠糖尿病のカルテ記載文を生成してください。
 
 【ルール】
@@ -163,7 +165,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 ---------------------------------------------
 頚部エコー：${data.disease.echoNeck==="行っていない"?"当院で施行予定":data.disease.echoNeck||"当院で施行予定"}　腹部エコー：${data.disease.echoAbdomen==="行っていない"?"当院で施行予定":data.disease.echoAbdomen||"当院で施行予定"}（必ず1行に横配置）
 ---------------------------------------------
-身長:○cm　初診時:○kg　20歳時:○kg　max体重○kg(○歳)
+身長:○cm　初診時:○kg${bmiNow ? `（BMI ${bmiNow}）` : ""}　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 □リブレ（自費CGM）取り付けに同意済
@@ -305,29 +307,33 @@ LINE登録ご案内→済　登録確認未・登録できない
           </div>
           {d.disease.pastGDM==="あり"&&(
             <div style={sBox({background:"#fff0f7",border:"1.5px solid #f0b8d4",marginBottom:14})}>
-              {["第1子","第2子","第3子"].map((child,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:i<2?10:0,flexWrap:"wrap"}}>
-                  <span style={{fontSize:13,fontWeight:700,color:"#c05c8a",minWidth:40}}>{child}</span>
+              {d.disease.pastGDMChild.map((row,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:i<d.disease.pastGDMChild.length-1?10:8,flexWrap:"wrap"}}>
+                  <span style={{fontSize:13,fontWeight:700,color:"#c05c8a",minWidth:40}}>第{i+1}子</span>
                   <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>
                     {["あり","なし"].map(v=>(
-                      <button key={v} style={{...btn(d.disease.pastGDMChild[i].had===v),padding:"6px 12px",fontSize:12}}
+                      <button key={v} style={{...btn(row.had===v),padding:"6px 12px",fontSize:12}}
                         onClick={()=>setData(p=>{const arr=[...p.disease.pastGDMChild];arr[i]={...arr[i],had:v};return{...p,disease:{...p.disease,pastGDMChild:arr}};})}>
                         {v}
                       </button>
                     ))}
-                    {d.disease.pastGDMChild[i].had==="あり"&&(<>
-                      <select style={{...inp(),width:90,fontSize:12}} value={d.disease.pastGDMChild[i].era}
+                    {row.had==="あり"&&(<>
+                      <select style={{...inp(),width:90,fontSize:12}} value={row.era}
                         onChange={e=>setData(p=>{const arr=[...p.disease.pastGDMChild];arr[i]={...arr[i],era:e.target.value};return{...p,disease:{...p.disease,pastGDMChild:arr}};})}>
                         <option>昭和</option><option>平成</option><option>令和</option>
                       </select>
                       <input style={{...inp(),width:60,fontSize:12}} type="number" placeholder="年"
-                        value={d.disease.pastGDMChild[i].year}
+                        value={row.year}
                         onChange={e=>setData(p=>{const arr=[...p.disease.pastGDMChild];arr[i]={...arr[i],year:e.target.value};return{...p,disease:{...p.disease,pastGDMChild:arr}};})}/>
                       <span style={{fontSize:12,color:"#666"}}>年</span>
                     </>)}
+                    {i>=3&&(
+                      <button onClick={()=>setData(p=>{const arr=p.disease.pastGDMChild.filter((_,j)=>j!==i);return{...p,disease:{...p.disease,pastGDMChild:arr}};})} style={{fontSize:12,color:"#e53e3e",background:"none",border:"none",cursor:"pointer",fontWeight:700}}>✕ 削除</button>
+                    )}
                   </div>
                 </div>
               ))}
+              <button style={{...btn(false,"#c05c8a"),fontSize:13,marginTop:4}} onClick={()=>setData(p=>({...p,disease:{...p.disease,pastGDMChild:[...p.disease.pastGDMChild,{era:'令和',year:'',had:''}]}}))}>＋ 追加</button>
             </div>
           )}
           <label style={lbl({marginTop:8})}>合併する疾患</label>

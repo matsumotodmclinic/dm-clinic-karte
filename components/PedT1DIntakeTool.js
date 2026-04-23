@@ -22,7 +22,7 @@ const initialData = {
   reason: { type: "", referralFrom: "", referralDept: "", referralQuickSelect: false, referralDetail: "", transferFrom: "", transferDetail: "", summary: "" },
   disease: { dm1type: "", dmOnsetEra: "令和", dmOnset: "", dmOnsetUnknown: false, ht: false, hl: false, thyroidChecked: false, bakusmi: "" },
   support: { familyMain: "", familySubList: [], familyNote: "", schoolStaff: [], schoolSupportPerson: [], schoolSupportNote: "", disclosedChild: "", disclosedTeacher: "", childGrade: "", childActivities: [], childActivityNote: "", parentWorkMain: [], parentWorkMainNote: "", parentWorkSub: [], parentWorkSubNote: "", independenceLevel: "", independenceNote: "" },
-  chronic: { status: "", birthWeight: "", birthWeek: "", birthWeekDay: "", birthCity: "", booklets: [], documents: [], residenceCity: "", paymentConfirmed: "" },
+  chronic: { status: "", birthWeight: "", birthWeek: "", birthWeekDay: "", birthCity: "", booklets: [], documents: [], residenceCity: "", paymentConfirmed: "", maternalHandbook: "" },
   history: { allergy: "なし", allergyDetail: "", fh: { dm: false, dmWho: [], dm1: false, dm1Who: [], collagen: false, collagenItems: [{who:"",disease:""}], ht: false, apo: false, ihd: false }, eyeVisiting: "", eye: "", livingSpouse: "", livingOther: "", livingCustom: "", keyPerson: "" },
   body: { height: "", weightNow: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
 };
@@ -153,7 +153,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 【注射・血糖測定の自立度】（内容）
 【生活情報】家族構成・キーパーソン：（内容）
 ---------------------------------------------
-身長:○cm　初診時:○kg
+身長:○cm　初診時:○kg${bmi ? `（BMI ${bmi}）` : ""}
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 □甲状腺3項目・GAD抗体・CPRを初診時採血
@@ -162,6 +162,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 （書類関係で「学校生活管理指導表」を選択した場合）□4月頃に処方
 （CGM希望がある場合）□デバイス希望：（現在→希望の形式で記載）
 （小児慢性申請済の場合）□小児慢性申請済・窓口負担を確認し算定へ連絡
+（母子手帳「忘れた」の場合）□次回以降、母子手帳を確認してください
 （新患2枠取得済の場合）□新患2枠取得済み
 （医師性別指定ありの場合）□${data.body.doctorGender}
 （患者フラグが「○患者疑い（話が長い方）」の場合）□○患者疑い（対応注意）
@@ -406,9 +407,15 @@ LINE登録ご案内→済　登録確認未・登録できない
             ))}
           </div>
           <label style={lbl()}>居住地（市町村）</label>
-          <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
+          <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:12}}>
             {["さいたま市","上尾市","桶川市","伊奈町","川越市","北本市","その他"].map(v=>(
               <button key={v} style={btn(d.chronic.residenceCity===v)} onClick={()=>up("chronic","residenceCity",v)}>{v}</button>
+            ))}
+          </div>
+          <label style={lbl()}>母子手帳の持参</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:12}}>
+            {["持ってきた","忘れた"].map(v=>(
+              <button key={v} style={btn(d.chronic.maternalHandbook===v, v==="忘れた"?"#c05621":"#0f9668")} onClick={()=>up("chronic","maternalHandbook",v)}>{v}</button>
             ))}
           </div>
           {d.chronic.status==="申請済"&&(

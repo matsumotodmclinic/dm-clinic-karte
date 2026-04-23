@@ -266,7 +266,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 ---------------------------------------------
 頚部エコー：当院で施行予定　腹部エコー：当院で施行予定（必ず1行に横配置）
 ---------------------------------------------
-身長:○cm　初診時:○kg　20歳時:○kg　max体重○kg(○歳)
+身長:○cm　初診時:○kg${bmi ? `（BMI ${bmi}）` : ""}　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 （体重減少ありの場合）□体重減少あり（3ヶ月以内に3kg以上）インスリン導入要検討
@@ -404,25 +404,25 @@ LINE登録ご案内→済　登録確認未・登録できない
             <div style={{marginBottom:10}}>
               <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>CGM（現在使用中）</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
-                {["フリースタイルリブレ","Dexcom G7","使用していない"].map(v=>(
+                {["フリースタイルリブレ","Dexcom G7","ガーディアンセンサー","使用していない"].map(v=>(
                   <button key={v} style={btn(d.reason.cgmCurrent===v,"#0f9668")} onClick={()=>up("reason","cgmCurrent",v)}>{v}</button>
                 ))}
               </div>
               <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>CGM（希望）</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
-                {["フリースタイルリブレ","Dexcom G7","希望なし","先生と相談したい"].map(v=>(
+                {["フリースタイルリブレ","Dexcom G7","ガーディアンセンサー","希望なし","先生と相談したい"].map(v=>(
                   <button key={v} style={btn(d.reason.cgmWish===v,"#0f9668")} onClick={()=>up("reason","cgmWish",v)}>{v}</button>
                 ))}
               </div>
               <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>インスリンポンプ（現在使用中）</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
-                {["ミニメド","メディセーフウィズ","使用していない"].map(v=>(
+                {["ミニメド","メディセーフウィズ","SAP","使用していない"].map(v=>(
                   <button key={v} style={btn(d.reason.pumpCurrent===v,"#553c9a")} onClick={()=>up("reason","pumpCurrent",v)}>{v}</button>
                 ))}
               </div>
               <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>インスリンポンプ（希望）</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
-                {["ミニメド","メディセーフウィズ","希望なし","先生と相談したい"].map(v=>(
+                {["ミニメド","メディセーフウィズ","SAP","希望なし","先生と相談したい"].map(v=>(
                   <button key={v} style={btn(d.reason.pumpWish===v,"#553c9a")} onClick={()=>up("reason","pumpWish",v)}>{v}</button>
                 ))}
               </div>
