@@ -698,6 +698,22 @@ LINE登録ご案内→済　登録確認未・登録できない
               )}
               <div>
                 <label style={lbl({ color: "#8e44ad" })}>内服薬（分かる範囲で）</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 6 }}>
+                  {["アスピリン", "クロピドグレル"].map(v => {
+                    const selected = (d.disease.stroke.meds || "").includes(v);
+                    return (
+                      <button key={v} style={btn(selected, "#8e44ad")} onClick={() => {
+                        const cur = d.disease.stroke.meds || "";
+                        if (selected) {
+                          const next = cur.split(/[・、,]/).map(s => s.trim()).filter(s => s && s !== v).join("・");
+                          upN("disease", "stroke", "meds", next);
+                        } else {
+                          upN("disease", "stroke", "meds", cur ? `${cur}・${v}` : v);
+                        }
+                      }}>{selected ? "✓ " : ""}{v}</button>
+                    );
+                  })}
+                </div>
                 <input style={inp()} placeholder="例：アスピリン・クロピドグレル・不明" value={d.disease.stroke.meds} onChange={e => upN("disease","stroke","meds",e.target.value)} />
               </div>
             </div>
