@@ -12,7 +12,7 @@ const STEPS = [
 ];
 
 const LIVING_WITH_SPOUSE = ["配偶者あり", "配偶者なし（独居・死別・離別等）"];
-const LIVING_OTHERS = ["子供と同居なし", "息子と同居", "娘と同居", "息子夫婦と同居", "娘夫婦と同居", "親と同居", "その他"];
+const LIVING_OTHERS = ["子供と同居なし", "息子と同居", "娘と同居", "息子夫婦と同居", "娘夫婦と同居", "親と同居", "祖父母と同居", "兄弟姉妹と同居", "その他"];
 const NEARBY_HOSPITALS = ["ナラヤマレディースクリニック", "葵ウィメンズクリニック", "自治医大さいたま医療センター", "上尾中央総合病院", "その他", "不明"];
 const EYE_CLINICS = ["上尾こいけ眼科", "おが・おおぐし眼科", "上尾中央総合病院眼科", "おおたけ眼科", "こしの眼科"];
 
@@ -31,7 +31,7 @@ const initialData = {
     fh: { dm: false, dmWho: [], ht: false, apo: false, ihd: false },
     smoking: "なし",
     eyeVisiting: "", eye: "",
-    livingSpouse: "", livingOther: "", livingCustom: "",
+    livingSpouse: "", livingOther: [], livingCustom: "",
     work: "していない", job: [], jobNote: "", activity: "",
     otherDiseases: [{name:"",hospital:"",hospitalOther:""}],
   },
@@ -79,7 +79,9 @@ export default function GDMIntakeTool() {
   const buildLiving = () => {
     const{livingSpouse,livingOther,livingCustom}=data.history;
     const hasSpouse=livingSpouse==="配偶者あり";
-    const other=(livingOther==="子供と同居なし"||!livingOther)?"":livingOther;
+    const arr = Array.isArray(livingOther) ? livingOther : (livingOther ? [livingOther] : []);
+    const others = arr.filter(x=>x&&x!=="子供と同居なし");
+    const other = others.join("・");
     const custom=livingCustom||"";
     let base="";
     if(hasSpouse&&!other) base="夫婦2人暮らし";
@@ -138,7 +140,7 @@ export default function GDMIntakeTool() {
 生活情報：${buildLiving()}
 職業：${buildJob()}
 希望曜日：${buildWeekday()}
-医師性別希望：${data.body.doctorGender || "指定なし"}
+医師希望：${data.body.doctorGender || "指定なし"}
 患者フラグ：${data.body.patientFlag || "通常"}
 新患2枠取得：${data.body.doubleSlot ? "取得済" : "なし"}
 
@@ -171,7 +173,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 □リブレ（自費CGM）取り付けに同意済
 （喫煙「あり」の場合）□喫煙確認あり・指導必要
 （新患2枠取得済の場合）□新患2枠取得済み
-（医師性別指定ありの場合）□${data.body.doctorGender}
+（医師希望指定ありの場合）□${data.body.doctorGender === "院長（初回のみ）" ? "院長希望（初回のみ）" : data.body.doctorGender}
 （患者フラグが「○患者疑い（話が長い方）」の場合）□○患者疑い（対応注意）
 （患者フラグが「●患者疑い（出禁対象）」の場合）□●患者疑い（出禁対象・要確認）
 （その他申し送りがあれば記載）
@@ -182,7 +184,7 @@ ${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲
 
 
 
-アレルギー薬あれば赤字14フォント太字
+（アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
 目標HbA1c　　　　%　目標体重　　　次回検討薬：
 DM基本セット
 1月follow
@@ -502,12 +504,11 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:12}}>
             {LIVING_WITH_SPOUSE.map(v=><button key={v} style={btn(d.history.livingSpouse===v)} onClick={()=>up("history","livingSpouse",v)}>{v}</button>)}
           </div>
-          <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>子供・その他との同居</label>
+          <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>子供・その他との同居（複数選択可）</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:8}}>
-            {LIVING_OTHERS.map(v=><button key={v} style={btn(d.history.livingOther===v)} onClick={()=>up("history","livingOther",v)}>{v}</button>)}
+            {LIVING_OTHERS.map(v=><button key={v} style={btn((d.history.livingOther||[]).includes(v))} onClick={()=>toggleArr("history","livingOther",v)}>{v}</button>)}
           </div>
-          {d.history.livingOther==="その他"&&<input style={{...inp(),marginBottom:8}} placeholder="例：兄弟と同居" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>}
-          <input style={{...inp(),marginBottom:14}} placeholder="補足があれば（例：夫は単身赴任中）" value={d.history.livingOther!=="その他"?d.history.livingCustom:""} onChange={e=>up("history","livingCustom",e.target.value)}/>
+          <input style={{...inp(),marginBottom:14}} placeholder="補足があれば（例：夫は単身赴任中・兄弟と同居）" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>
 
           <label style={lbl()}>仕事</label>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
@@ -550,9 +551,9 @@ LINE登録ご案内→済　登録確認未・登録できない
               <button key={v} style={btn((d.body.preferredDays||[]).includes(v),"#c05c8a")} onClick={()=>toggleArr("body","preferredDays",v)}>{v}</button>
             ))}
           </div>
-          <label style={lbl()}>医師の性別希望</label>
+          <label style={lbl()}>医師の希望</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:14}}>
-            {["指定なし","女性医師希望","男性医師希望"].map(v=>(
+            {["指定なし","女性医師希望","男性医師希望","院長（初回のみ）"].map(v=>(
               <button key={v} style={btn(d.body.doctorGender===v,"#c05c8a")} onClick={()=>up("body","doctorGender",v)}>{v}</button>
             ))}
           </div>

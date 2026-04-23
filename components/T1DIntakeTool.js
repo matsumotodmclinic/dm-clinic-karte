@@ -16,7 +16,7 @@ const STEPS = [
 
 const NEARBY_HOSPITALS = ["自治医大さいたま医療センター", "上尾中央総合病院", "埼玉県立がんセンター", "その他", "不明"];
 const LIVING_WITH_SPOUSE = ["配偶者あり", "配偶者なし（独居・死別・離別等）"];
-const LIVING_OTHERS = ["子供と同居なし", "息子と同居", "娘と同居", "息子夫婦と同居", "娘夫婦と同居", "親と同居", "その他"];
+const LIVING_OTHERS = ["子供と同居なし", "息子と同居", "娘と同居", "息子夫婦と同居", "娘夫婦と同居", "親と同居", "祖父母と同居", "兄弟姉妹と同居", "その他"];
 const ALCOHOL_TYPES = [
   { key: "beer",   label: "ビール",     unit: "缶(350ml)", amounts: ["1缶","2缶","3缶以上"] },
   { key: "happo",  label: "発泡酒",     unit: "缶(350ml)", amounts: ["1缶","2缶","3缶以上"] },
@@ -50,7 +50,7 @@ const initialData = {
     eyeVisiting: "", eye: "",
     checkup: [],
     vaccine65Prevena: "", vaccine65Herpes: "",
-    livingSpouse: "", livingOther: "", livingCustom: "", childInfo: "", childLocation: "", childGender: [],
+    livingSpouse: "", livingOther: [], livingCustom: "", childInfo: "", childLocation: "", childGender: [],
     work: "していない", job: [], jobNote: "", activity: "",
     otherDiseases: [{name:"",hospital:"",hospitalOther:""}],
   },
@@ -143,7 +143,9 @@ export default function T1DIntakeTool() {
   const buildLiving = () => {
     const{livingSpouse,livingOther,livingCustom}=data.history;
     const hasSpouse=livingSpouse==="配偶者あり";
-    const other=(livingOther==="子供と同居なし"||!livingOther)?"":livingOther;
+    const arr = Array.isArray(livingOther) ? livingOther : (livingOther ? [livingOther] : []);
+    const others = arr.filter(x=>x&&x!=="子供と同居なし");
+    const other = others.join("・");
     const custom=livingCustom||"";
     let base="";
     if(hasSpouse&&!other) base="夫婦2人暮らし";
@@ -233,7 +235,7 @@ export default function T1DIntakeTool() {
 職業：${buildJob()}
 発症時期：${dmOnsetText()}
 希望曜日：${buildWeekday()}
-医師性別希望：${data.body.doctorGender || "指定なし"}
+医師希望：${data.body.doctorGender || "指定なし"}
 患者フラグ：${data.body.patientFlag || "通常"}
 新患2枠取得：${data.body.doubleSlot ? "取得済" : "なし"}
 
@@ -270,14 +272,14 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 （体重減少ありの場合）□体重減少あり（3ヶ月以内に3kg以上）インスリン導入要検討
-（障害年金：厚生年金加入ありの場合）□障害年金の可能性あり→CPR結果を確認してください
+（障害年金：厚生年金加入あり かつ 受給中ではない場合のみ）□障害年金の可能性あり→CPR結果を確認してください
 （デバイス希望がある場合）□使用希望デバイス：CGM=${data.reason.cgmWish||"なし"}　ポンプ=${data.reason.pumpWish||"なし"}
 □甲状腺3項目・GAD抗体・CPRを初診時採血
 （インスリン未使用の場合）□初回療養計画書を作成済
 （CGM希望がある場合）□CGM：${data.reason.cgmCurrent&&data.reason.cgmCurrent!=="使用していない"?data.reason.cgmCurrent+"使用中→":""} ${data.reason.cgmWish&&data.reason.cgmWish!=="希望なし"?data.reason.cgmWish:""}
 （ポンプ希望がある場合）□インスリンポンプ：${data.reason.pumpCurrent&&data.reason.pumpCurrent!=="使用していない"?data.reason.pumpCurrent+"使用中→":""} ${data.reason.pumpWish&&data.reason.pumpWish!=="希望なし"?data.reason.pumpWish:""}
 （新患2枠取得済の場合）□新患2枠取得済み
-（医師性別指定ありの場合）□${data.body.doctorGender}
+（医師希望指定ありの場合）□${data.body.doctorGender === "院長（初回のみ）" ? "院長希望（初回のみ）" : data.body.doctorGender}
 （患者フラグが「○患者疑い（話が長い方）」の場合）□○患者疑い（対応注意）
 （患者フラグが「●患者疑い（出禁対象）」の場合）□●患者疑い（出禁対象・要確認）
 【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
@@ -287,7 +289,7 @@ ${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲
 
 
 
-アレルギー薬あれば赤字14フォント太字
+（アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
 目標HbA1c　　　　%　目標体重　　　次回検討薬：
 DM基本セット
 1月follow
@@ -660,14 +662,14 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:8}}>
             {LIVING_WITH_SPOUSE.map(v=><button key={v} style={btn(d.history.livingSpouse===v)} onClick={()=>up("history","livingSpouse",v)}>{v}</button>)}
           </div>
-          <label style={lbl({marginTop:8})}>子供・その他との同居</label>
+          <label style={lbl({marginTop:8})}>子供・その他との同居（複数選択可）</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
-            {LIVING_OTHERS.map(v=><button key={v} style={btn(d.history.livingOther===v)} onClick={()=>up("history","livingOther",v)}>{v}</button>)}
+            {LIVING_OTHERS.map(v=><button key={v} style={btn((d.history.livingOther||[]).includes(v))} onClick={()=>toggleArr("history","livingOther",v)}>{v}</button>)}
           </div>
           <input style={{...inp(),marginBottom:8}} placeholder="その他の場合や補足があれば（例：兄弟と同居・夫は要介護）" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>
           {isOver70&&(<div style={sBox({border:"1.5px solid #fbd38d",background:"#fffaf0"})}>
             <div style={{fontSize:13,fontWeight:800,color:"#c05621",marginBottom:8}}>👨‍👩‍👧 お子さんの状況（70歳以上）</div>
-            {d.history.livingOther==="子供と同居なし"&&(
+            {(Array.isArray(d.history.livingOther)?d.history.livingOther:[]).includes("子供と同居なし")&&(
               <div style={{marginBottom:10}}>
                 <label style={lbl({color:"#c05621",fontSize:11})}>お子さんの居住地</label>
                 <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
@@ -730,9 +732,9 @@ LINE登録ご案内→済　登録確認未・登録できない
               <button key={v} style={btn((d.body.preferredDays||[]).includes(v),"#c53030")} onClick={()=>toggleArr("body","preferredDays",v)}>{v}</button>
             ))}
           </div>
-          <label style={lbl()}>医師の性別希望</label>
+          <label style={lbl()}>医師の希望</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:14}}>
-            {["指定なし","女性医師希望","男性医師希望"].map(v=>(
+            {["指定なし","女性医師希望","男性医師希望","院長（初回のみ）"].map(v=>(
               <button key={v} style={btn(d.body.doctorGender===v,"#c53030")} onClick={()=>up("body","doctorGender",v)}>{v}</button>
             ))}
           </div>

@@ -44,10 +44,12 @@ export default async function handler(req, res) {
   const buildLiving = () => {
     // DM基本は d.lifestyle、T1D/HTHL/RH/GDM は d.history に格納
     const src = d.lifestyle || d.history || {}
-    if (!src.livingSpouse && !src.livingOther) return ''
+    if (!src.livingSpouse && !(src.livingOther && ((Array.isArray(src.livingOther) && src.livingOther.length) || (!Array.isArray(src.livingOther) && src.livingOther)))) return ''
     const { livingSpouse, livingOther, livingCustom } = src
     const hasSpouse = livingSpouse === '配偶者あり'
-    const other = (livingOther === '子供と同居なし' || !livingOther) ? '' : livingOther
+    const arr = Array.isArray(livingOther) ? livingOther : (livingOther ? [livingOther] : [])
+    const others = arr.filter(x => x && x !== '子供と同居なし')
+    const other = others.join('・')
     const custom = livingCustom || ''
     let base = ''
     if (hasSpouse && !other) base = '夫婦2人暮らし'
@@ -103,6 +105,7 @@ export default async function handler(req, res) {
   }
 
   const doctorGender = d.body?.doctorGender || '指定なし'
+  const doctorFlagLabel = doctorGender === '院長（初回のみ）' ? '院長希望（初回のみ）' : doctorGender
   const patientFlag  = d.body?.patientFlag || '通常'
   const doubleSlot   = d.body?.doubleSlot ? '取得済' : 'なし'
 
@@ -112,7 +115,7 @@ export default async function handler(req, res) {
   const bmiSuffix = bmiNow ? `（BMI ${bmiNow}）` : ''
 
   const STAFF_FLAGS = `（新患2枠取得済の場合）□新患2枠取得済み
-（医師性別指定ありの場合）□${doctorGender}
+（医師希望指定ありの場合）□${doctorFlagLabel}
 （患者フラグが「○患者疑い（話が長い方）」の場合）□○患者疑い（対応注意）
 （患者フラグが「●患者疑い（出禁対象）」の場合）□●患者疑い（出禁対象・要確認）`
 
@@ -121,7 +124,7 @@ export default async function handler(req, res) {
 
 
 
-アレルギー薬あれば赤字14フォント太字
+（アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
 目標HbA1c　　　　%　目標体重　　　次回検討薬：`
 
   // ── フォームタイプ別プロンプト生成 ──────────────────────
@@ -159,7 +162,7 @@ export default async function handler(req, res) {
 頚部エコー：${echoNeck}
 腹部エコー：${echoAbdomen}
 希望曜日：${buildWeekday()}
-医師性別希望：${doctorGender}
+医師希望：${doctorGender}
 患者フラグ：${patientFlag}
 新患2枠取得：${doubleSlot}
 
@@ -239,7 +242,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 職業：${buildJobStr()}
 発症時期：${dmOnsetText()}
 希望曜日：${buildWeekday()}
-医師性別希望：${doctorGender}
+医師希望：${doctorGender}
 患者フラグ：${patientFlag}
 新患2枠取得：${doubleSlot}
 
@@ -275,7 +278,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 （体重減少ありの場合）□体重減少あり（3ヶ月以内に3kg以上）インスリン導入要検討
-（障害年金：厚生年金加入ありの場合）□障害年金の可能性あり→CPR結果を確認してください
+（障害年金：厚生年金加入あり かつ 受給中ではない場合のみ）□障害年金の可能性あり→CPR結果を確認してください
 □甲状腺3項目・GAD抗体・CPRを初診時採血
 （インスリン未使用の場合）□初回療養計画書を作成済
 （CGM希望がある場合）□CGM：${d.reason?.cgmCurrent && d.reason.cgmCurrent !== '使用していない' ? d.reason.cgmCurrent + '使用中→' : ''}${d.reason?.cgmWish && d.reason.cgmWish !== '希望なし' ? d.reason.cgmWish : ''}
@@ -317,7 +320,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 腹部エコー：${d.disease?.echoAbdomen || '未選択'}
 その他の病名・既往歴：${otherDiseasesText}
 希望曜日：${buildWeekday()}
-医師性別希望：${doctorGender}
+医師希望：${doctorGender}
 患者フラグ：${patientFlag}
 新患2枠取得：${doubleSlot}
 
@@ -356,7 +359,7 @@ ${getCurrentMonth()}：
 
 
 
-アレルギー薬あれば赤字14フォント太字
+（アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
 目標HbA1c　　　　%　目標体重　　　次回検討薬：
 基本採血なし
 1月follow
@@ -382,7 +385,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 生活情報：${buildLiving()}
 職業：${buildJobStr()}
 希望曜日：${buildWeekday()}
-医師性別希望：${doctorGender}
+医師希望：${doctorGender}
 患者フラグ：${patientFlag}
 新患2枠取得：${doubleSlot}
 
@@ -442,7 +445,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 子供の状況：${buildChildInfo()}
 職業：${buildJobStr()}
 希望曜日：${buildWeekday()}
-医師性別希望：${doctorGender}
+医師希望：${doctorGender}
 患者フラグ：${patientFlag}
 新患2枠取得：${doubleSlot}
 
@@ -499,7 +502,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 
 【整形済みデータ】
 希望曜日：${buildWeekday()}
-医師性別希望：${doctorGender}
+医師希望：${doctorGender}
 患者フラグ：${patientFlag}
 新患2枠取得：${doubleSlot}
 
@@ -549,7 +552,7 @@ ${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲
 
 
 
-アレルギー薬あれば赤字14フォント太字
+（アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
 目標HbA1c　　　　%　目標体重　　　次回検討薬：
 DM基本セット
 1月follow

@@ -15,7 +15,7 @@ const STEPS = [
 
 const NEARBY_HOSPITALS = ["自治医大さいたま医療センター", "埼玉県立小児医療センター", "その他", "不明"];
 const LIVING_WITH_SPOUSE = ["配偶者あり（両親同居）", "ひとり親家庭", "その他"];
-const LIVING_OTHERS = ["祖父母と同居", "兄弟・姉妹あり", "一人っ子", "その他"];
+const LIVING_OTHERS = ["祖父母と同居", "兄弟姉妹と同居", "一人っ子", "その他"];
 const EYE_CLINICS = ["上尾こいけ眼科", "おが・おおぐし眼科", "上尾中央総合病院眼科", "おおたけ眼科", "こしの眼科"];
 
 const initialData = {
@@ -23,7 +23,7 @@ const initialData = {
   disease: { dm1type: "", dmOnsetEra: "令和", dmOnset: "", dmOnsetUnknown: false, ht: false, hl: false, thyroidChecked: false, bakusmi: "" },
   support: { familyMain: "", familySubList: [], familyNote: "", schoolStaff: [], schoolSupportPerson: [], schoolSupportNote: "", disclosedChild: "", disclosedTeacher: "", childGrade: "", childActivities: [], childActivityNote: "", parentWorkMain: [], parentWorkMainNote: "", parentWorkSub: [], parentWorkSubNote: "", independenceLevel: "", independenceNote: "" },
   chronic: { status: "", birthWeight: "", birthWeek: "", birthWeekDay: "", birthCity: "", booklets: [], documents: [], residenceCity: "", paymentConfirmed: "", maternalHandbook: "" },
-  history: { allergy: "なし", allergyDetail: "", fh: { dm: false, dmWho: [], dm1: false, dm1Who: [], collagen: false, collagenItems: [{who:"",disease:""}], ht: false, apo: false, ihd: false }, eyeVisiting: "", eye: "", livingSpouse: "", livingOther: "", livingCustom: "", keyPerson: "" },
+  history: { allergy: "なし", allergyDetail: "", fh: { dm: false, dmWho: [], dm1: false, dm1Who: [], collagen: false, collagenItems: [{who:"",disease:""}], ht: false, apo: false, ihd: false }, eyeVisiting: "", eye: "", livingSpouse: "", livingOther: [], livingCustom: "", keyPerson: "" },
   body: { height: "", weightNow: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
 };
 
@@ -119,7 +119,7 @@ export default function PedT1DIntakeTool() {
 
 【整形済みデータ】
 希望曜日：${buildWeekday()}
-医師性別希望：${data.body.doctorGender || "指定なし"}
+医師希望：${data.body.doctorGender || "指定なし"}
 患者フラグ：${data.body.patientFlag || "通常"}
 新患2枠取得：${data.body.doubleSlot ? "取得済" : "なし"}
 
@@ -164,7 +164,7 @@ ${getCurrentMonth()}：（受診理由1〜2行）
 （小児慢性申請済の場合）□小児慢性申請済・窓口負担を確認し算定へ連絡
 （母子手帳「忘れた」の場合）□次回以降、母子手帳を確認してください
 （新患2枠取得済の場合）□新患2枠取得済み
-（医師性別指定ありの場合）□${data.body.doctorGender}
+（医師希望指定ありの場合）□${data.body.doctorGender === "院長（初回のみ）" ? "院長希望（初回のみ）" : data.body.doctorGender}
 （患者フラグが「○患者疑い（話が長い方）」の場合）□○患者疑い（対応注意）
 （患者フラグが「●患者疑い（出禁対象）」の場合）□●患者疑い（出禁対象・要確認）
 （その他申し送り事項があれば記載）
@@ -175,7 +175,7 @@ ${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲
 
 
 
-アレルギー薬あれば赤字14フォント太字
+（アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
 目標HbA1c　　　　%　目標体重　　　次回検討薬：
 DM基本セット
 1月follow
@@ -627,9 +627,9 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:10}}>
             {LIVING_WITH_SPOUSE.map(v=><button key={v} style={btn(d.history.livingSpouse===v)} onClick={()=>up("history","livingSpouse",v)}>{v}</button>)}
           </div>
-          <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>兄弟・祖父母との同居</label>
+          <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>兄弟・祖父母との同居（複数選択可）</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:8}}>
-            {LIVING_OTHERS.map(v=><button key={v} style={btn(d.history.livingOther===v)} onClick={()=>up("history","livingOther",v)}>{v}</button>)}
+            {LIVING_OTHERS.map(v=><button key={v} style={btn((d.history.livingOther||[]).includes(v))} onClick={()=>toggleArr("history","livingOther",v)}>{v}</button>)}
           </div>
           <input style={{...inp(),marginBottom:14}} placeholder="補足があれば（例：祖父母が近居で協力的）" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>
           <label style={lbl()}>キーパーソン</label>
@@ -655,9 +655,9 @@ LINE登録ご案内→済　登録確認未・登録できない
               <button key={v} style={btn((d.body.preferredDays||[]).includes(v),"#3182ce")} onClick={()=>toggleArr("body","preferredDays",v)}>{v}</button>
             ))}
           </div>
-          <label style={lbl()}>医師の性別希望</label>
+          <label style={lbl()}>医師の希望</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:14}}>
-            {["指定なし","女性医師希望","男性医師希望"].map(v=>(
+            {["指定なし","女性医師希望","男性医師希望","院長（初回のみ）"].map(v=>(
               <button key={v} style={btn(d.body.doctorGender===v,"#3182ce")} onClick={()=>up("body","doctorGender",v)}>{v}</button>
             ))}
           </div>
