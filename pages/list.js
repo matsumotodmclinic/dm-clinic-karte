@@ -76,14 +76,8 @@ export default function ListPage() {
 
   const handleSearch = (e) => { e.preventDefault(); fetchRecords(search); };
 
-  const handleDeleteAllRegardless = async () => {
-    if (!confirm('⚠️ ステータスに関わらず全件削除します。この操作は元に戻せません。本当によろしいですか？')) return;
-    await fetch('/api/questionnaire', {
-      method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ deleteAllRegardless: true }),
-    });
-    fetchRecords();
-  };
+  // 全件削除は誤操作・悪意ある操作のリスクが大きいため UI から削除。
+  // どうしても必要な場合は Supabase 管理画面から実行する。
 
   const handleDeleteDone = async () => {
     if (!confirm('完了済みをすべて削除しますか？')) return;
@@ -167,12 +161,8 @@ export default function ListPage() {
             style={{ padding:'10px 14px', borderRadius:8, border:'1.5px solid #d0dff5', background:'#fff', color:'#5580a8', fontWeight:700, fontSize:14, cursor:'pointer' }}>全件</button>
         </form>
 
-        {/* 削除ボタン */}
+        {/* 削除ボタン（「全件削除」は誤操作リスクのため廃止、Supabase管理画面で実行） */}
         <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginBottom:12, flexWrap:'wrap' }}>
-          <button onClick={handleDeleteAllRegardless}
-            style={{ padding:'7px 14px', borderRadius:8, border:'1.5px solid #c53030', background:'#fff5f5', color:'#c53030', fontWeight:700, fontSize:12, cursor:'pointer' }}>
-            🗑️ 全件削除
-          </button>
           <button onClick={handleDeleteToday}
             style={{ padding:'7px 14px', borderRadius:8, border:'1.5px solid #fbd38d', background:'#fffaf0', color:'#c05621', fontWeight:700, fontSize:12, cursor:'pointer' }}>
             🗑️ 当日完了分を削除{todayDoneCount > 0 ? `（${todayDoneCount}件）` : ''}

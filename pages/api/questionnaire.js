@@ -70,15 +70,9 @@ export default async function handler(req, res) {
   if (req.method === 'DELETE') {
     const { id, deleteAll, deleteToday, date } = req.body
 
-    // ステータス問わず全削除
-    if (req.body.deleteAllRegardless) {
-      const { error } = await supabase
-        .from('questionnaires')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000') // 全件対象のダミー条件
-      if (error) return res.status(500).json({ error: error.message })
-      return res.status(200).json({ ok: true })
-    }
+    // セキュリティ上、全件削除(deleteAllRegardless)は API から削除。
+    // 過去の誤操作・悪意ある操作による問診データ全消失を防ぐ。
+    // 全件削除が必要な場合は Supabase 管理画面で手動実行すること。
 
     // 完了済みを一括削除
     if (deleteAll) {
@@ -104,7 +98,10 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
 
-    // 個別削除
+    // 個別削除（id 必須）
+    if (!id) {
+      return res.status(400).json({ error: 'id is required' })
+    }
     const { error } = await supabase
       .from('questionnaires')
       .delete()
