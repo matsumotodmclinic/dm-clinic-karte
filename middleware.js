@@ -34,10 +34,12 @@ function base64urlDecode(s) {
 }
 
 // Edge Runtime 対応の HMAC 検証（Web Crypto API のみ使用）
+// HMAC 入力には APP_GATE_PASSWORD も含めるため、PW 変更で全 cookie が自動失効する。
 async function verifyGateCookie(token) {
   if (!token) return false
   const secret = process.env.SECRET_COOKIE_PASSWORD
   if (!secret || secret.length < 32) return false
+  const gatePw = process.env.APP_GATE_PASSWORD || ''
   try {
     const key = await crypto.subtle.importKey(
       'raw',
@@ -49,7 +51,7 @@ async function verifyGateCookie(token) {
     const expectedBuf = await crypto.subtle.sign(
       'HMAC',
       key,
-      new TextEncoder().encode('dm-karte-gate-v1')
+      new TextEncoder().encode('dm-karte-gate-v1|' + gatePw)
     )
     const expected = new Uint8Array(expectedBuf)
     const actual = base64urlDecode(token)
