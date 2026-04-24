@@ -131,6 +131,58 @@
 
 ---
 
+## セキュリティ監査結果(2026-04-24)
+
+### ✅ 対応済み(58aff02: 自宅セッション)
+
+1. `/api/auth`: timingSafeEqual + HttpOnly/Secure/SameSite=Strict cookie
+2. `/api/generate`: model(3種類)と max_tokens(4000上限)のホワイトリスト
+3. `/api/questionnaire` DELETE: 全件削除(deleteAllRegardless)エンドポイント削除
+
+### ✅ 対応済み(2026-04-24 クリニックセッション)
+
+4. `/api/generate-karte` 入力検証追加:
+   - form_type ホワイトリスト(6種)
+   - form_data サイズ上限(100KB)
+   - form_data 型チェック(object 必須)
+
+### 🔴 高リスク(短期で対処検討)
+
+- **レート制限なし**: `/api/generate*` は Anthropic コスト直結。認証済みユーザーの連打で高額請求の可能性
+  - 対策候補: Vercel KV / Upstash Redis で IP 別カウント(1分10リクエスト等)
+  - 工数: 1〜2h
+
+- **操作ログなし**: 誰が何を削除・編集したか追跡不可(共有パスワードで「誰」は特定できないが「いつ・何・どのID」は残せる)
+  - 対策: audit_logs 相当のテーブル新設
+  - 工数: 1〜2h
+
+### 🟡 中リスク(要判断)
+
+- **共有パスワード**: 全スタッフ共通 → 誰が漏らしたか不明、退職者の個別無効化不可
+  - 対策案: 個別アカウント化(kinkan-app の staff テーブル方式)
+  - 工数: 中〜大(既存運用への影響あり)
+
+- **/api/questionnaire POST/PATCH の入力検証なし**: age/form_type/generated_karte の型・値検証なし
+  - 対策: generate-karte と同様のホワイトリスト・型検証
+  - 工数: 30分
+
+### 🟢 低リスク(商用展開時に検討)
+
+- **PHI(患者医療情報)の暗号化・保管要件**: Supabase の保管場所・法的要件(個人情報保護法)の確認
+- **visit_code のブルートフォース耐性**: 30^4=81万通り、認証必須なので実害低い
+
+### 監査から得た知見
+
+- middleware.js ですべての /api/* を保護しているので、「個別 API に認証欠落がないか」のチェックは不要(middleware で一括防御)
+- ただし Anthropic API のコストや PHI の取扱いは、認証突破されなくても内部者リスクがある。個別認証・ログ・レート制限で防御層を増やす価値あり
+
+---
+
 ## タスク履歴
 
 （ここに完了タスクを追記していく）
+
+### 2026-04-24 クリニックセッション
+
+- `/api/generate-karte` 入力検証追加(form_type ホワイトリスト・form_data サイズ上限・型チェック)
+- CLAUDE.md にセキュリティ監査結果を追記

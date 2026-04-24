@@ -1,8 +1,43 @@
+// 許可する form_type(ホワイトリスト、CLAUDE.md の 6 フォームと同期)
+const ALLOWED_FORM_TYPES = new Set([
+  'DM基本',
+  '1型糖尿病',
+  '高血圧・脂質異常症',
+  '妊娠糖尿病',
+  '反応性低血糖',
+  '小児1型糖尿病',
+])
+
+// form_data のサイズ上限(JSON 文字列のバイト数)。
+// 通常の問診入力は 20KB 程度で収まる想定、余裕を持って 100KB。
+// 巨大ペイロード送信による Anthropic API コスト膨張を防ぐ。
+const MAX_FORM_DATA_SIZE = 100 * 1024
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
   const { form_data, form_type } = req.body
   if (!form_data) return res.status(400).json({ error: 'form_data is required' })
+
+  // form_type ホワイトリスト検証
+  if (!form_type || !ALLOWED_FORM_TYPES.has(form_type)) {
+    return res.status(400).json({
+      error: `form_type must be one of: ${[...ALLOWED_FORM_TYPES].join(', ')}`,
+    })
+  }
+
+  // form_data は object 型であること(string 等の不正型を拒否)
+  if (typeof form_data !== 'object' || Array.isArray(form_data)) {
+    return res.status(400).json({ error: 'form_data must be an object' })
+  }
+
+  // form_data のサイズ検証(巨大ペイロード拒否)
+  const formDataSize = JSON.stringify(form_data).length
+  if (formDataSize > MAX_FORM_DATA_SIZE) {
+    return res.status(413).json({
+      error: `form_data too large (${formDataSize} bytes, max ${MAX_FORM_DATA_SIZE})`,
+    })
+  }
 
   const d = form_data
 
