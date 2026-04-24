@@ -15,7 +15,11 @@
 - Vercel（ホスティング）
 - Supabase（DB: questionnaires テーブル、service_role キーでRLSバイパス）
 - Anthropic API（モデル: `claude-sonnet-4-5`）
-- 認証: cookie ベース（`app_auth=ok`、7日間、middleware.js で制御）
+- 認証: iron-session（kinkan-app の staff テーブルを認証サーバーとして使用、2026-04-25 Phase G 完了）
+  - ログイン: `/auth` でスタッフ選択 + パスワード → kinkan-app の `/api/auth/verify-staff` に問い合わせ
+  - パスワード変更は **kinkan-app 側でしかできない**（staff テーブルの単一所有権を維持するため）
+  - 初回ログイン（`password_changed=false`）のスタッフも dm-clinic-karte に入れてしまうが、全員が kinkan-app で打刻する運用なので実質的に先に変更強制される
+  - 運用ルール: 新規スタッフには「初回パスワード変更は必ず勤怠アプリから」と案内
 - スタイル: 全てインラインCSS（CSSファイルなし）
 
 ## 環境変数（Vercel設定済み）
