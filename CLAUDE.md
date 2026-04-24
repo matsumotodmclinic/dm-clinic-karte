@@ -158,9 +158,13 @@
 
 ### 🟡 中リスク(要判断)
 
-- **共有パスワード**: 全スタッフ共通 → 誰が漏らしたか不明、退職者の個別無効化不可
-  - 対策案: 個別アカウント化(kinkan-app の staff テーブル方式)
-  - 工数: 中〜大(既存運用への影響あり)
+- **共有パスワード → 個別アカウント化(2026-04-24 方針決定)**:
+  - kinkan-app Phase 2(iron-session 導入)に合わせて、**kinkan-app の staff テーブルを認証サーバーとして使う**方式で統合予定(案B採用)
+  - Supabase プロジェクトは分離維持(kinkan-app: ktrg... / dm-clinic-karte: ozixf...)
+  - kinkan-app に `/api/auth/verify-staff` を新設、dm-clinic-karte はそこを fetch
+  - 退職者・パスワード変更は kinkan-app 側の1箇所で両アプリに反映
+  - 実装計画: `kinkan-app/docs/design/security-phase2-plan.md` の Phase G 参照
+  - 工数: dm-clinic-karte 側 +3h(iron-session + login 書き換え)
 
 - **/api/questionnaire POST/PATCH の入力検証なし**: age/form_type/generated_karte の型・値検証なし
   - 対策: generate-karte と同様のホワイトリスト・型検証
