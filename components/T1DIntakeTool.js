@@ -371,12 +371,18 @@ LINE登録ご案内→済　登録確認未・登録できない
           {d.reason.type==="紹介"&&(<div style={sBox()}>
             <label style={lbl()}>よく使う紹介元</label>
             <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:12}}>
-              {[["上尾中央総合病院","糖尿病内科"],["自治医大さいたま医療センター","糖尿病内科"],["自治医大さいたま医療センター","小児科"],["埼玉県立小児医療センター","小児科"]].map(([hosp,dept])=>(
-                <button key={hosp+dept} style={{...btn(d.reason.referralFrom===hosp&&d.reason.referralDept===dept,"#0f9668"),fontSize:12,padding:"7px 12px",border:d.reason.referralFrom===hosp&&d.reason.referralDept===dept?"2px solid #0f9668":"2px dashed #0f9668",background:d.reason.referralFrom===hosp&&d.reason.referralDept===dept?"#0f9668":"#f0fff8",color:d.reason.referralFrom===hosp&&d.reason.referralDept===dept?"#fff":"#0f9668"}}
-                  onClick={()=>setData(p=>({...p,reason:{...p.reason,referralFrom:hosp,referralDept:dept,referralQuickSelect:true,dmConcern:false}}))}>
-                  {d.reason.referralFrom===hosp&&d.reason.referralDept===dept?"✓ ":""}{hosp}・{dept}
+              {[["上尾中央総合病院","糖尿病内科"],["自治医大さいたま医療センター","糖尿病内科"],["自治医大さいたま医療センター","小児科"],["埼玉県立小児医療センター","小児科"]].map(([hosp,dept])=>{
+                const selected = d.reason.referralFrom===hosp&&d.reason.referralDept===dept;
+                return (
+                <button key={hosp+dept} style={{...btn(selected,"#0f9668"),fontSize:12,padding:"7px 12px",border:selected?"2px solid #0f9668":"2px dashed #0f9668",background:selected?"#0f9668":"#f0fff8",color:selected?"#fff":"#0f9668"}}
+                  onClick={()=>setData(p=>selected
+                    ? ({...p,reason:{...p.reason,referralFrom:"",referralDept:"",referralQuickSelect:false}})
+                    : ({...p,reason:{...p.reason,referralFrom:hosp,referralDept:dept,referralQuickSelect:true,dmConcern:false}})
+                  )}>
+                  {selected?"✓ ":""}{hosp}・{dept}
                 </button>
-              ))}
+                );
+              })}
             </div>
             {!d.reason.referralQuickSelect&&(<div style={{display:"flex",gap:10,marginBottom:12}}>
               <div style={{flex:2}}><label style={lbl()}>病院名</label><input style={inp()} placeholder="病院名" value={d.reason.referralFrom} onChange={e=>up("reason","referralFrom",e.target.value)}/></div>

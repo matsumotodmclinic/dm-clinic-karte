@@ -511,7 +511,10 @@ LINE登録ご案内→済　登録確認未・登録できない
                     const selected = d.reason.referralFrom === hosp && d.reason.referralDept === dept;
                     return (
                       <button key={hosp+dept} style={{ ...btn(selected, "#0f9668"), fontSize: 12, padding: "7px 14px", border: selected ? "2px solid #0f9668" : "2px dashed #0f9668", background: selected ? "#0f9668" : "#f0fff8", color: selected ? "#fff" : "#0f9668" }}
-                        onClick={() => setData(p => ({ ...p, reason: { ...p.reason, referralFrom: hosp, referralDept: dept, referralQuickSelect: true } }))}>
+                        onClick={() => setData(p => selected
+                          ? ({ ...p, reason: { ...p.reason, referralFrom: "", referralDept: "", referralQuickSelect: false } })
+                          : ({ ...p, reason: { ...p.reason, referralFrom: hosp, referralDept: dept, referralQuickSelect: true } })
+                        )}>
                         {selected ? "✓ " : ""}{hosp}・{dept}
                       </button>
                     );
@@ -526,7 +529,10 @@ LINE登録ご案内→済　登録確認未・登録できない
                     const selected = d.reason.referralFrom === hosp;
                     return (
                       <button key={hosp} style={{ ...btn(selected, "#0f9668"), fontSize: 12, padding: "7px 14px", border: selected ? "2px solid #0f9668" : "2px dashed #0f9668", background: selected ? "#0f9668" : "#f0fff8", color: selected ? "#fff" : "#0f9668" }}
-                        onClick={() => setData(p => ({ ...p, reason: { ...p.reason, referralFrom: hosp, referralDept: "", referralQuickSelect: true } }))}>
+                        onClick={() => setData(p => selected
+                          ? ({ ...p, reason: { ...p.reason, referralFrom: "", referralDept: "", referralQuickSelect: false } })
+                          : ({ ...p, reason: { ...p.reason, referralFrom: hosp, referralDept: "", referralQuickSelect: true } })
+                        )}>
                         {selected ? "✓ " : ""}{hosp}
                       </button>
                     );
