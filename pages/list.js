@@ -76,6 +76,12 @@ export default function ListPage() {
 
   const handleSearch = (e) => { e.preventDefault(); fetchRecords(search); };
 
+  const handleLogout = async () => {
+    if (!confirm('ログアウトしますか？')) return;
+    await fetch('/api/auth', { method: 'DELETE' });
+    router.push('/auth');
+  };
+
   // 全件削除は誤操作・悪意ある操作のリスクが大きいため UI から削除。
   // どうしても必要な場合は Supabase 管理画面から実行する。
 
@@ -118,6 +124,10 @@ export default function ListPage() {
             <button onClick={() => router.push('/')}
               style={{ padding:'8px 14px', borderRadius:8, border:'1.5px solid #d0dff5', background:'#fff', color:'#5580a8', fontWeight:700, fontSize:13, cursor:'pointer' }}>
               トップへ
+            </button>
+            <button onClick={handleLogout}
+              style={{ padding:'8px 14px', borderRadius:8, border:'1.5px solid #feb2b2', background:'#fff', color:'#c53030', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+              ログアウト
             </button>
           </div>
         </div>

@@ -66,6 +66,12 @@ const FORMATS = [
 export default function TopPage() {
   const router = useRouter();
 
+  const handleLogout = async () => {
+    if (!confirm('ログアウトしますか？')) return;
+    await fetch('/api/auth', { method: 'DELETE' });
+    router.push('/auth');
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -92,8 +98,8 @@ export default function TopPage() {
           該当するフォーマットを選択してください
         </div>
       </div>
-　　　{/* 問診一覧ボタン */}
-        <div style={{ maxWidth: 640, margin: '0 auto 16px', textAlign: 'right' }}>
+　　　{/* 問診一覧・ログアウトボタン */}
+        <div style={{ maxWidth: 640, margin: '0 auto 16px', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           <button
             onClick={() => router.push('/list')}
             style={{
@@ -108,6 +114,21 @@ export default function TopPage() {
             }}
           >
             📋 問診一覧
+          </button>
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: '10px 20px',
+              borderRadius: 10,
+              border: '1.5px solid #feb2b2',
+              background: '#fff',
+              color: '#c53030',
+              fontWeight: 700,
+              fontSize: 14,
+              cursor: 'pointer',
+            }}
+          >
+            ログアウト
           </button>
         </div>
       {/* フォーマット選択カード */}
