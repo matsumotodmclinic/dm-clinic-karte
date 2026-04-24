@@ -1,49 +1,61 @@
-import crypto from 'crypto';
+// Phase 2 Phase G: dm-clinic-karte のログイン
+//
+// kinkan-app の /api/auth/verify-staff に staff_id + password を投げて認証、
+// 成功したら iron-session に staff 情報を保存する。
+//
+// POST   /api/auth  { staffId, password }   → ログイン
+// DELETE /api/auth                          → ログアウト
+// GET    /api/auth                          → 現セッション情報
 
-export default function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).end();
+import { getSession } from '../../lib/session'
+
+const KINKAN_VERIFY_URL = process.env.KINKAN_VERIFY_URL
+  || 'https://kinkan-app.vercel.app/api/auth/verify-staff'
+
+export default async function handler(req, res) {
+  if (req.method === 'POST') {
+    const { staffId, password } = req.body || {}
+    if (!staffId || !password) {
+      return res.status(400).json({ error: 'staffId と password が必要です' })
+    }
+
+    let verifyRes
+    try {
+      verifyRes = await fetch(KINKAN_VERIFY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staffId, password }),
+      })
+    } catch (e) {
+      return res.status(502).json({ error: '認証サーバーに接続できません' })
+    }
+
+    const data = await verifyRes.json().catch(() => ({}))
+    if (!verifyRes.ok || !data.ok) {
+      return res.status(401).json({ error: data.error || '認証に失敗しました' })
+    }
+
+    // セッション保存
+    const session = await getSession(req, res)
+    session.user = data.staff
+    await session.save()
+
+    return res.status(200).json({ ok: true, staff: data.staff })
   }
 
-  const { password } = req.body || {};
-  const correct = process.env.APP_SHARED_PASSWORD;
-
-  if (!correct) {
-    return res.status(500).json({ error: 'パスワードが設定されていません' });
+  if (req.method === 'DELETE') {
+    const session = await getSession(req, res)
+    session.destroy()
+    return res.status(200).json({ ok: true })
   }
 
-  if (typeof password !== 'string' || password.length === 0) {
-    return res.status(401).json({ error: 'Wrong password' });
+  if (req.method === 'GET') {
+    const session = await getSession(req, res)
+    if (!session.user) {
+      return res.status(401).json({ user: null })
+    }
+    return res.status(200).json({ user: session.user })
   }
 
-  // タイミング攻撃対策: 長さが異なる場合は常に偽を返すが、
-  // crypto.timingSafeEqual が等長 Buffer を要求するため長さを揃えてから比較。
-  const a = Buffer.from(password);
-  const b = Buffer.from(correct);
-  let isMatch = false;
-  if (a.length === b.length) {
-    isMatch = crypto.timingSafeEqual(a, b);
-  } else {
-    // 等長でない時もダミー比較を走らせて応答時間を揃える
-    crypto.timingSafeEqual(b, b);
-    isMatch = false;
-  }
-
-  if (isMatch) {
-    // 認証成功 → cookie セット（7日間有効）
-    // 本番(HTTPS)を前提に Secure を付与。開発 http://localhost は Vercel 本番で使わないので問題なし。
-    const isProd = process.env.NODE_ENV === 'production';
-    const cookieParts = [
-      `app_auth=ok`,
-      `Path=/`,
-      `HttpOnly`,
-      `SameSite=Strict`,
-      `Max-Age=${60 * 60 * 24 * 7}`,
-    ];
-    if (isProd) cookieParts.push('Secure');
-    res.setHeader('Set-Cookie', [cookieParts.join('; ')]);
-    return res.status(200).json({ ok: true });
-  }
-
-  return res.status(401).json({ error: 'Wrong password' });
+  return res.status(405).end()
 }
