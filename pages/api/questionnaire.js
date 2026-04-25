@@ -1,4 +1,6 @@
 import { supabase } from '../../lib/supabase'
+import { getSession } from '../../lib/session'
+import { recordAuditLog } from '../../lib/auditLog'
 
 function generateVisitCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -64,11 +66,24 @@ export default async function handler(req, res) {
       .eq('id', id)
 
     if (error) return res.status(500).json({ error: error.message })
+
+    // 監査ログ(失敗してもメイン処理は続行)
+    const session = await getSession(req, res)
+    const changedFields = Object.keys(updates).filter(k => k !== 'updated_at')
+    await recordAuditLog({
+      category: 'questionnaire',
+      action: 'update',
+      table_name: 'questionnaires',
+      note: `[id: ${id}] ${changedFields.join(', ')} を更新`,
+      new_value: JSON.stringify(updates),
+    }, session.user)
+
     return res.status(200).json({ ok: true })
   }
 
   if (req.method === 'DELETE') {
     const { id, deleteAll, deleteToday, date } = req.body
+    const session = await getSession(req, res)
 
     // セキュリティ上、全件削除(deleteAllRegardless)は API から削除。
     // 過去の誤操作・悪意ある操作による問診データ全消失を防ぐ。
@@ -81,6 +96,12 @@ export default async function handler(req, res) {
         .delete()
         .eq('status', 'done')
       if (error) return res.status(500).json({ error: error.message })
+      await recordAuditLog({
+        category: 'questionnaire',
+        action: 'delete_all_done',
+        table_name: 'questionnaires',
+        note: '完了済みの問診を一括削除',
+      }, session.user)
       return res.status(200).json({ ok: true })
     }
 
@@ -95,6 +116,12 @@ export default async function handler(req, res) {
         .gte('created_at', startOfDay)
         .lte('created_at', endOfDay)
       if (error) return res.status(500).json({ error: error.message })
+      await recordAuditLog({
+        category: 'questionnaire',
+        action: 'delete_today_done',
+        table_name: 'questionnaires',
+        note: `${date} の完了済みを一括削除`,
+      }, session.user)
       return res.status(200).json({ ok: true })
     }
 
@@ -107,6 +134,12 @@ export default async function handler(req, res) {
       .delete()
       .eq('id', id)
     if (error) return res.status(500).json({ error: error.message })
+    await recordAuditLog({
+      category: 'questionnaire',
+      action: 'delete',
+      table_name: 'questionnaires',
+      note: `[id: ${id}] 問診を個別削除`,
+    }, session.user)
     return res.status(200).json({ ok: true })
   }
 
