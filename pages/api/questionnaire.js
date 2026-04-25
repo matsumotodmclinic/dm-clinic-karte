@@ -74,7 +74,8 @@ export default async function handler(req, res) {
       category: 'questionnaire',
       action: 'update',
       table_name: 'questionnaires',
-      note: `[id: ${id}] ${changedFields.join(', ')} を更新`,
+      record_id: id,
+      note: `${changedFields.join(', ')} を更新`,
       new_value: JSON.stringify(updates),
     }, session.user)
 
@@ -138,7 +139,8 @@ export default async function handler(req, res) {
       category: 'questionnaire',
       action: 'delete',
       table_name: 'questionnaires',
-      note: `[id: ${id}] 問診を個別削除`,
+      record_id: id,
+      note: '問診を個別削除',
     }, session.user)
     return res.status(200).json({ ok: true })
   }
