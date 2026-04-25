@@ -27,6 +27,7 @@ const initialData = {
   history: { allergy: "なし", allergyDetail: "", fh: { dm: false, dmWho: [], dm1: false, dm1Who: [], collagen: false, collagenItems: [{who:"",disease:""}], ht: false, apo: false, ihd: false }, eyeVisiting: "", eye: "", livingSpouse: "", livingOther: [], livingCustom: "", keyPerson: "" },
   body: { height: "", weightNow: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
   voiceMemo: { transcript: "", aiSummary: "" },
+  voicePastHistory: { transcript: "", aiSummary: "" },
 };
 
 const inp = (x={}) => ({ padding:"9px 12px", border:"1.5px solid #d0dff5", borderRadius:8, fontSize:14, color:"#1a2a3a", background:"#f7faff", outline:"none", boxSizing:"border-box", fontFamily:"inherit", width:"100%", ...x });
@@ -127,7 +128,7 @@ export default function PedT1DIntakeTool() {
 
 【患者情報JSON】
 ${JSON.stringify({disease:data.disease,history:data.history,body:data.body,reason:data.reason,support:data.support,chronic:data.chronic},null,2)}
-${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}
+${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}
 【出力フォーマット（空行は一切入れないこと）】
 ${getCurrentMonth()}：（受診理由1〜2行${data.voiceMemo?.aiSummary ? '。音声入力AI整形済みテキストを優先・統合して使用' : ''}）
 ＃1型糖尿病（タイプ）（発症時期）
@@ -639,6 +640,13 @@ LINE登録ご案内→済　登録確認未・登録できない
           <input style={{...inp(),marginBottom:14}} placeholder="補足があれば（例：祖父母が近居で協力的）" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>
           <label style={lbl()}>キーパーソン</label>
           <input style={inp()} placeholder="例：母（主な管理者）・父（夜間対応）" value={d.history.keyPerson} onChange={e=>up("history","keyPerson",e.target.value)}/>
+          <VoiceMemoSection
+            mode="pastHistory"
+            formData={data}
+            formType="ped-t1d"
+            initialValue={data.voicePastHistory}
+            onUpdate={(memo) => setData(p => ({ ...p, voicePastHistory: memo }))}
+          />
         </div>
       );
 

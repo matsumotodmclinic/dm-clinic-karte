@@ -1,27 +1,52 @@
-// 音声メモセクション(問診フォーム末尾に配置)
+// 音声メモセクション(問診フォームに配置)
 //
 // 機能:
 //   - Web Speech API でリアルタイム音声認識
 //   - 認識結果の編集
-//   - Claude で医療カルテ用に整形
-//   - 整形結果は親コンポーネントに通知(formData.voiceMemo に保存)
+//   - Claude で医療カルテ用に整形(mode により現病歴/既往歴を切替)
+//   - 整形結果は親コンポーネントに通知(formData の任意フィールドに保存)
+//
+// mode:
+//   - 'currentIllness' (デフォルト): 現病歴・受診理由として整形
+//   - 'pastHistory'                : 既往歴として整形(♯病名（...）リスト形式)
 //
 // 設計書: docs/design/voice-input-summary-plan.md
 
 import { useState } from 'react'
 import { useSpeechRecognition } from '../lib/speechRecognition'
-import { summarizeForKarte } from '../lib/voiceSummary'
+import { summarizeForKarte, summarizeForPastHistory } from '../lib/voiceSummary'
 
-/* ── styles (form と統一感を持たせる) ── */
-const sectionStyle = {
-  background: '#fff7e6',
-  border: '2px solid #f0c270',
+const MODE_CONFIG = {
+  currentIllness: {
+    title: '📋 経緯の自由発話(任意)',
+    helper: '患者さんに経緯を話してもらってください。録音すると AI が医療的に整形してカルテに追加します。',
+    summaryLabel: '✨ AI 整形結果(編集可、現病歴に追加されます)',
+    summaryHint: 'この内容は「カルテ文を生成」ボタンを押した時に現病歴セクションに追加されます。',
+    accentColor: '#a67000',
+    bgColor: '#fff7e6',
+    borderColor: '#f0c270',
+  },
+  pastHistory: {
+    title: '🩺 既往歴の音声入力(任意)',
+    helper: '事務スタッフ or 患者さんが既往歴を口頭で述べてください。AI が ♯病名（時期・病院・薬）の形式に整形して既往歴セクションに追加します。',
+    summaryLabel: '✨ AI 整形結果(編集可、既往歴に追加されます)',
+    summaryHint: 'この内容は「カルテ文を生成」ボタンを押した時に既往歴セクションに追加されます。',
+    accentColor: '#1a5fa8',
+    bgColor: '#eef4fc',
+    borderColor: '#7aa8d4',
+  },
+}
+
+/* ── styles (form と統一感を持たせる、mode により色変化) ── */
+const buildSectionStyle = (cfg) => ({
+  background: cfg.bgColor,
+  border: `2px solid ${cfg.borderColor}`,
   borderRadius: 12,
   padding: '16px 18px',
   marginBottom: 14,
-}
-const labelStyle = { display: 'block', fontSize: 13, fontWeight: 800, color: '#a67000', marginBottom: 8 }
-const helperStyle = { fontSize: 11, color: '#a67000', marginBottom: 10, lineHeight: 1.5 }
+})
+const buildLabelStyle = (cfg) => ({ display: 'block', fontSize: 13, fontWeight: 800, color: cfg.accentColor, marginBottom: 8 })
+const buildHelperStyle = (cfg) => ({ fontSize: 11, color: cfg.accentColor, marginBottom: 10, lineHeight: 1.5 })
 const taStyle = {
   width: '100%',
   minHeight: 80,
@@ -75,9 +100,18 @@ const btnGhost = {
   cursor: 'pointer',
 }
 
-export default function VoiceMemoSection({ formData, formType, onUpdate }) {
+/**
+ * @param {object} props
+ * @param {object} props.formData
+ * @param {string} props.formType
+ * @param {(memo: { transcript: string, aiSummary: string }) => void} props.onUpdate
+ * @param {'currentIllness' | 'pastHistory'} [props.mode='currentIllness']
+ * @param {{ transcript: string, aiSummary: string }} [props.initialValue] - 初期値(state 復元用)
+ */
+export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 'currentIllness', initialValue }) {
+  const cfg = MODE_CONFIG[mode] || MODE_CONFIG.currentIllness
   const sr = useSpeechRecognition()
-  const [aiSummary, setAiSummary] = useState(formData?.voiceMemo?.aiSummary || '')
+  const [aiSummary, setAiSummary] = useState(initialValue?.aiSummary || formData?.voiceMemo?.aiSummary || '')
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
 
@@ -120,7 +154,9 @@ export default function VoiceMemoSection({ formData, formType, onUpdate }) {
     }
     setAiLoading(true)
     setAiError('')
-    const result = await summarizeForKarte(sr.transcript, formData, formType)
+    const result = mode === 'pastHistory'
+      ? await summarizeForPastHistory(sr.transcript)
+      : await summarizeForKarte(sr.transcript, formData, formType)
     setAiLoading(false)
 
     if (!result.ok) {
@@ -136,20 +172,24 @@ export default function VoiceMemoSection({ formData, formType, onUpdate }) {
     notify(sr.transcript, e.target.value)
   }
 
+  const sectionStyle = buildSectionStyle(cfg)
+  const labelStyle = buildLabelStyle(cfg)
+  const helperStyle = buildHelperStyle(cfg)
+
   // 非対応ブラウザ
   if (!sr.isSupported) {
     return (
       <div style={sectionStyle}>
-        <div style={labelStyle}>📋 経緯の自由発話(任意)</div>
+        <div style={labelStyle}>{cfg.title}</div>
         <div style={{ ...helperStyle, color: '#c62828' }}>
           このブラウザは音声入力に対応していません(Safari/Chrome/Edge を推奨)。
-          直接テキスト入力で経緯を残したい場合は下のテキストエリアにご記入ください。
+          直接テキスト入力で内容を残したい場合は下のテキストエリアにご記入ください。
         </div>
         <textarea
           style={taStyle}
           value={sr.transcript}
           onChange={handleEditTranscript}
-          placeholder="患者さんから聞いた経緯をテキスト入力できます"
+          placeholder={mode === 'pastHistory' ? '既往歴をテキスト入力できます' : '患者さんから聞いた経緯をテキスト入力できます'}
         />
         <div style={{ marginTop: 10 }}>
           <button
@@ -164,7 +204,7 @@ export default function VoiceMemoSection({ formData, formType, onUpdate }) {
         {aiError && <div style={{ color: '#c62828', fontSize: 12, marginTop: 8 }}>{aiError}</div>}
         {aiSummary && (
           <div style={{ marginTop: 10 }}>
-            <div style={{ ...labelStyle, color: '#1a5fa8' }}>✨ AI 整形結果(編集可、カルテに追加されます)</div>
+            <div style={{ ...labelStyle, color: '#1a5fa8' }}>{cfg.summaryLabel}</div>
             <textarea
               style={summaryStyle}
               value={aiSummary}
@@ -178,9 +218,9 @@ export default function VoiceMemoSection({ formData, formType, onUpdate }) {
 
   return (
     <div style={sectionStyle}>
-      <div style={labelStyle}>📋 経緯の自由発話(任意)</div>
+      <div style={labelStyle}>{cfg.title}</div>
       <div style={helperStyle}>
-        患者さんに経緯を話してもらってください。録音すると AI が医療的に整形してカルテに追加します。<br />
+        {cfg.helper}<br />
         録音せず、テキスト入力だけでもご利用いただけます。
       </div>
 
@@ -237,14 +277,14 @@ export default function VoiceMemoSection({ formData, formType, onUpdate }) {
       {/* AI 整形結果 */}
       {aiSummary && (
         <div style={{ marginTop: 10 }}>
-          <div style={{ ...labelStyle, color: '#1a5fa8' }}>✨ AI 整形結果(編集可、カルテに追加されます)</div>
+          <div style={{ ...labelStyle, color: '#1a5fa8' }}>{cfg.summaryLabel}</div>
           <textarea
             style={summaryStyle}
             value={aiSummary}
             onChange={handleEditSummary}
           />
           <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
-            この内容は「カルテ文を生成」ボタンを押した時に現病歴セクションに追加されます。
+            {cfg.summaryHint}
           </div>
         </div>
       )}

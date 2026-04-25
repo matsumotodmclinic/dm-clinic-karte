@@ -42,6 +42,7 @@ const initialData = {
   },
   body: { height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
   voiceMemo: { transcript: "", aiSummary: "" },
+  voicePastHistory: { transcript: "", aiSummary: "" },
 };
 
 const inp = (x={}) => ({ padding:"9px 12px", border:"1.5px solid #d0dff5", borderRadius:8, fontSize:14, color:"#1a2a3a", background:"#f7faff", outline:"none", boxSizing:"border-box", fontFamily:"inherit", width:"100%", ...x });
@@ -232,7 +233,7 @@ export default function HTHLIntakeTool() {
 
 【患者情報JSON】
 ${JSON.stringify(data,null,2)}
-${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}
+${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}
 【ルール追加】
 - 「診察にあたっての要望」は必ず【】付きで記載。記載なければ「なし」と記載
 - その他の病名がある場合は既往歴として記載
@@ -427,6 +428,13 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
             </div>
           </div>
+          <VoiceMemoSection
+            mode="pastHistory"
+            formData={data}
+            formType="hthl"
+            initialValue={data.voicePastHistory}
+            onUpdate={(memo) => setData(p => ({ ...p, voicePastHistory: memo }))}
+          />
         </div>
       );
 

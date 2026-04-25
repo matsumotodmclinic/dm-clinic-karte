@@ -70,6 +70,7 @@ const initialData = {
   lifestyle: { livingSpouse: "", livingOther: [], livingCustom: "", childInfo: "", childLocation: "", childGender: [], work: "していない", job: [], jobNote: "", activity: "" },
   body: { height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
   voiceMemo: { transcript: "", aiSummary: "" },
+  voicePastHistory: { transcript: "", aiSummary: "" },
 };
 
 /* ── shared styles ── */
@@ -360,7 +361,7 @@ ${JSON.stringify(data, null, 2)}
 体重減少：${data.alert.weightLoss}
 HTあり：${data.disease.ht}
 HLあり：${data.disease.hl}
-${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}
+${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}
 【出力フォーマット（必ずこの順序で。該当なければ省略）】
 （体重減少が「あり」かつ3kg以上の場合のみ）【⚠️ 体重減少あり・早急なインスリン導入を検討】
 
@@ -795,6 +796,13 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
             </div>
           </div>
+          <VoiceMemoSection
+            mode="pastHistory"
+            formData={data}
+            formType="dm"
+            initialValue={data.voicePastHistory}
+            onUpdate={(memo) => setData(p => ({ ...p, voicePastHistory: memo }))}
+          />
         </div>
       );
 

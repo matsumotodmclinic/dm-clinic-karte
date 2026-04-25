@@ -154,14 +154,18 @@ export default async function handler(req, res) {
 （患者フラグが「○患者疑い（話が長い方）」の場合）□○患者疑い（対応注意）
 （患者フラグが「●患者疑い（出禁対象）」の場合）□●患者疑い（出禁対象・要確認）`
 
-  // 音声入力からのAI整形済み現病歴
-  // (患者の自由発話 → Whisper 不要 / Web Speech API → Claude 整形済み)
-  // フォーム入力と同等以上に重視して受診理由サマリーに統合
+  // 音声入力からのAI整形済み現病歴・既往歴
+  // (患者/事務スタッフの自由発話 → Web Speech API → Claude 整形済み)
+  // フォーム入力と同等以上に重視して受診理由サマリー / 既往歴セクションに統合
   const voiceMemoBlock = d.voiceMemo?.aiSummary
     ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${d.voiceMemo.aiSummary}\n`
     : ''
   const voiceMemoNote = d.voiceMemo?.aiSummary
     ? '。音声入力AI整形済みテキストがある場合はそれを優先・統合して使用'
+    : ''
+  // 既往歴用 voice block (♯既往疾患のリストとして統合)
+  const voicePastHistoryBlock = d.voicePastHistory?.aiSummary
+    ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合、内容に応じて他院管理表記等も補完)】\n${d.voicePastHistory.aiSummary}\n`
     : ''
 
   const COMMON_FOOTER = `${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲状腺項目追加してください　CPR0.5以下の方は今後半年ごとCPR測定を入れてください。
@@ -220,7 +224,7 @@ ${JSON.stringify(d, null, 2)}
 体重減少：${d.alert?.weightLoss || ''}
 HTあり：${d.disease?.ht || false}
 HLあり：${d.disease?.hl || false}
-${voiceMemoBlock}
+${voiceMemoBlock}${voicePastHistoryBlock}
 【出力フォーマット（必ずこの順序で。該当なければ省略）】
 （体重減少が「あり」かつ3kg以上の場合のみ）【⚠️ 体重減少あり・早急なインスリン導入を検討】
 
@@ -295,7 +299,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 
 【患者情報JSON】
 ${JSON.stringify(d, null, 2)}
-${voiceMemoBlock}
+${voiceMemoBlock}${voicePastHistoryBlock}
 【出力フォーマット】
 （体重減少ありなら）【⚠️ 体重減少あり・早急なインスリン導入を検討】
 
@@ -373,7 +377,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 
 【患者情報JSON】
 ${JSON.stringify(d, null, 2)}
-${voiceMemoBlock}
+${voiceMemoBlock}${voicePastHistoryBlock}
 【出力フォーマット】
 ${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の場合は気になる理由も含めて記載${voiceMemoNote}）
 ＃IGT（該当時のみ、受診理由の直後、空行なし）
@@ -438,7 +442,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 
 【患者情報JSON】
 ${JSON.stringify({ disease: d.disease, history: d.history, body: d.body, reason: d.reason }, null, 2)}
-${voiceMemoBlock}
+${voiceMemoBlock}${voicePastHistoryBlock}
 【出力フォーマット】
 ${getCurrentMonth()}：（受診理由1〜2行${voiceMemoNote}）
 ＃妊娠糖尿病（または＃糖尿病合併妊娠）
@@ -498,7 +502,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 
 【患者情報JSON】
 ${JSON.stringify(d, null, 2)}
-${voiceMemoBlock}
+${voiceMemoBlock}${voicePastHistoryBlock}
 【出力フォーマット】
 ${getCurrentMonth()}：${voiceMemoNote ? '（' + voiceMemoNote.replace(/^。/, '') + '）' : ''}
 ♯反応性低血糖疑い
@@ -555,7 +559,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 
 【患者情報JSON】
 ${JSON.stringify({ disease: d.disease, history: d.history, body: d.body, reason: d.reason, support: d.support, chronic: d.chronic }, null, 2)}
-${voiceMemoBlock}
+${voiceMemoBlock}${voicePastHistoryBlock}
 【出力フォーマット（空行は一切入れないこと）】
 ${getCurrentMonth()}：（受診理由1〜2行${voiceMemoNote}）
 ＃1型糖尿病（タイプ）（発症時期）
