@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
@@ -68,6 +69,7 @@ const initialData = {
   },
   lifestyle: { livingSpouse: "", livingOther: [], livingCustom: "", childInfo: "", childLocation: "", childGender: [], work: "していない", job: [], jobNote: "", activity: "" },
   body: { height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
+  voiceMemo: { transcript: "", aiSummary: "" },
 };
 
 /* ── shared styles ── */
@@ -358,11 +360,11 @@ ${JSON.stringify(data, null, 2)}
 体重減少：${data.alert.weightLoss}
 HTあり：${data.disease.ht}
 HLあり：${data.disease.hl}
-
+${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}
 【出力フォーマット（必ずこの順序で。該当なければ省略）】
 （体重減少が「あり」かつ3kg以上の場合のみ）【⚠️ 体重減少あり・早急なインスリン導入を検討】
 
-${getCurrentMonth()}：（受診理由サマリー1〜2行。記載なければ省略）
+${getCurrentMonth()}：（受診理由サマリー1〜2行。記載なければ省略。音声入力AI整形済みテキストがある場合はそれを統合・優先して使用）
 ${data.reason.dmConcern ? '＃糖尿病 or IGT or 正常耐糖能' : `＃糖尿病${dmOnsetText()}`}（サマリーの直後、空行なし）
 ＃HT（該当時のみ）
 ＃HL（該当時のみ）
@@ -1125,6 +1127,15 @@ LINE登録ご案内→済　登録確認未・登録できない
               {STEPS[step].title}
             </h2>
             {renderStep()}
+            {/* 最終ステップでのみ音声入力セクションを表示 */}
+            {step === STEPS.length - 1 && (
+              <VoiceMemoSection
+                formData={data}
+                formType="dm"
+                onUpdate={(voiceMemo) => setData(p => ({ ...p, voiceMemo }))}
+              />
+            )}
+
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 26 }}>
               <button style={{ padding: "11px 22px", borderRadius: 8, border: "1.5px solid #d0dff5", background: "#f7faff", color: step === 0 ? "#c0d0e0" : "#5580a8", fontWeight: 700, fontSize: 14, cursor: step === 0 ? "not-allowed" : "pointer" }}
                 onClick={() => goStep(step - 1)} disabled={step === 0}>← 前へ</button>

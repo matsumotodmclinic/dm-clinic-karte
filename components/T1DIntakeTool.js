@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
@@ -55,6 +56,7 @@ const initialData = {
     otherDiseases: [{name:"",hospital:"",hospitalOther:""}],
   },
   body: { height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
+  voiceMemo: { transcript: "", aiSummary: "" },
 };
 
 const inp = (x={}) => ({ padding:"9px 12px", border:"1.5px solid #d0dff5", borderRadius:8, fontSize:14, color:"#1a2a3a", background:"#f7faff", outline:"none", boxSizing:"border-box", fontFamily:"inherit", width:"100%", ...x });
@@ -241,11 +243,11 @@ export default function T1DIntakeTool() {
 
 【患者情報JSON】
 ${JSON.stringify(data,null,2)}
-
+${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}
 【出力フォーマット】
 （体重減少ありなら）【⚠️ 体重減少あり・早急なインスリン導入を検討】
 
-${getCurrentMonth()}：（受診理由1〜2行）
+${getCurrentMonth()}：（受診理由1〜2行${data.voiceMemo?.aiSummary ? '。音声入力AI整形済みテキストを優先・統合して使用' : ''}）
 ＃1型糖尿病（${data.disease.dm1type||"タイプ不明"}）${dmOnsetText()}
 ・GAD抗体：（初診時採血）
 ・CPR：（初診時採血）
@@ -806,6 +808,13 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{background:"#fff",borderRadius:16,padding:"24px 26px",boxShadow:"0 2px 20px rgba(180,0,0,0.07)"}}>
             <h2 style={{fontSize:16,fontWeight:800,color:"#1a2a4a",marginBottom:18,borderBottom:"2px solid #fff5f5",paddingBottom:10}}>{STEPS[step].title}</h2>
             {renderStep()}
+            {step === STEPS.length - 1 && (
+              <VoiceMemoSection
+                formData={data}
+                formType="t1d"
+                onUpdate={(voiceMemo) => setData(p => ({ ...p, voiceMemo }))}
+              />
+            )}
             <div style={{display:"flex",justifyContent:"space-between",marginTop:26}}>
               <button style={{padding:"11px 22px",borderRadius:8,border:"1.5px solid #d0dff5",background:"#f7faff",color:step===0?"#c0d0e0":"#5580a8",fontWeight:700,fontSize:14,cursor:step===0?"not-allowed":"pointer"}} onClick={()=>goStep(step-1)} disabled={step===0}>← 前へ</button>
               {step<STEPS.length-1?(
