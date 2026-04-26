@@ -395,7 +395,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>)}
             <label style={lbl()}>紹介の理由</label>
             <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
-              {["血糖コントロール不良のため","安定していたため当院へ","専門的管理のため","内容不明"].map(v=><button key={v} style={btn(d.reason.referralDetail===v)} onClick={()=>up("reason","referralDetail",v)}>{v}</button>)}
+              {["血糖コントロール不良のため","安定していたため当院へ","専門的管理のため","転居のため","内容不明"].map(v=><button key={v} style={btn(d.reason.referralDetail===v)} onClick={()=>up("reason","referralDetail",v)}>{v}</button>)}
             </div>
           </div>)}
           {d.reason.type==="自主転院"&&(<div style={sBox()}>

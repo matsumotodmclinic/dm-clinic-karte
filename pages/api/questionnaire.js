@@ -55,7 +55,37 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-    const { id, status, generated_karte } = req.body
+    const { id, status, generated_karte, markAllDone } = req.body
+    const session = await getSession(req, res)
+
+    // 全件完了化（院長・事務長・リーダーのみ）
+    if (markAllDone) {
+      const role = session.user?.role
+      if (!['管理者', '事務長', 'リーダー'].includes(role)) {
+        return res.status(403).json({ error: '権限がありません' })
+      }
+      const { data: targets, error: selErr } = await supabase
+        .from('questionnaires')
+        .select('id')
+        .eq('status', 'new')
+      if (selErr) return res.status(500).json({ error: selErr.message })
+
+      const { error } = await supabase
+        .from('questionnaires')
+        .update({ status: 'done', updated_at: new Date().toISOString() })
+        .eq('status', 'new')
+      if (error) return res.status(500).json({ error: error.message })
+
+      await recordAuditLog({
+        category: 'questionnaire',
+        action: 'mark_all_done',
+        table_name: 'questionnaires',
+        note: `新規問診 ${targets?.length || 0} 件を一括完了化`,
+        new_value: JSON.stringify({ count: targets?.length || 0 }),
+      }, session.user)
+      return res.status(200).json({ ok: true, count: targets?.length || 0 })
+    }
+
     const updates = { updated_at: new Date().toISOString() }
     if (status) updates.status = status
     if (generated_karte) updates.generated_karte = generated_karte
@@ -68,7 +98,6 @@ export default async function handler(req, res) {
     if (error) return res.status(500).json({ error: error.message })
 
     // 監査ログ(失敗してもメイン処理は続行)
-    const session = await getSession(req, res)
     const changedFields = Object.keys(updates).filter(k => k !== 'updated_at')
     await recordAuditLog({
       category: 'questionnaire',

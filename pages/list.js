@@ -11,14 +11,25 @@ const DATE_FILTERS = [
   { id: 'all',       label: '全件' },
 ];
 
+const PRIVILEGED_ROLES = ['管理者', '事務長', 'リーダー'];
+
 export default function ListPage() {
   const [records, setRecords]       = useState([]);
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState('');
   const [dateFilter, setDateFilter] = useState('today');
   const [newCount, setNewCount]     = useState(0);
+  const [user, setUser]             = useState(null);
   const prevIdsRef                  = useRef(new Set());
   const router = useRouter();
+
+  useEffect(() => {
+    fetch('/api/auth')
+      .then(r => r.ok ? r.json() : { user: null })
+      .then(d => setUser(d.user))
+      .catch(() => setUser(null));
+  }, []);
+  const canMarkAllDone = user && PRIVILEGED_ROLES.includes(user.role);
 
   const matchDateFilter = (str, filter) => {
     const d = new Date(str);
@@ -88,6 +99,20 @@ export default function ListPage() {
   const handleDeleteDone = async () => {
     if (!confirm('完了済みをすべて削除しますか？')) return;
     await fetch('/api/questionnaire', { method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({deleteAll:true}) });
+    fetchRecords();
+  };
+
+  const handleMarkAllDone = async () => {
+    const allNewCount = records.filter(r => r.status === 'new').length;
+    if (allNewCount === 0) { alert('未完了の問診はありません'); return; }
+    if (!confirm(`新規 ${allNewCount} 件をすべて完了にしますか？\n（日付フィルターに関わらず全ての新規が対象）`)) return;
+    const res = await fetch('/api/questionnaire', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ markAllDone: true }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(data.error || '失敗しました'); return; }
     fetchRecords();
   };
 
@@ -173,6 +198,12 @@ export default function ListPage() {
 
         {/* 削除ボタン（「全件削除」は誤操作リスクのため廃止、Supabase管理画面で実行） */}
         <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginBottom:12, flexWrap:'wrap' }}>
+          {canMarkAllDone && (
+            <button onClick={handleMarkAllDone}
+              style={{ padding:'7px 14px', borderRadius:8, border:'1.5px solid #9ae6b4', background:'#f0fff4', color:'#276749', fontWeight:700, fontSize:12, cursor:'pointer' }}>
+              ✅ 全ての問診を完了済にする{records.filter(r=>r.status==='new').length > 0 ? `（${records.filter(r=>r.status==='new').length}件）` : ''}
+            </button>
+          )}
           <button onClick={handleDeleteToday}
             style={{ padding:'7px 14px', borderRadius:8, border:'1.5px solid #fbd38d', background:'#fffaf0', color:'#c05621', fontWeight:700, fontSize:12, cursor:'pointer' }}>
             🗑️ 当日完了分を削除{todayDoneCount > 0 ? `（${todayDoneCount}件）` : ''}
