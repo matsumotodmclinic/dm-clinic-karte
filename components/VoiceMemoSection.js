@@ -116,13 +116,24 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
   const [aiSummary, setAiSummary] = useState(initialValue?.aiSummary || formData?.voiceMemo?.aiSummary || '')
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
+  const [unansweredQuestions, setUnansweredQuestions] = useState(initialValue?.unansweredQuestions || [])
 
   // 親に変更を通知するヘルパー
-  const notify = (transcript, summary) => {
+  const notify = (transcript, summary, unanswered) => {
     onUpdate?.({
       transcript: transcript ?? sr.transcript,
       aiSummary: summary ?? aiSummary,
+      unansweredQuestions: unanswered ?? unansweredQuestions,
     })
+  }
+
+  const handleSummaryUpdate = (updated) => {
+    setAiSummary(updated)
+    notify(sr.transcript, updated, unansweredQuestions)
+  }
+  const handleUnansweredChange = (list) => {
+    setUnansweredQuestions(list)
+    notify(sr.transcript, aiSummary, list)
   }
 
   const handleStart = () => {
@@ -217,6 +228,9 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
                 diseaseNames={parseDiseasesFromSummary(aiSummary)}
                 age={formData?.history?.age}
                 helperText="AI 整形結果に含まれる既往歴に対し、診療上聞いておくべき追加質問を提案します。"
+                aiSummary={aiSummary}
+                onSummaryUpdate={handleSummaryUpdate}
+                onUnansweredChange={handleUnansweredChange}
               />
             )}
           </div>
