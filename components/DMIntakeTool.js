@@ -10,7 +10,7 @@ const CHILD_GENDERS = ["息子", "娘", "両方"];
 const STEPS = [
   { id: "alert", title: "重要確認" },
   { id: "reason", title: "受診理由" },
-  { id: "history", title: "既往・家族歴" },
+  { id: "history", title: "医療背景・家族歴" },
   { id: "lifestyle", title: "生活情報" },
   { id: "body", title: "体格・要望" },
   { id: "extended", title: "病歴・経緯の聴取" },
