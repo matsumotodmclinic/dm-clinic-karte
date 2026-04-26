@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
 const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ", "金属"];
+const DM_SYMPTOMS = ["のどが渇く", "尿の回数が多い", "体がだるい", "手のしびれ", "足のしびれ", "足がつりやすい", "視力が落ちた", "食後の低血糖を心配している", "その他"];
 const CHILD_LOCATIONS = ["近居（同一市区町村）", "近隣（同一都道府県）", "遠方（他都道府県）", "子供なし"];
 const CHILD_GENDERS = ["息子", "娘", "両方"];
 
@@ -41,6 +42,7 @@ const initialData = {
     ht: false, hl: false,
     thyroidChecked: false,
     pensionStatus: "", pensionKosei: "", pensionPossibility: "",
+    dmSymptoms: { selected: [], otherText: "" },
   },
   history: {
     age: "", allergy: "なし", allergyDetail: "",
@@ -244,7 +246,14 @@ export default function T1DIntakeTool() {
 
 【患者情報JSON】
 ${JSON.stringify(data,null,2)}
-${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}${data.voicePastHistory?.needsDoctorReview ? `\n【既往歴：要ドクター確認フラグあり(申し送り事項に「□ 既往歴：要ドクター確認」を必ず追加)】\nスタッフが既往歴の確認で医師の判断が必要と判定。\n` : ''}
+${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}${data.voicePastHistory?.needsDoctorReview ? `\n【既往歴：要ドクター確認フラグあり(申し送り事項に「□ 既往歴：要ドクター確認」を必ず追加)】\nスタッフが既往歴の確認で医師の判断が必要と判定。\n` : ''}${(()=>{
+  const sel=data.disease.dmSymptoms?.selected||[];
+  if(sel.length===0)return'';
+  const items=sel.filter(s=>s!=='その他');
+  const other=(data.disease.dmSymptoms?.otherText||'').trim();
+  if(sel.includes('その他')&&other)items.push(`その他: ${other}`);
+  return `\n【糖尿病の症状(チェック済、横一列に「・」区切りで【糖尿病の症状】セクションに記載)】\n${items.join('・')}\n`;
+})()}
 【出力フォーマット】
 （体重減少ありなら）【⚠️ 体重減少あり・早急なインスリン導入を検討】
 
@@ -272,6 +281,8 @@ ${getCurrentMonth()}：（受診理由1〜2行${data.voiceMemo?.aiSummary ? '。
 頚部エコー：当院で施行予定　腹部エコー：当院で施行予定（必ず1行に横配置）
 ---------------------------------------------
 身長:○cm　初診時:○kg${bmi ? `（BMI ${bmi}）` : ""}　20歳時:○kg　max体重○kg(○歳)
+---------------------------------------------
+（症状チェックがある場合のみ）【糖尿病の症状】（チェックされた症状を「・」で横一列に記載。「その他」がチェックされていれば末尾に「その他: ○○」を追加）
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 □通院のご案内をお渡し済
@@ -477,6 +488,27 @@ LINE登録ご案内→済　登録確認未・登録できない
               <button key={v} style={btn(d.disease.insulinStatus===v,v==="インスリン使用中"?"#c53030":"#1a5fa8")} onClick={()=>up("disease","insulinStatus",v)}>{v}</button>
             ))}
           </div>
+
+          <label style={lbl()}>糖尿病の症状（該当するものをすべてチェック）</label>
+          <div style={{display:"flex",flexWrap:"wrap",marginBottom:8}}>
+            {DM_SYMPTOMS.map(sym=>{
+              const selected=(d.disease.dmSymptoms?.selected||[]).includes(sym);
+              return (
+                <button key={sym} style={btn(selected,"#0f9668")} onClick={()=>setData(p=>{
+                  const cur=p.disease.dmSymptoms?.selected||[];
+                  const next=cur.includes(sym)?cur.filter(s=>s!==sym):[...cur,sym];
+                  return {...p,disease:{...p.disease,dmSymptoms:{...p.disease.dmSymptoms,selected:next}}};
+                })}>{selected?"✓ ":""}{sym}</button>
+              );
+            })}
+          </div>
+          {(d.disease.dmSymptoms?.selected||[]).includes("その他") && (
+            <input style={{...inp(),marginBottom:14}} placeholder="その他の症状を自由記載"
+              value={d.disease.dmSymptoms?.otherText||""}
+              onChange={e=>setData(p=>({...p,disease:{...p.disease,dmSymptoms:{...p.disease.dmSymptoms,otherText:e.target.value}}}))} />
+          )}
+          {!(d.disease.dmSymptoms?.selected||[]).includes("その他") && <div style={{marginBottom:6}}/>}
+
           <label style={lbl()}>合併する疾患</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:16}}>
             {[["ht","高血圧（HT）"],["hl","脂質異常症（HL）"]].map(([k,l])=>(
