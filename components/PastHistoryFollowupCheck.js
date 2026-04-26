@@ -278,63 +278,74 @@ export default function PastHistoryFollowupCheck({ diseaseNames, otherDiseases, 
             </div>
           )}
 
-          {/* 回答反映エリア */}
+          {/* 回答反映エリア（既往歴の音声入力と同等の大きさ・スタイル） */}
           {flatQuestions.length > 0 && aiSummary && onSummaryUpdate && (
-            <div style={{ marginTop: 14, padding: '12px 14px', background: '#fff', borderRadius: 10, border: `1.5px dashed ${palette.borderStrong}` }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: palette.accent, marginBottom: 6 }}>
-                💬 患者から聞き取った回答を反映
+            <div style={{ marginTop: 16, padding: '16px 18px', background: '#eef4fc', borderRadius: 12, border: '2px solid #7aa8d4' }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#1a5fa8', marginBottom: 6 }}>
+                🎤 質問への回答を音声入力（既往歴サマリーに自動反映）
               </div>
-              <div style={{ fontSize: 11, color: palette.accent, marginBottom: 8, lineHeight: 1.5 }}>
-                上記の質問について患者に確認した内容を入力してください。録音 or 直接入力どちらでも可。AI が既往歴サマリーに統合します。
+              <div style={{ fontSize: 12, color: '#1a5fa8', marginBottom: 12, lineHeight: 1.6 }}>
+                上記の質問について患者に確認した内容を、録音 or 直接入力で記録してください。<br />
+                「✨ AI で反映」を押すと既存の既往歴サマリーに統合され、未回答質問は自動でカルテの【既往歴確認事項】に出力されます。
               </div>
 
               {sr.isSupported && (
-                <div style={{ marginBottom: 8 }}>
+                <div style={{ marginBottom: 10 }}>
                   <div style={{ position: 'relative' }}>
                     <textarea
-                      style={{ width: '100%', minHeight: 80, padding: '8px 10px', border: sr.isRecording ? '2px solid #c62828' : '1.5px solid #d0c094', borderRadius: 6, fontSize: 13, background: '#fffaf2', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical' }}
-                      rows={Math.max(3, (sr.transcript + sr.interimText).split(/\r?\n/).length + 1)}
+                      style={{ width: '100%', minHeight: 160, padding: '10px 12px', border: sr.isRecording ? '2.5px solid #c62828' : '1.5px solid #d0c094', borderRadius: 8, fontSize: 14, background: '#fffaf2', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical', color: '#1a2a3a' }}
+                      rows={Math.max(6, (sr.transcript + sr.interimText).split(/\r?\n/).length + 2)}
                       value={sr.transcript + (sr.interimText ? ' ' + sr.interimText : '')}
                       onChange={(e) => sr.setTranscript(e.target.value)}
                       readOnly={sr.isRecording}
-                      placeholder="🎤 録音中はリアルタイムで認識テキストが表示されます。直接入力も可（例: 胆石は10年前に上尾中央総合病院で胆嚢摘出済み...）"
+                      placeholder="🎤 録音開始 を押すと、ここに認識された音声テキストが表示されます。直接編集も可能です。&#10;&#10;例: 「胆石は10年前に上尾中央総合病院で胆嚢摘出してます。糖尿病は5年前から○○内科で内服中です。」"
                     />
                     {sr.isRecording && (
-                      <div style={{ position: 'absolute', top: 6, right: 10, background: '#c62828', color: '#fff', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 700 }}>
+                      <div style={{ position: 'absolute', top: 8, right: 12, background: '#c62828', color: '#fff', padding: '3px 10px', borderRadius: 14, fontSize: 12, fontWeight: 800, animation: 'pulse 1.5s ease-in-out infinite' }}>
                         ● 録音中（リアルタイム認識）
                       </div>
                     )}
                   </div>
-                  <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                     {!sr.isRecording ? (
-                      <button onClick={sr.start} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: palette.borderStrong, color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>🎤 録音開始</button>
+                      <button onClick={sr.start} style={{ padding: '10px 18px', borderRadius: 8, border: 'none', background: '#1a5fa8', color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>🎤 録音開始</button>
                     ) : (
-                      <button onClick={sr.stop} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: '#c62828', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>⏹ 録音停止</button>
+                      <button onClick={sr.stop} style={{ padding: '10px 18px', borderRadius: 8, border: 'none', background: '#c62828', color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>⏹ 録音停止</button>
                     )}
+                    <button
+                      onClick={handleApply}
+                      disabled={applying || sr.isRecording}
+                      style={{ padding: '10px 18px', borderRadius: 8, border: 'none', background: (applying || sr.isRecording) ? '#cccccc' : '#0f9668', color: '#fff', fontWeight: 800, fontSize: 14, cursor: (applying || sr.isRecording) ? 'not-allowed' : 'pointer' }}
+                    >
+                      {applying ? '✨ AI で反映中...' : '✨ AI で反映'}
+                    </button>
                     {(sr.transcript || sr.interimText) && (
-                      <button onClick={() => sr.reset()} style={{ padding: '6px 12px', borderRadius: 6, border: '1.5px solid #b0b0b0', background: '#fff', color: '#555', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>クリア</button>
+                      <button onClick={() => sr.reset()} style={{ padding: '8px 14px', borderRadius: 8, border: '1.5px solid #b0b0b0', background: '#fff', color: '#555', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>クリア</button>
                     )}
                   </div>
                 </div>
               )}
 
               {!sr.isSupported && (
-                <textarea
-                  style={{ width: '100%', minHeight: 60, padding: '8px 10px', border: '1.5px solid #d0c094', borderRadius: 6, fontSize: 13, background: '#fffaf2', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical', marginBottom: 8 }}
-                  value={answerText}
-                  onChange={(e) => setAnswerText(e.target.value)}
-                  placeholder="患者から聞き取った内容をテキスト入力（例: 胆石は10年前に上尾中央総合病院で胆嚢摘出済み...）"
-                />
+                <>
+                  <textarea
+                    style={{ width: '100%', minHeight: 160, padding: '10px 12px', border: '1.5px solid #d0c094', borderRadius: 8, fontSize: 14, background: '#fffaf2', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical', marginBottom: 10 }}
+                    rows={6}
+                    value={answerText}
+                    onChange={(e) => setAnswerText(e.target.value)}
+                    placeholder="患者から聞き取った内容をテキスト入力&#10;&#10;例: 胆石は10年前に上尾中央総合病院で胆嚢摘出済み..."
+                  />
+                  <button
+                    onClick={handleApply}
+                    disabled={applying}
+                    style={{ padding: '10px 18px', borderRadius: 8, border: 'none', background: applying ? '#cccccc' : '#0f9668', color: '#fff', fontWeight: 800, fontSize: 14, cursor: applying ? 'not-allowed' : 'pointer' }}
+                  >
+                    {applying ? '✨ AI で反映中...' : '✨ AI で反映 → 既往歴サマリーを更新'}
+                  </button>
+                </>
               )}
 
-              <button
-                onClick={handleApply}
-                disabled={applying}
-                style={{ padding: '8px 14px', borderRadius: 6, border: 'none', background: applying ? '#cccccc' : '#1a5fa8', color: '#fff', fontWeight: 800, fontSize: 12, cursor: applying ? 'not-allowed' : 'pointer' }}
-              >
-                {applying ? '✨ AI で反映中...' : '✨ AI で反映 → 既往歴サマリーを更新'}
-              </button>
-              {applyError && <div style={{ color: '#c62828', fontSize: 11, marginTop: 6 }}>{applyError}</div>}
+              {applyError && <div style={{ color: '#c62828', fontSize: 12, marginTop: 8, fontWeight: 700 }}>⚠ {applyError}</div>}
 
               {/* AI 反映済み最終結果プレビュー */}
               {lastUpdatedSummary && (

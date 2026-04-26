@@ -236,10 +236,12 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
           <div style={{ marginTop: 10 }}>
             <div style={{ ...labelStyle, color: '#1a5fa8' }}>{cfg.summaryLabel}</div>
             {(() => {
-              const rows = computeAutoRows(aiSummary, mode === 'pastHistory' ? 8 : 4)
+              const baseHeight = mode === 'pastHistory' ? 240 : 160
+              const rows = computeAutoRows(aiSummary, mode === 'pastHistory' ? 10 : 6)
+              const dynamicHeight = Math.max(baseHeight, rows * 26)
               return (
                 <textarea
-                  style={{ ...summaryStyle, minHeight: `${rows * 26}px`, height: 'auto' }}
+                  style={{ ...summaryStyle, minHeight: `${dynamicHeight}px` }}
                   rows={rows}
                   value={aiSummary}
                   onChange={handleEditSummary}
