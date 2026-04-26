@@ -11,6 +11,7 @@ const STEPS = [
   { id: "symptom", title: "症状・きっかけ" },
   { id: "history", title: "既往・生活歴" },
   { id: "body",    title: "体格・要望" },
+  { id: "extended", title: "病歴・経緯の聴取" },
 ];
 
 const LIVING_WITH_SPOUSE = ["配偶者あり", "配偶者なし（独居・死別・離別等）"];
@@ -508,13 +509,6 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
             {["体を動かしていることが多い","立っていることが多い","座っていることが多い"].map(v=><button key={v} style={btn(d.history.activity===v)} onClick={()=>up("history","activity",v)}>{v}</button>)}
           </div>
-          <VoiceMemoSection
-            mode="pastHistory"
-            formData={data}
-            formType="rh"
-            initialValue={data.voicePastHistory}
-            onUpdate={(memo) => setData(p => ({ ...p, voicePastHistory: memo }))}
-          />
         </div>
       );
 
@@ -559,6 +553,24 @@ LINE登録ご案内→済　登録確認未・登録できない
         </div>
       );
 
+      case 3: return (
+        <div>
+          <VoiceMemoSection
+            formData={data}
+            formType="rh"
+            initialValue={data.voiceMemo}
+            onUpdate={(voiceMemo) => setData(p => ({ ...p, voiceMemo }))}
+          />
+          <VoiceMemoSection
+            mode="pastHistory"
+            formData={data}
+            formType="rh"
+            initialValue={data.voicePastHistory}
+            onUpdate={(memo) => setData(p => ({ ...p, voicePastHistory: memo }))}
+          />
+        </div>
+      );
+
       default: return null;
     }
   };
@@ -599,13 +611,6 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{background:"#fff",borderRadius:16,padding:"24px 26px",boxShadow:"0 2px 20px rgba(180,83,9,0.07)"}}>
             <h2 style={{fontSize:16,fontWeight:800,color:"#1a2a4a",marginBottom:18,borderBottom:"2px solid #fef3e2",paddingBottom:10}}>{STEPS[step].title}</h2>
             {renderStep()}
-            {step === STEPS.length - 1 && (
-              <VoiceMemoSection
-                formData={data}
-                formType="rh"
-                onUpdate={(voiceMemo) => setData(p => ({ ...p, voiceMemo }))}
-              />
-            )}
             <div style={{display:"flex",justifyContent:"space-between",marginTop:26}}>
               <button style={{padding:"11px 22px",borderRadius:8,border:"1.5px solid #f0ddc0",background:"#fffbf5",color:step===0?"#d0a888":"#92400e",fontWeight:700,fontSize:14,cursor:step===0?"not-allowed":"pointer"}} onClick={()=>goStep(step-1)} disabled={step===0}>← 前へ</button>
               {step<STEPS.length-1?(

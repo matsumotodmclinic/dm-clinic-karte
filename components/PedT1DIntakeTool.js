@@ -13,6 +13,7 @@ const STEPS = [
   { id: "chronic",  title: "小児慢性" },
   { id: "life",     title: "生活・家族" },
   { id: "body",     title: "体格・要望" },
+  { id: "extended", title: "病歴・経緯の聴取" },
 ];
 
 const NEARBY_HOSPITALS = ["自治医大さいたま医療センター", "埼玉県立小児医療センター", "その他", "不明"];
@@ -684,13 +685,6 @@ LINE登録ご案内→済　登録確認未・登録できない
           <input style={{...inp(),marginBottom:14}} placeholder="補足があれば（例：祖父母が近居で協力的）" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>
           <label style={lbl()}>キーパーソン</label>
           <input style={inp()} placeholder="例：母（主な管理者）・父（夜間対応）" value={d.history.keyPerson} onChange={e=>up("history","keyPerson",e.target.value)}/>
-          <VoiceMemoSection
-            mode="pastHistory"
-            formData={data}
-            formType="ped-t1d"
-            initialValue={data.voicePastHistory}
-            onUpdate={(memo) => setData(p => ({ ...p, voicePastHistory: memo }))}
-          />
         </div>
       );
 
@@ -735,6 +729,24 @@ LINE登録ご案内→済　登録確認未・登録できない
         </div>
       );
 
+      case 6: return (
+        <div>
+          <VoiceMemoSection
+            formData={data}
+            formType="ped-t1d"
+            initialValue={data.voiceMemo}
+            onUpdate={(voiceMemo) => setData(p => ({ ...p, voiceMemo }))}
+          />
+          <VoiceMemoSection
+            mode="pastHistory"
+            formData={data}
+            formType="ped-t1d"
+            initialValue={data.voicePastHistory}
+            onUpdate={(memo) => setData(p => ({ ...p, voicePastHistory: memo }))}
+          />
+        </div>
+      );
+
       default: return null;
     }
   };
@@ -776,13 +788,6 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{background:"#fff",borderRadius:16,padding:"24px 26px",boxShadow:"0 2px 20px rgba(49,130,206,0.08)"}}>
             <h2 style={{fontSize:16,fontWeight:800,color:"#1a2a4a",marginBottom:18,borderBottom:"2px solid #e8f4ff",paddingBottom:10}}>{STEPS[step].title}</h2>
             {renderStep()}
-            {step === STEPS.length - 1 && (
-              <VoiceMemoSection
-                formData={data}
-                formType="ped-t1d"
-                onUpdate={(voiceMemo) => setData(p => ({ ...p, voiceMemo }))}
-              />
-            )}
             <div style={{display:"flex",justifyContent:"space-between",marginTop:26}}>
               <button style={{padding:"11px 22px",borderRadius:8,border:"1.5px solid #d0dff5",background:"#f7faff",color:step===0?"#c0d0e0":"#5580a8",fontWeight:700,fontSize:14,cursor:step===0?"not-allowed":"pointer"}} onClick={()=>goStep(step-1)} disabled={step===0}>← 前へ</button>
               {step<STEPS.length-1?(
