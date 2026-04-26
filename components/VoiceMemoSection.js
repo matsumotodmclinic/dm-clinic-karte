@@ -235,12 +235,17 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
         {aiSummary && (
           <div style={{ marginTop: 10 }}>
             <div style={{ ...labelStyle, color: '#1a5fa8' }}>{cfg.summaryLabel}</div>
-            <textarea
-              style={{ ...summaryStyle, minHeight: 'unset', height: 'auto' }}
-              rows={computeAutoRows(aiSummary, mode === 'pastHistory' ? 8 : 4)}
-              value={aiSummary}
-              onChange={handleEditSummary}
-            />
+            {(() => {
+              const rows = computeAutoRows(aiSummary, mode === 'pastHistory' ? 8 : 4)
+              return (
+                <textarea
+                  style={{ ...summaryStyle, minHeight: `${rows * 26}px`, height: 'auto' }}
+                  rows={rows}
+                  value={aiSummary}
+                  onChange={handleEditSummary}
+                />
+              )
+            })()}
             {mode === 'pastHistory' && (
               <PastHistoryFollowupCheck
                 diseaseNames={parseDiseasesFromSummary(aiSummary)}
