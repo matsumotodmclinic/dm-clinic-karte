@@ -186,14 +186,6 @@ export default function DetailPage() {
           )}
         </div>
 
-        {/* 問診データ */}
-        <div style={{ background:'#fff', borderRadius:16, padding:'20px', marginBottom:12, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
-          <div style={{ fontSize:14, fontWeight:800, color:'#1a2a4a', marginBottom:12 }}>問診データ（生データ）</div>
-          <pre style={{ background:'#f7faff', borderRadius:8, padding:'12px', fontSize:11, overflowX:'auto', color:'#3a5a7a', lineHeight:1.6 }}>
-            {JSON.stringify(record.form_data, null, 2)}
-          </pre>
-        </div>
-
         {/* 削除ボタン */}
         <div style={{ textAlign:'right', marginBottom:32 }}>
           <button onClick={handleDelete}
