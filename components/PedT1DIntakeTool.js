@@ -128,7 +128,7 @@ export default function PedT1DIntakeTool() {
 
 【患者情報JSON】
 ${JSON.stringify({disease:data.disease,history:data.history,body:data.body,reason:data.reason,support:data.support,chronic:data.chronic},null,2)}
-${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}
+${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}${data.voicePastHistory?.needsDoctorReview ? `\n【既往歴：要ドクター確認フラグあり(申し送り事項に「□ 既往歴：要ドクター確認」を必ず追加)】\nスタッフが既往歴の確認で医師の判断が必要と判定。\n` : ''}
 【出力フォーマット（空行は一切入れないこと）】
 ${getCurrentMonth()}：（受診理由1〜2行${data.voiceMemo?.aiSummary ? '。音声入力AI整形済みテキストを優先・統合して使用' : ''}）
 ＃1型糖尿病（タイプ）（発症時期）
@@ -160,6 +160,7 @@ ${getCurrentMonth()}：（受診理由1〜2行${data.voiceMemo?.aiSummary ? '。
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 □通院のご案内をお渡し済
+（既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
 （眼底検査=受けていない or 連携手帳=持っていない の場合）□糖尿病-眼科連携手帳をお渡し
 □甲状腺3項目・GAD抗体・CPRを初診時採血
 （HTありの場合）□HTの確認のため、血圧手帳をお渡ししています。
