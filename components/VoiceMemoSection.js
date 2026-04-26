@@ -365,11 +365,33 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
             {cfg.summaryHint}
           </div>
           {mode === 'pastHistory' && (
-            <PastHistoryFollowupCheck
-              diseaseNames={parseDiseasesFromSummary(aiSummary)}
-              age={formData?.history?.age}
-              helperText="AI 整形結果に含まれる既往歴に対し、診療上聞いておくべき追加質問を提案します。"
-            />
+            <div style={{ marginTop: 12, padding: '14px 16px', background: '#fff7e6', borderRadius: 10, border: '2px solid #fbbf24' }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#92400e', marginBottom: 6 }}>
+                📝 各疾患について以下を確認・追記してください
+              </div>
+              <ul style={{ margin: '4px 0 12px 18px', padding: 0, fontSize: 12, color: '#78350f', lineHeight: 1.7 }}>
+                <li>発症時期（和暦：H/R 形式）</li>
+                <li>治療内容（必要ならば手術、抗がん剤、内服など）</li>
+                <li>現在通院中の医療機関</li>
+                <li>follow間隔（○ヶ月に1回 など）</li>
+              </ul>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: needsDoctorReview ? '#fff5f5' : '#fff', borderRadius: 8, border: `2px solid ${needsDoctorReview ? '#c53030' : '#fbbf24'}`, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={!!needsDoctorReview}
+                  onChange={(e) => handleNeedsDoctorReviewChange(e.target.checked)}
+                  style={{ marginTop: 3, width: 20, height: 20, cursor: 'pointer' }}
+                />
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 900, color: needsDoctorReview ? '#c53030' : '#92400e' }}>
+                    🔲 要ドクター確認
+                  </div>
+                  <div style={{ fontSize: 11, color: '#7a7a7a', marginTop: 2, lineHeight: 1.5 }}>
+                    チェックすると、カルテの申し送り事項に「□ 既往歴：要ドクター確認」が自動追加されます。
+                  </div>
+                </div>
+              </label>
+            </div>
           )}
         </div>
       )}
