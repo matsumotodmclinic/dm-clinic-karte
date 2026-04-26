@@ -100,6 +100,7 @@ export default function HTHLIntakeTool() {
   const [showKarte, setShowKarte] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const [saving, setSaving] = useState(false);
   const topRef = useRef(null);
 
   const scrollTop = () => { if(topRef.current) topRef.current.scrollIntoView({behavior:"smooth"}); };
@@ -198,12 +199,15 @@ export default function HTHLIntakeTool() {
     } catch(e) { setSaveError(true); }
   };
   const saveEditedKarte = async () => {
+    if (saving) return;
     if (!recordId) { setSaveMsg("保存先IDが見つかりません"); setTimeout(() => setSaveMsg(""), 3000); return; }
+    setSaving(true); setSaveMsg("");
     try {
       const res = await fetch("/api/questionnaire", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: recordId, generated_karte: result }) });
       if (res.ok) { setSaveMsg("✓ 保存しました"); setTimeout(() => setSaveMsg(""), 2500); }
       else { setSaveMsg("保存に失敗しました"); setTimeout(() => setSaveMsg(""), 3000); }
     } catch (e) { setSaveMsg("保存に失敗しました"); setTimeout(() => setSaveMsg(""), 3000); }
+    finally { setSaving(false); }
   };
 
   const generateKarte = async () => {
@@ -721,7 +725,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               <div style={{marginBottom:8}}>
                 <textarea value={result} onChange={e=>setResult(e.target.value)} style={{width:"100%",minHeight:320,background:"#f5f9f7",border:"1px solid #c0e8d8",borderRadius:10,padding:"16px 18px",fontSize:13,lineHeight:2,color:"#1a3a2a",fontFamily:"monospace",resize:"vertical",boxSizing:"border-box"}}/>
                 <div style={{display:"flex",gap:8,marginTop:8,alignItems:"center"}}>
-                  <button onClick={saveEditedKarte} style={{padding:"10px 18px",borderRadius:8,border:"none",background:"#0f9668",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer"}}>💾 編集内容を保存</button>
+                  <button onClick={saveEditedKarte} disabled={saving} style={{padding:"10px 18px",borderRadius:8,border:"none",background:saving?"#7fc7a6":"#0f9668",color:"#fff",fontWeight:800,fontSize:13,cursor:saving?"wait":"pointer"}}>{saving?"💾 保存中...":"💾 編集内容を保存"}</button>
                   {saveMsg && <span style={{fontSize:13,fontWeight:700,color:saveMsg.startsWith("✓")?"#0f9668":"#c53030"}}>{saveMsg}</span>}
                 </div>
               </div>
