@@ -111,7 +111,7 @@ export default function PastHistoryFollowupCheck({ diseaseNames, otherDiseases, 
     setLoading(true);
     setAiError('');
     setAiResult(null);
-    const res = await aiSuggestFollowups(computedDiseaseNames, { age });
+    const res = await aiSuggestFollowups(computedDiseaseNames, { age }, aiSummary);
     setLoading(false);
     if (!res.ok) {
       setAiError(res.error || 'AI 取得に失敗しました');

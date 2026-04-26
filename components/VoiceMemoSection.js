@@ -69,11 +69,16 @@ const summaryStyle = {
   color: '#1a3a5a',
   marginTop: 10,
 }
-// 内容に応じて textarea の高さを動的に計算（疾患数が多くても全部見える）
+// 内容に応じて textarea の高さを動的に計算（折り返しも考慮）
+// 各行が約50文字で折り返すと想定し、視覚的な行数で計算
 const computeAutoRows = (text, min = 4) => {
   if (!text) return min;
-  const lines = text.split(/\r?\n/).length;
-  return Math.max(min, lines + 1);
+  const lines = text.split(/\r?\n/);
+  let visualRows = 0;
+  for (const line of lines) {
+    visualRows += Math.max(1, Math.ceil((line.length || 1) / 45));
+  }
+  return Math.max(min, visualRows + 1);
 }
 const btnPrimary = (disabled) => ({
   padding: '10px 18px',
@@ -231,8 +236,8 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
           <div style={{ marginTop: 10 }}>
             <div style={{ ...labelStyle, color: '#1a5fa8' }}>{cfg.summaryLabel}</div>
             <textarea
-              style={summaryStyle}
-              rows={computeAutoRows(aiSummary, mode === 'pastHistory' ? 6 : 4)}
+              style={{ ...summaryStyle, minHeight: 'unset', height: 'auto' }}
+              rows={computeAutoRows(aiSummary, mode === 'pastHistory' ? 8 : 4)}
               value={aiSummary}
               onChange={handleEditSummary}
             />
