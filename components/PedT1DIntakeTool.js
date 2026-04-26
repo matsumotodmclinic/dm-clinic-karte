@@ -3,7 +3,7 @@ import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
-const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ"];
+const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ", "金属"];
 
 const STEPS = [
   { id: "reason",   title: "受診理由" },
@@ -24,7 +24,7 @@ const initialData = {
   disease: { dm1type: "", dmOnsetEra: "令和", dmOnset: "", dmOnsetUnknown: false, ht: false, hl: false, thyroidChecked: false, bakusmi: "" },
   support: { familyMain: "", familySubList: [], familyNote: "", schoolStaff: [], schoolSupportPerson: [], schoolSupportNote: "", disclosedChild: "", disclosedTeacher: "", childGrade: "", childActivities: [], childActivityNote: "", parentWorkMain: [], parentWorkMainNote: "", parentWorkSub: [], parentWorkSubNote: "", independenceLevel: "", independenceNote: "" },
   chronic: { status: "", birthWeight: "", birthWeek: "", birthWeekDay: "", birthCity: "", booklets: [], documents: [], residenceCity: "", paymentConfirmed: "", maternalHandbook: "" },
-  history: { allergy: "なし", allergyDetail: "", fh: { dm: false, dmWho: [], dm1: false, dm1Who: [], collagen: false, collagenItems: [{who:"",disease:""}], ht: false, apo: false, ihd: false }, eyeVisiting: "", eye: "", livingSpouse: "", livingOther: [], livingCustom: "", keyPerson: "" },
+  history: { allergy: "なし", allergyDetail: "", fh: { dm: false, dmWho: [], dm1: false, dm1Who: [], collagen: false, collagenItems: [{who:"",disease:""}], ht: false, apo: false, ihd: false }, eyeVisiting: "", eyeFundusCheck: "", eyeNotebook: "", eye: "", livingSpouse: "", livingOther: [], livingCustom: "", keyPerson: "" },
   body: { height: "", weightNow: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
   voiceMemo: { transcript: "", aiSummary: "" },
   voicePastHistory: { transcript: "", aiSummary: "" },
@@ -144,7 +144,7 @@ ${getCurrentMonth()}：（受診理由1〜2行${data.voiceMemo?.aiSummary ? '。
 ---------------------------------------------
 【アレルギー歴】（なしまたは内容を同じ行に）
 【FH】DM(-/+、誰かも記載) 1型糖尿病(-/+、誰かも記載) 膠原病(-/+、誰が・どの病気かも記載) HT(-/+) APO(-/+) IHD(-/+)
-【眼科通院歴】（通院中の場合：眼科名・網膜症の状況・緑内障の有無を記載）
+【眼科通院歴】（眼底検査を受けている場合：眼科名・網膜症の状況・緑内障の有無を記載。受けていない場合は「未受診」と記載）
 【協力体制】
 ①家族の協力体制：（内容）
 ②学校の協力体制：（内容）
@@ -159,6 +159,8 @@ ${getCurrentMonth()}：（受診理由1〜2行${data.voiceMemo?.aiSummary ? '。
 身長:○cm　初診時:○kg${bmi ? `（BMI ${bmi}）` : ""}
 ---------------------------------------------
 【事前聴取時　申し送り事項】
+□通院のご案内をお渡し済
+（眼底検査=受けていない or 連携手帳=持っていない の場合）□糖尿病-眼科連携手帳をお渡し
 □甲状腺3項目・GAD抗体・CPRを初診時採血
 （HTありの場合）□HTの確認のため、血圧手帳をお渡ししています。
 （HLありの場合）□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。
@@ -596,14 +598,16 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
           )}
 
-          <label style={lbl()}>眼科通院歴</label>
+          <label style={lbl()}>糖尿病の眼底検査</label>
+          <div style={{fontSize:12,color:"#7a9abf",marginBottom:6}}>糖尿病による網膜症のフォローのため、眼底検査を受けているか確認します</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}}>
-            {["通院中","通院していない","今後受診予定"].map(v=>(
-              <button key={v} style={btn(d.history.eyeVisiting===v,v==="通院していない"?"#718096":"#1a5fa8")} onClick={()=>up("history","eyeVisiting",v)}>{v}</button>
+            {["受けている","受けていない","今後受ける予定"].map(v=>(
+              <button key={v} style={btn(d.history.eyeFundusCheck===v,v==="受けていない"?"#c53030":"#1a5fa8")} onClick={()=>up("history","eyeFundusCheck",v)}>{v}</button>
             ))}
           </div>
-          {d.history.eyeVisiting==="通院中"&&(
+          {d.history.eyeFundusCheck==="受けている"&&(
             <div style={{marginBottom:14}}>
+              <label style={lbl({fontSize:11})}>受診中の眼科</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:6}}>
                 {EYE_CLINICS.map(v=>(
                   <button key={v} style={{...btn(d.history.eye===v),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","eye",v)}>{v}</button>
@@ -626,7 +630,15 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
             </div>
           )}
-          {d.history.eyeVisiting!=="通院中"&&<div style={{marginBottom:14}}/>}
+          {d.history.eyeFundusCheck!=="受けている"&&<div style={{marginBottom:14}}/>}
+
+          <label style={lbl()}>糖尿病-眼科連携手帳</label>
+          <div style={{fontSize:12,color:"#7a9abf",marginBottom:6}}>糖尿病-眼科連携手帳をお持ちですか？</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:14}}>
+            {["持っている","持っていない"].map(v=>(
+              <button key={v} style={btn(d.history.eyeNotebook===v,v==="持っていない"?"#c53030":"#1a5fa8")} onClick={()=>up("history","eyeNotebook",v)}>{v}</button>
+            ))}
+          </div>
 
           <label style={lbl()}>家族構成</label>
           <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>親の状況</label>

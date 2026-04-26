@@ -3,7 +3,7 @@ import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
-const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ"];
+const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ", "金属"];
 
 const STEPS = [
   { id: "reason",  title: "受診理由" },
@@ -31,7 +31,7 @@ const initialData = {
     allergy: "なし", allergyDetail: "",
     fh: { dm: false, dmWho: [], ht: false, apo: false, ihd: false },
     smoking: "なし",
-    eyeVisiting: "", eye: "",
+    eyeVisiting: "", eyeFundusCheck: "", eyeNotebook: "", eye: "",
     livingSpouse: "", livingOther: [], livingCustom: "",
     work: "していない", job: [], jobNote: "", activity: "",
     otherDiseases: [{name:"",hospital:"",hospitalOther:""}],
@@ -164,7 +164,7 @@ ${getCurrentMonth()}：（受診理由1〜2行${data.voiceMemo?.aiSummary ? '。
 【FH】DM(-/+) HT(-/+) APO(-/+) IHD(-/+)
 【飲酒歴】なし（妊娠中）
 【喫煙歴】（記載）
-（糖尿病合併妊娠の場合のみ）【眼科通院歴】（通院中の場合：眼科名・網膜症の状況・緑内障の有無を記載）
+（糖尿病合併妊娠の場合のみ）【眼科通院歴】（眼底検査を受けている場合：眼科名・網膜症の状況・緑内障の有無を記載。受けていない場合は「未受診」と記載）
 【生活情報】（整形済みテキスト）
 【仕事】職業・活動量
 ---------------------------------------------
@@ -173,6 +173,8 @@ ${getCurrentMonth()}：（受診理由1〜2行${data.voiceMemo?.aiSummary ? '。
 身長:○cm　初診時:○kg${bmiNow ? `（BMI ${bmiNow}）` : ""}　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
 【事前聴取時　申し送り事項】
+□通院のご案内をお渡し済
+（糖尿病合併妊娠の場合のみ：眼底検査=受けていない or 連携手帳=持っていない の場合）□糖尿病-眼科連携手帳をお渡し
 □リブレ（自費CGM）取り付けに同意済
 （喫煙「あり」の場合）□喫煙確認あり・指導必要
 （新患2枠取得済の場合）□新患2枠取得済み
@@ -465,14 +467,16 @@ LINE登録ご案内→済　登録確認未・登録できない
           {/* 糖尿病合併妊娠の場合のみ眼科欄を表示 */}
           {d.disease.dmType==="糖尿病合併妊娠"&&(
             <div style={sBox({background:"#f0f7ff",border:"1.5px solid #bcd4f8",marginBottom:14})}>
-              <div style={{fontSize:13,fontWeight:800,color:"#1a5fa8",marginBottom:10}}>👁 眼科通院歴（糖尿病合併妊娠のため確認）</div>
+              <div style={{fontSize:13,fontWeight:800,color:"#1a5fa8",marginBottom:10}}>👁 糖尿病の眼底検査（糖尿病合併妊娠のため確認）</div>
+              <div style={{fontSize:12,color:"#7a9abf",marginBottom:6}}>糖尿病による網膜症のフォローのため、眼底検査を受けているか確認します</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}}>
-                {["通院中","通院していない","今後受診予定"].map(v=>(
-                  <button key={v} style={{...btn(d.history.eyeVisiting===v,"#1a5fa8"),fontSize:12}} onClick={()=>up("history","eyeVisiting",v)}>{v}</button>
+                {["受けている","受けていない","今後受ける予定"].map(v=>(
+                  <button key={v} style={{...btn(d.history.eyeFundusCheck===v,v==="受けていない"?"#c53030":"#1a5fa8"),fontSize:12}} onClick={()=>up("history","eyeFundusCheck",v)}>{v}</button>
                 ))}
               </div>
-              {d.history.eyeVisiting==="通院中"&&(
-                <div>
+              {d.history.eyeFundusCheck==="受けている"&&(
+                <div style={{marginBottom:10}}>
+                  <label style={lbl({fontSize:11})}>受診中の眼科</label>
                   <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:6}}>
                     {EYE_CLINICS.map(v=>(
                       <button key={v} style={{...btn(d.history.eye===v,"#1a5fa8"),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","eye",v)}>{v}</button>
@@ -495,6 +499,13 @@ LINE登録ご案内→済　登録確認未・登録できない
                   </div>
                 </div>
               )}
+              <label style={lbl({fontSize:12,marginTop:8})}>糖尿病-眼科連携手帳</label>
+              <div style={{fontSize:12,color:"#7a9abf",marginBottom:6}}>糖尿病-眼科連携手帳をお持ちですか？</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                {["持っている","持っていない"].map(v=>(
+                  <button key={v} style={{...btn(d.history.eyeNotebook===v,v==="持っていない"?"#c53030":"#1a5fa8"),fontSize:12}} onClick={()=>up("history","eyeNotebook",v)}>{v}</button>
+                ))}
+              </div>
             </div>
           )}
 

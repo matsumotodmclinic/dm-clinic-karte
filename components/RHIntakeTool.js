@@ -3,7 +3,7 @@ import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
-const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ"];
+const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ", "金属"];
 const CHILD_LOCATIONS = ["近居（同一市区町村）", "近隣（同一都道府県）", "遠方（他都道府県）", "子供なし"];
 const CHILD_GENDERS = ["息子", "娘", "両方"];
 
@@ -248,6 +248,7 @@ ${getCurrentMonth()}：${data.voiceMemo?.aiSummary ? '（音声入力AI整形済
 身長:○cm　初診時:○kg${bmi ? `（BMI ${bmi}）` : ""}　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
 【事前聴取時　申し送り事項】
+□通院のご案内をお渡し済
 （甲状腺3項目追加済の場合）□甲状腺3項目追加採血済
 （リブレ装着済の場合）□自費CGM（リブレ）装着済
 （新患2枠取得済の場合）□新患2枠取得済み
