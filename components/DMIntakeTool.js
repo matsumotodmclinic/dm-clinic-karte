@@ -798,13 +798,6 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
             </div>
           </div>
-          <VoiceMemoSection
-            mode="pastHistory"
-            formData={data}
-            formType="dm"
-            initialValue={data.voicePastHistory}
-            onUpdate={(memo) => setData(p => ({ ...p, voicePastHistory: memo }))}
-          />
         </div>
       );
 
@@ -1147,13 +1140,23 @@ LINE登録ご案内→済　登録確認未・登録できない
               {STEPS[step].title}
             </h2>
             {renderStep()}
-            {/* 最終ステップでのみ音声入力セクションを表示 */}
+            {/* 最終ステップでのみ音声入力セクションを表示（経緯 → 既往歴 の順） */}
             {step === STEPS.length - 1 && (
-              <VoiceMemoSection
-                formData={data}
-                formType="dm"
-                onUpdate={(voiceMemo) => setData(p => ({ ...p, voiceMemo }))}
-              />
+              <>
+                <VoiceMemoSection
+                  formData={data}
+                  formType="dm"
+                  initialValue={data.voiceMemo}
+                  onUpdate={(voiceMemo) => setData(p => ({ ...p, voiceMemo }))}
+                />
+                <VoiceMemoSection
+                  mode="pastHistory"
+                  formData={data}
+                  formType="dm"
+                  initialValue={data.voicePastHistory}
+                  onUpdate={(memo) => setData(p => ({ ...p, voicePastHistory: memo }))}
+                />
+              </>
             )}
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 26 }}>

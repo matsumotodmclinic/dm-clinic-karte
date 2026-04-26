@@ -69,6 +69,12 @@ const summaryStyle = {
   color: '#1a3a5a',
   marginTop: 10,
 }
+// 内容に応じて textarea の高さを動的に計算（疾患数が多くても全部見える）
+const computeAutoRows = (text, min = 4) => {
+  if (!text) return min;
+  const lines = text.split(/\r?\n/).length;
+  return Math.max(min, lines + 1);
+}
 const btnPrimary = (disabled) => ({
   padding: '10px 18px',
   borderRadius: 8,
@@ -117,23 +123,29 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
   const [unansweredQuestions, setUnansweredQuestions] = useState(initialValue?.unansweredQuestions || [])
+  const [needsDoctorReview, setNeedsDoctorReview] = useState(!!initialValue?.needsDoctorReview)
 
   // 親に変更を通知するヘルパー
-  const notify = (transcript, summary, unanswered) => {
+  const notify = (transcript, summary, unanswered, ndr) => {
     onUpdate?.({
       transcript: transcript ?? sr.transcript,
       aiSummary: summary ?? aiSummary,
       unansweredQuestions: unanswered ?? unansweredQuestions,
+      needsDoctorReview: ndr ?? needsDoctorReview,
     })
   }
 
   const handleSummaryUpdate = (updated) => {
     setAiSummary(updated)
-    notify(sr.transcript, updated, unansweredQuestions)
+    notify(sr.transcript, updated, unansweredQuestions, needsDoctorReview)
   }
   const handleUnansweredChange = (list) => {
     setUnansweredQuestions(list)
-    notify(sr.transcript, aiSummary, list)
+    notify(sr.transcript, aiSummary, list, needsDoctorReview)
+  }
+  const handleNeedsDoctorReviewChange = (value) => {
+    setNeedsDoctorReview(value)
+    notify(sr.transcript, aiSummary, unansweredQuestions, value)
   }
 
   const handleStart = () => {
@@ -220,6 +232,7 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
             <div style={{ ...labelStyle, color: '#1a5fa8' }}>{cfg.summaryLabel}</div>
             <textarea
               style={summaryStyle}
+              rows={computeAutoRows(aiSummary, mode === 'pastHistory' ? 6 : 4)}
               value={aiSummary}
               onChange={handleEditSummary}
             />
@@ -231,6 +244,8 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
                 aiSummary={aiSummary}
                 onSummaryUpdate={handleSummaryUpdate}
                 onUnansweredChange={handleUnansweredChange}
+                needsDoctorReview={needsDoctorReview}
+                onNeedsDoctorReviewChange={handleNeedsDoctorReviewChange}
               />
             )}
           </div>

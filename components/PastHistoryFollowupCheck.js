@@ -69,8 +69,10 @@ const tagStyle = (color) => ({
  * @param {string} [props.aiSummary] - 元の AI 整形済み既往歴（回答反映の元データ）
  * @param {(updated: string) => void} [props.onSummaryUpdate] - 反映後にサマリーを更新するコールバック
  * @param {(unanswered: Array<{disease:string,question:string}>) => void} [props.onUnansweredChange] - 未回答質問の変更通知
+ * @param {boolean} [props.needsDoctorReview] - 「先生に確認希望」フラグ
+ * @param {(value: boolean) => void} [props.onNeedsDoctorReviewChange]
  */
-export default function PastHistoryFollowupCheck({ diseaseNames, otherDiseases, age, helperText, aiSummary, onSummaryUpdate, onUnansweredChange }) {
+export default function PastHistoryFollowupCheck({ diseaseNames, otherDiseases, age, helperText, aiSummary, onSummaryUpdate, onUnansweredChange, needsDoctorReview, onNeedsDoctorReviewChange }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
@@ -82,6 +84,7 @@ export default function PastHistoryFollowupCheck({ diseaseNames, otherDiseases, 
   const [applying, setApplying] = useState(false);
   const [applyError, setApplyError] = useState('');
   const [unanswered, setUnanswered] = useState([]);
+  const [lastUpdatedSummary, setLastUpdatedSummary] = useState(''); // 直近の AI 整形最終結果
 
   // 入力済み病名のみ抽出（diseaseNames 優先、なければ otherDiseases から）
   const computedDiseaseNames = useMemo(() => {
@@ -165,6 +168,7 @@ export default function PastHistoryFollowupCheck({ diseaseNames, otherDiseases, 
       return;
     }
     onSummaryUpdate?.(res.updatedSummary);
+    setLastUpdatedSummary(res.updatedSummary);
     setUnanswered(res.unansweredQuestions || []);
     onUnansweredChange?.(res.unansweredQuestions || []);
     // 反映済みの入力をクリア
@@ -286,13 +290,21 @@ export default function PastHistoryFollowupCheck({ diseaseNames, otherDiseases, 
 
               {sr.isSupported && (
                 <div style={{ marginBottom: 8 }}>
-                  <textarea
-                    style={{ width: '100%', minHeight: 60, padding: '8px 10px', border: '1.5px solid #d0c094', borderRadius: 6, fontSize: 13, background: '#fffaf2', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical' }}
-                    value={sr.transcript + (sr.interimText ? ' ' + sr.interimText : '')}
-                    onChange={(e) => sr.setTranscript(e.target.value)}
-                    readOnly={sr.isRecording}
-                    placeholder="🎤 録音 or テキスト入力（例: 胆石は10年前に上尾中央総合病院で胆嚢摘出済み...）"
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <textarea
+                      style={{ width: '100%', minHeight: 80, padding: '8px 10px', border: sr.isRecording ? '2px solid #c62828' : '1.5px solid #d0c094', borderRadius: 6, fontSize: 13, background: '#fffaf2', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical' }}
+                      rows={Math.max(3, (sr.transcript + sr.interimText).split(/\r?\n/).length + 1)}
+                      value={sr.transcript + (sr.interimText ? ' ' + sr.interimText : '')}
+                      onChange={(e) => sr.setTranscript(e.target.value)}
+                      readOnly={sr.isRecording}
+                      placeholder="🎤 録音中はリアルタイムで認識テキストが表示されます。直接入力も可（例: 胆石は10年前に上尾中央総合病院で胆嚢摘出済み...）"
+                    />
+                    {sr.isRecording && (
+                      <div style={{ position: 'absolute', top: 6, right: 10, background: '#c62828', color: '#fff', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 700 }}>
+                        ● 録音中（リアルタイム認識）
+                      </div>
+                    )}
+                  </div>
                   <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
                     {!sr.isRecording ? (
                       <button onClick={sr.start} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: palette.borderStrong, color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>🎤 録音開始</button>
@@ -323,7 +335,45 @@ export default function PastHistoryFollowupCheck({ diseaseNames, otherDiseases, 
                 {applying ? '✨ AI で反映中...' : '✨ AI で反映 → 既往歴サマリーを更新'}
               </button>
               {applyError && <div style={{ color: '#c62828', fontSize: 11, marginTop: 6 }}>{applyError}</div>}
+
+              {/* AI 反映済み最終結果プレビュー */}
+              {lastUpdatedSummary && (
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: '#276749', marginBottom: 4 }}>
+                    ✨ AI 整形最終結果（既往歴サマリーに反映済）
+                  </div>
+                  <textarea
+                    readOnly
+                    style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #9ae6b4', borderRadius: 6, fontSize: 12, background: '#f0fff4', color: '#1a3a5a', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical' }}
+                    rows={Math.max(3, lastUpdatedSummary.split(/\r?\n/).length + 1)}
+                    value={lastUpdatedSummary}
+                  />
+                  <div style={{ fontSize: 10, color: '#888', marginTop: 4 }}>
+                    （上の「AI 整形結果」欄に同じ内容が反映されています。修正したい場合は上の欄を編集してください）
+                  </div>
+                </div>
+              )}
             </div>
+          )}
+
+          {/* 時間切れフラグ */}
+          {flatQuestions.length > 0 && onNeedsDoctorReviewChange && (
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 10, padding: '10px 12px', background: needsDoctorReview ? '#fff5f5' : '#fff', borderRadius: 8, border: `1.5px solid ${needsDoctorReview ? '#fc8181' : palette.border}`, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={!!needsDoctorReview}
+                onChange={(e) => onNeedsDoctorReviewChange(e.target.checked)}
+                style={{ marginTop: 2 }}
+              />
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: needsDoctorReview ? '#c53030' : palette.accent }}>
+                  ⏱ 時間が足りない・先生に確認してほしい
+                </div>
+                <div style={{ fontSize: 11, color: '#7a7a7a', marginTop: 2, lineHeight: 1.5 }}>
+                  チェックすると、カルテの申し送り事項に「□ 既往歴：聴取時間不足のため医師に確認依頼」と自動で追加されます。
+                </div>
+              </div>
+            </label>
           )}
 
           {/* 未回答質問リスト */}
