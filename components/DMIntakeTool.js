@@ -10,10 +10,10 @@ const CHILD_GENDERS = ["息子", "娘", "両方"];
 const STEPS = [
   { id: "alert", title: "重要確認" },
   { id: "reason", title: "受診理由" },
-  { id: "disease", title: "病気について" },
   { id: "history", title: "既往・家族歴" },
   { id: "lifestyle", title: "生活情報" },
   { id: "body", title: "体格・要望" },
+  { id: "extended", title: "病歴・経緯の聴取" },
 ];
 
 const NEARBY_HOSPITALS = ["自治医大さいたま医療センター", "上尾中央総合病院", "埼玉県立がんセンター", "その他", "不明"];
@@ -586,33 +586,9 @@ LINE登録ご案内→済　登録確認未・登録できない
         </div>
       );
 
-      /* 2: 病気 */
-      case 2: return (
+      /* 5: 病歴・経緯の聴取 */
+      case 5: return (
         <div>
-          <div style={{ ...sBox({ background: "#f0f7ff", border: "2px solid #bcd4f8" }), marginBottom: 16 }}>
-            <span style={{ fontSize: 15, fontWeight: 900, color: "#1a5fa8" }}>＃糖尿病</span>
-            {(d.reason.type !== "検診異常" && !d.reason.dmConcern) && (
-              <>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, marginBottom: 10, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 13, color: "#888" }}>発症時期：</span>
-                  <EraYear era={d.disease.dmOnsetEra} year={d.disease.dmOnset}
-                    onEraChange={v => up("disease", "dmOnsetEra", v)}
-                    onYearChange={v => up("disease", "dmOnset", v)}
-                    disabled={d.disease.dmOnsetUnknown} />
-                </div>
-                <label style={{ fontSize: 13, color: "#5580a8", display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-                  <input type="checkbox" checked={d.disease.dmOnsetUnknown} onChange={e => up("disease", "dmOnsetUnknown", e.target.checked)} />
-                  発症時期は不明（カルテ記載を省略）
-                </label>
-              </>
-            )}
-          </div>
-
-          <label style={{ fontSize: 15, fontWeight: 800, color: "#1a5fa8", display: "flex", alignItems: "center", gap: 8, marginBottom: 16, cursor: "pointer", background: "#f0f7ff", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #bcd4f8" }}>
-            <input type="checkbox" checked={d.disease.insulinUse} onChange={e => up("disease", "insulinUse", e.target.checked)} style={{ width: 20, height: 20 }} />
-            現在インスリン治療中
-          </label>
-
           <label style={lbl()}>合併する疾患</label>
           <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 14 }}>
             {[["ht", "高血圧（HT）"], ["hl", "脂質異常症（HL）"]].map(([k, l]) => <button key={k} style={btn(d.disease[k])} onClick={() => up("disease", k, !d.disease[k])}>{l}</button>)}
@@ -774,36 +750,49 @@ LINE登録ご案内→済　登録確認未・登録できない
           ))}
           <button style={{ ...btn(false, "#718096"), fontSize: 13, marginBottom: 14 }} onClick={() => setData(p => ({ ...p, disease: { ...p.disease, otherDiseases: [...p.disease.otherDiseases, emptyOtherDisease()] } }))}>＋ その他の病名を追加</button>
 
-          <div style={{ ...sBox({ background: "#f0f8ff", border: "1.5px solid #bee3f8" }), marginTop: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: "#2b6cb0", marginBottom: 4 }}>🔍 エコー検査について</div>
-            <div style={{ fontSize: 12, color: "#4a7fa8", marginBottom: 12, lineHeight: 1.7 }}>
-              当院では糖尿病の合併症検査として、頸動脈エコー・腹部エコー等を年に1回行っています。
-            </div>
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-              <div style={{ flex: 1, minWidth: 200 }}>
-                <label style={lbl({ color: "#2b6cb0" })}>頚部エコー</label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                  {["他院で施行済", "健診で施行済", "行っていない"].map(v => (
-                    <button key={v} style={{ ...btn(d.disease.echoNeck === v, "#2b6cb0"), padding: "6px 10px", fontSize: 12 }} onClick={() => up("disease", "echoNeck", v)}>{v}</button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ flex: 1, minWidth: 200 }}>
-                <label style={lbl({ color: "#2b6cb0" })}>腹部エコー</label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                  {["他院で施行済", "健診で施行済", "行っていない"].map(v => (
-                    <button key={v} style={{ ...btn(d.disease.echoAbdomen === v, "#2b6cb0"), padding: "6px 10px", fontSize: 12 }} onClick={() => up("disease", "echoAbdomen", v)}>{v}</button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          <VoiceMemoSection
+            formData={data}
+            formType="dm"
+            initialValue={data.voiceMemo}
+            onUpdate={(voiceMemo) => setData(p => ({ ...p, voiceMemo }))}
+          />
+          <VoiceMemoSection
+            mode="pastHistory"
+            formData={data}
+            formType="dm"
+            initialValue={data.voicePastHistory}
+            onUpdate={(memo) => setData(p => ({ ...p, voicePastHistory: memo }))}
+          />
         </div>
       );
 
-      /* 3: 既往・家族歴 */
-      case 3: return (
+      /* 2: 既往・家族歴 */
+      case 2: return (
         <div>
+          <div style={{ ...sBox({ background: "#f0f7ff", border: "2px solid #bcd4f8" }), marginBottom: 16 }}>
+            <span style={{ fontSize: 15, fontWeight: 900, color: "#1a5fa8" }}>＃糖尿病</span>
+            {(d.reason.type !== "検診異常" && !d.reason.dmConcern) && (
+              <>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, marginBottom: 10, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 13, color: "#888" }}>発症時期：</span>
+                  <EraYear era={d.disease.dmOnsetEra} year={d.disease.dmOnset}
+                    onEraChange={v => up("disease", "dmOnsetEra", v)}
+                    onYearChange={v => up("disease", "dmOnset", v)}
+                    disabled={d.disease.dmOnsetUnknown} />
+                </div>
+                <label style={{ fontSize: 13, color: "#5580a8", display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                  <input type="checkbox" checked={d.disease.dmOnsetUnknown} onChange={e => up("disease", "dmOnsetUnknown", e.target.checked)} />
+                  発症時期は不明（カルテ記載を省略）
+                </label>
+              </>
+            )}
+          </div>
+
+          <label style={{ fontSize: 15, fontWeight: 800, color: "#1a5fa8", display: "flex", alignItems: "center", gap: 8, marginBottom: 16, cursor: "pointer", background: "#f0f7ff", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #bcd4f8" }}>
+            <input type="checkbox" checked={d.disease.insulinUse} onChange={e => up("disease", "insulinUse", e.target.checked)} style={{ width: 20, height: 20 }} />
+            現在インスリン治療中
+          </label>
+
           <label style={lbl()}>患者様の年齢</label>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
             <input style={{ ...inp(), width: 80 }} type="number" placeholder="歳" value={d.history.age} onChange={e => up("history", "age", e.target.value)} />
@@ -967,11 +956,36 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
             </div>
           )}
+
+          <div style={{ ...sBox({ background: "#f0f8ff", border: "1.5px solid #bee3f8" }), marginTop: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#2b6cb0", marginBottom: 4 }}>🔍 エコー検査について</div>
+            <div style={{ fontSize: 12, color: "#4a7fa8", marginBottom: 12, lineHeight: 1.7 }}>
+              当院では糖尿病の合併症検査として、頸動脈エコー・腹部エコー等を年に1回行っています。
+            </div>
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <label style={lbl({ color: "#2b6cb0" })}>頚部エコー</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                  {["他院で施行済", "健診で施行済", "行っていない"].map(v => (
+                    <button key={v} style={{ ...btn(d.disease.echoNeck === v, "#2b6cb0"), padding: "6px 10px", fontSize: 12 }} onClick={() => up("disease", "echoNeck", v)}>{v}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <label style={lbl({ color: "#2b6cb0" })}>腹部エコー</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                  {["他院で施行済", "健診で施行済", "行っていない"].map(v => (
+                    <button key={v} style={{ ...btn(d.disease.echoAbdomen === v, "#2b6cb0"), padding: "6px 10px", fontSize: 12 }} onClick={() => up("disease", "echoAbdomen", v)}>{v}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       );
 
-      /* 4: 生活情報 */
-      case 4: return (
+      /* 3: 生活情報 */
+      case 3: return (
         <div>
           <label style={lbl()}>現在どなたと住んでいますか？</label>
           <label style={lbl({ fontSize: 11, color: "#888", marginBottom: 4 })}>配偶者の有無</label>
@@ -1039,8 +1053,8 @@ LINE登録ご案内→済　登録確認未・登録できない
         </div>
       );
 
-      /* 5: 体格・要望 */
-      case 5: return (
+      /* 4: 体格・要望 */
+      case 4: return (
         <div>
           <label style={lbl()}>身長・体重</label>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
@@ -1140,24 +1154,6 @@ LINE登録ご案内→済　登録確認未・登録できない
               {STEPS[step].title}
             </h2>
             {renderStep()}
-            {/* 最終ステップでのみ音声入力セクションを表示（経緯 → 既往歴 の順） */}
-            {step === STEPS.length - 1 && (
-              <>
-                <VoiceMemoSection
-                  formData={data}
-                  formType="dm"
-                  initialValue={data.voiceMemo}
-                  onUpdate={(voiceMemo) => setData(p => ({ ...p, voiceMemo }))}
-                />
-                <VoiceMemoSection
-                  mode="pastHistory"
-                  formData={data}
-                  formType="dm"
-                  initialValue={data.voicePastHistory}
-                  onUpdate={(memo) => setData(p => ({ ...p, voicePastHistory: memo }))}
-                />
-              </>
-            )}
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 26 }}>
               <button style={{ padding: "11px 22px", borderRadius: 8, border: "1.5px solid #d0dff5", background: "#f7faff", color: step === 0 ? "#c0d0e0" : "#5580a8", fontWeight: 700, fontSize: 14, cursor: step === 0 ? "not-allowed" : "pointer" }}

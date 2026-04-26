@@ -20,7 +20,7 @@ import PastHistoryFollowupCheck from './PastHistoryFollowupCheck'
 
 const MODE_CONFIG = {
   currentIllness: {
-    title: '📋 経緯の自由発話(任意)',
+    title: '📋 現病歴の音声入力(任意)',
     helper: '患者さんに経緯を話してもらってください。録音すると AI が医療的に整形してカルテに追加します。',
     summaryLabel: '✨ AI 整形結果(編集可、現病歴に追加されます)',
     summaryHint: 'この内容は「カルテ文を生成」ボタンを押した時に現病歴セクションに追加されます。',
