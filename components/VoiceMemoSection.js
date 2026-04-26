@@ -129,6 +129,8 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
   const [aiError, setAiError] = useState('')
   const [unansweredQuestions, setUnansweredQuestions] = useState(initialValue?.unansweredQuestions || [])
   const [needsDoctorReview, setNeedsDoctorReview] = useState(!!initialValue?.needsDoctorReview)
+  // 初回録音パネルの折りたたみ（AI整形完了後は省スペース化、ボタンで再展開可）
+  const [recordCollapsed, setRecordCollapsed] = useState(false)
 
   // 親に変更を通知するヘルパー
   const notify = (transcript, summary, unanswered, ndr) => {
@@ -194,6 +196,7 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
       return
     }
     setAiSummary(result.summary)
+    setRecordCollapsed(true) // AI整形完了 → 上部録音欄を折りたたむ
     notify(sr.transcript, result.summary)
   }
 
@@ -274,51 +277,70 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
         録音せず、テキスト入力だけでもご利用いただけます。
       </div>
 
-      {/* 録音テキストエリア */}
-      <div style={{ position: 'relative' }}>
-        <textarea
-          style={taStyle}
-          value={sr.transcript + (sr.interimText ? ' ' + sr.interimText : '')}
-          onChange={handleEditTranscript}
-          placeholder="🎤 録音開始 を押すと、ここに認識された音声テキストが表示されます。直接編集も可能です。"
-          readOnly={sr.isRecording}
-        />
-        {sr.isRecording && (
-          <div style={{
-            position: 'absolute', top: 8, right: 12,
-            background: '#c62828', color: '#fff', padding: '2px 8px',
-            borderRadius: 12, fontSize: 11, fontWeight: 700,
-          }}>
-            ● 録音中
-          </div>
-        )}
-      </div>
-
-      {/* 録音コントロール */}
-      <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
-        {!sr.isRecording ? (
-          <button type="button" style={btnPrimary(false)} onClick={handleStart}>
-            🎤 録音開始
-          </button>
-        ) : (
-          <button type="button" style={btnDanger(true)} onClick={handleStop}>
-            ⏹ 録音停止
-          </button>
-        )}
+      {/* 折りたたみ時の再展開ボタン */}
+      {recordCollapsed && aiSummary && (
         <button
           type="button"
-          style={btnPrimary(aiLoading || !sr.transcript || sr.isRecording)}
-          disabled={aiLoading || !sr.transcript || sr.isRecording}
-          onClick={handleSummarize}
+          onClick={() => setRecordCollapsed(false)}
+          style={{ padding: '6px 12px', borderRadius: 6, border: `1.5px solid ${cfg.borderColor}`, background: '#fff', color: cfg.accentColor, fontWeight: 700, fontSize: 12, cursor: 'pointer', marginBottom: 10 }}
         >
-          {aiLoading ? '✨ AI整形中...' : '✨ AI で整形'}
+          ▼ 録音テキスト・操作ボタンを再表示（追加録音する場合）
         </button>
-        {(sr.transcript || aiSummary) && (
-          <button type="button" style={btnGhost} onClick={handleClear}>
-            🗑️ クリア
-          </button>
-        )}
-      </div>
+      )}
+
+      {/* 録音テキストエリア + コントロール（AI整形完了後は折りたたみ） */}
+      {!recordCollapsed && (
+        <>
+          <div style={{ position: 'relative' }}>
+            <textarea
+              style={taStyle}
+              value={sr.transcript + (sr.interimText ? ' ' + sr.interimText : '')}
+              onChange={handleEditTranscript}
+              placeholder="🎤 録音開始 を押すと、ここに認識された音声テキストが表示されます。直接編集も可能です。"
+              readOnly={sr.isRecording}
+            />
+            {sr.isRecording && (
+              <div style={{
+                position: 'absolute', top: 8, right: 12,
+                background: '#c62828', color: '#fff', padding: '2px 8px',
+                borderRadius: 12, fontSize: 11, fontWeight: 700,
+              }}>
+                ● 録音中
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+            {!sr.isRecording ? (
+              <button type="button" style={btnPrimary(false)} onClick={handleStart}>
+                🎤 録音開始
+              </button>
+            ) : (
+              <button type="button" style={btnDanger(true)} onClick={handleStop}>
+                ⏹ 録音停止
+              </button>
+            )}
+            <button
+              type="button"
+              style={btnPrimary(aiLoading || !sr.transcript || sr.isRecording)}
+              disabled={aiLoading || !sr.transcript || sr.isRecording}
+              onClick={handleSummarize}
+            >
+              {aiLoading ? '✨ AI整形中...' : '✨ AI で整形'}
+            </button>
+            {(sr.transcript || aiSummary) && (
+              <button type="button" style={btnGhost} onClick={handleClear}>
+                🗑️ クリア
+              </button>
+            )}
+            {aiSummary && (
+              <button type="button" style={btnGhost} onClick={() => setRecordCollapsed(true)}>
+                ▲ 折りたたむ
+              </button>
+            )}
+          </div>
+        </>
+      )}
 
       {/* 認識エラー */}
       {sr.error && <div style={{ color: '#c62828', fontSize: 12, marginTop: 8 }}>{sr.error}</div>}

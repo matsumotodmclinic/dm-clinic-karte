@@ -279,7 +279,7 @@ export default function PastHistoryFollowupCheck({ diseaseNames, otherDiseases, 
           )}
 
           {/* 回答反映エリア（既往歴の音声入力と同等の大きさ・スタイル） */}
-          {flatQuestions.length > 0 && aiSummary && onSummaryUpdate && (
+          {flatQuestions.length > 0 && (
             <div style={{ marginTop: 16, padding: '16px 18px', background: '#eef4fc', borderRadius: 12, border: '2px solid #7aa8d4' }}>
               <div style={{ fontSize: 14, fontWeight: 800, color: '#1a5fa8', marginBottom: 6 }}>
                 🎤 質問への回答を音声入力（既往歴サマリーに自動反映）
