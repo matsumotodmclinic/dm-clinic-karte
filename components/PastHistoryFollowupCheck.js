@@ -278,6 +278,28 @@ export default function PastHistoryFollowupCheck({ diseaseNames, otherDiseases, 
             </div>
           )}
 
+          {/* 時間切れフラグ（質問カードの直下に大きく表示） */}
+          {flatQuestions.length > 0 && onNeedsDoctorReviewChange && (
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 14, padding: '14px 16px', background: needsDoctorReview ? '#fff5f5' : '#fffaf2', borderRadius: 10, border: `2px solid ${needsDoctorReview ? '#c53030' : '#fbbf24'}`, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={!!needsDoctorReview}
+                onChange={(e) => onNeedsDoctorReviewChange(e.target.checked)}
+                style={{ marginTop: 3, width: 20, height: 20, cursor: 'pointer' }}
+              />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 900, color: needsDoctorReview ? '#c53030' : '#92400e' }}>
+                  ⏱ 時間が足りない → 問診終了せず、先生（DR）に確認をお願いする
+                </div>
+                <div style={{ fontSize: 12, color: '#7a7a7a', marginTop: 4, lineHeight: 1.6 }}>
+                  チェックすると、カルテの申し送り事項に「□ 既往歴：聴取時間不足のため医師に確認依頼」が自動追加され、
+                  医師がカルテで確認できます。<br />
+                  下の音声入力で回答を記録する時間がない場合に使ってください。
+                </div>
+              </div>
+            </label>
+          )}
+
           {/* 回答反映エリア（既往歴の音声入力と同等の大きさ・スタイル） */}
           {flatQuestions.length > 0 && (
             <div style={{ marginTop: 16, padding: '16px 18px', background: '#eef4fc', borderRadius: 12, border: '2px solid #7aa8d4' }}>
@@ -365,26 +387,6 @@ export default function PastHistoryFollowupCheck({ diseaseNames, otherDiseases, 
                 </div>
               )}
             </div>
-          )}
-
-          {/* 時間切れフラグ */}
-          {flatQuestions.length > 0 && onNeedsDoctorReviewChange && (
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 10, padding: '10px 12px', background: needsDoctorReview ? '#fff5f5' : '#fff', borderRadius: 8, border: `1.5px solid ${needsDoctorReview ? '#fc8181' : palette.border}`, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={!!needsDoctorReview}
-                onChange={(e) => onNeedsDoctorReviewChange(e.target.checked)}
-                style={{ marginTop: 2 }}
-              />
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: needsDoctorReview ? '#c53030' : palette.accent }}>
-                  ⏱ 時間が足りない・先生に確認してほしい
-                </div>
-                <div style={{ fontSize: 11, color: '#7a7a7a', marginTop: 2, lineHeight: 1.5 }}>
-                  チェックすると、カルテの申し送り事項に「□ 既往歴：聴取時間不足のため医師に確認依頼」と自動で追加されます。
-                </div>
-              </div>
-            </label>
           )}
 
           {/* 未回答質問リスト */}
