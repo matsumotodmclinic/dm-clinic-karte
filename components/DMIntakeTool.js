@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
-import PastHistoryFollowupCheck from "./PastHistoryFollowupCheck";
 import { useRouter } from "next/router";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
@@ -774,8 +773,6 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
           ))}
           <button style={{ ...btn(false, "#718096"), fontSize: 13, marginBottom: 14 }} onClick={() => setData(p => ({ ...p, disease: { ...p.disease, otherDiseases: [...p.disease.otherDiseases, emptyOtherDisease()] } }))}>＋ その他の病名を追加</button>
-
-          <PastHistoryFollowupCheck otherDiseases={d.disease.otherDiseases} age={d.history?.age} />
 
           <div style={{ ...sBox({ background: "#f0f8ff", border: "1.5px solid #bee3f8" }), marginTop: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 800, color: "#2b6cb0", marginBottom: 4 }}>🔍 エコー検査について</div>

@@ -15,6 +15,8 @@
 import { useState } from 'react'
 import { useSpeechRecognition } from '../lib/speechRecognition'
 import { summarizeForKarte, summarizeForPastHistory } from '../lib/voiceSummary'
+import { parseDiseasesFromSummary } from '../lib/pastHistoryFollowup'
+import PastHistoryFollowupCheck from './PastHistoryFollowupCheck'
 
 const MODE_CONFIG = {
   currentIllness: {
@@ -210,6 +212,13 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
               value={aiSummary}
               onChange={handleEditSummary}
             />
+            {mode === 'pastHistory' && (
+              <PastHistoryFollowupCheck
+                diseaseNames={parseDiseasesFromSummary(aiSummary)}
+                age={formData?.history?.age}
+                helperText="AI 整形結果に含まれる既往歴に対し、診療上聞いておくべき追加質問を提案します。"
+              />
+            )}
           </div>
         )}
       </div>
@@ -286,6 +295,13 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
           <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
             {cfg.summaryHint}
           </div>
+          {mode === 'pastHistory' && (
+            <PastHistoryFollowupCheck
+              diseaseNames={parseDiseasesFromSummary(aiSummary)}
+              age={formData?.history?.age}
+              helperText="AI 整形結果に含まれる既往歴に対し、診療上聞いておくべき追加質問を提案します。"
+            />
+          )}
         </div>
       )}
     </div>

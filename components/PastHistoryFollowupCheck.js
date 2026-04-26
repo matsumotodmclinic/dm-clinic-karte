@@ -59,36 +59,45 @@ const tagStyle = (color) => ({
   marginLeft: 8,
 });
 
-export default function PastHistoryFollowupCheck({ otherDiseases, age }) {
+/**
+ * @param {object} props
+ * @param {string[]} [props.diseaseNames] - 病名のリスト（直接指定）
+ * @param {Array<{name: string}>} [props.otherDiseases] - その他病気エントリ配列（後方互換）
+ * @param {string|number} [props.age]
+ * @param {string} [props.helperText]
+ */
+export default function PastHistoryFollowupCheck({ diseaseNames, otherDiseases, age, helperText }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
   const [aiError, setAiError] = useState('');
 
-  // 入力済み病名のみ抽出
-  const diseaseNames = useMemo(
-    () => (otherDiseases || []).map((d) => (d?.name || '').trim()).filter((n) => n.length > 0),
-    [otherDiseases]
-  );
+  // 入力済み病名のみ抽出（diseaseNames 優先、なければ otherDiseases から）
+  const computedDiseaseNames = useMemo(() => {
+    if (Array.isArray(diseaseNames)) {
+      return diseaseNames.map((n) => (n || '').trim()).filter((n) => n.length > 0);
+    }
+    return (otherDiseases || []).map((d) => (d?.name || '').trim()).filter((n) => n.length > 0);
+  }, [diseaseNames, otherDiseases]);
 
   // ルールベース提案（即時）
   const ruleSuggestions = useMemo(() => {
-    return diseaseNames.map((name) => ({
+    return computedDiseaseNames.map((name) => ({
       input: name,
       matches: findRuleBasedSuggestions(name),
     }));
-  }, [diseaseNames]);
+  }, [computedDiseaseNames]);
 
   const handleCheck = async () => {
-    if (diseaseNames.length === 0) {
-      alert('「その他の病気・既往歴」に病名が入力されていません。');
+    if (computedDiseaseNames.length === 0) {
+      alert('チェック対象の病名がありません。');
       return;
     }
     setOpen(true);
     setLoading(true);
     setAiError('');
     setAiResult(null);
-    const res = await aiSuggestFollowups(diseaseNames, { age });
+    const res = await aiSuggestFollowups(computedDiseaseNames, { age });
     setLoading(false);
     if (!res.ok) {
       setAiError(res.error || 'AI 取得に失敗しました');
@@ -98,7 +107,7 @@ export default function PastHistoryFollowupCheck({ otherDiseases, age }) {
   };
 
   // 表示用: 入力病名ごとにルール + AI を統合
-  const merged = diseaseNames.map((name) => {
+  const merged = computedDiseaseNames.map((name) => {
     const ruleHit = ruleSuggestions.find((r) => r.input === name)?.matches || [];
     const aiHit = (aiResult || []).filter(
       (s) => s.disease && (s.disease.includes(name) || name.includes(s.disease))
@@ -108,7 +117,7 @@ export default function PastHistoryFollowupCheck({ otherDiseases, age }) {
 
   // AI 結果のうちどの入力にも紐付かないもの（参考扱い）
   const aiOrphan = (aiResult || []).filter(
-    (s) => !diseaseNames.some((n) => s.disease && (s.disease.includes(n) || n.includes(s.disease)))
+    (s) => !computedDiseaseNames.some((n) => s.disease && (s.disease.includes(n) || n.includes(s.disease)))
   );
 
   return (
@@ -119,7 +128,7 @@ export default function PastHistoryFollowupCheck({ otherDiseases, age }) {
             💡 既往歴の聞き漏れチェック
           </div>
           <div style={{ fontSize: 11, color: palette.accent, marginTop: 4, lineHeight: 1.5 }}>
-            事務スタッフ向け：入力済みの「その他の病気・既往歴」に対し、診療上聞いておくべき追加質問を提案します。
+            {helperText || '事務スタッフ向け：入力された既往歴に対し、診療上聞いておくべき追加質問を提案します。'}
           </div>
         </div>
         <button onClick={handleCheck} disabled={loading} style={btnStyle(loading)}>
@@ -129,7 +138,7 @@ export default function PastHistoryFollowupCheck({ otherDiseases, age }) {
 
       {open && (
         <div style={{ marginTop: 12 }}>
-          {diseaseNames.length === 0 && (
+          {computedDiseaseNames.length === 0 && (
             <div style={{ fontSize: 12, color: '#888' }}>病名が未入力です。</div>
           )}
 
@@ -209,7 +218,7 @@ export default function PastHistoryFollowupCheck({ otherDiseases, age }) {
           )}
 
           <div style={{ fontSize: 11, color: '#7a7a7a', marginTop: 10, lineHeight: 1.5 }}>
-            ※ 提案は参考用です。患者に追加確認後、上の「その他の病気・既往歴」欄に手入力してください（自動入力はされません）。
+            ※ 提案は参考用です。患者に追加確認後、上の入力欄や AI 整形結果を手動で編集してください（自動入力はされません）。
           </div>
         </div>
       )}
