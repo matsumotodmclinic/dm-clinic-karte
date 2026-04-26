@@ -296,7 +296,7 @@ ${getCurrentMonth()}：（受診理由1〜2行${data.voiceMemo?.aiSummary ? '。
 （CGM希望がある場合）□CGM：${data.reason.cgmCurrent&&data.reason.cgmCurrent!=="使用していない"?data.reason.cgmCurrent+"使用中→":""} ${data.reason.cgmWish&&data.reason.cgmWish!=="希望なし"?data.reason.cgmWish:""}
 （ポンプ希望がある場合）□インスリンポンプ：${data.reason.pumpCurrent&&data.reason.pumpCurrent!=="使用していない"?data.reason.pumpCurrent+"使用中→":""} ${data.reason.pumpWish&&data.reason.pumpWish!=="希望なし"?data.reason.pumpWish:""}
 （新患2枠取得済の場合）□新患2枠取得済み
-（医師希望指定ありの場合）□${data.body.doctorGender === "院長（初回のみ）" ? "院長希望（初回のみ）" : data.body.doctorGender}
+${(() => { const g = data.body.doctorGender; if (!g || g === "指定なし") return ""; const label = g === "女性医師希望" ? "女性医師" : g === "男性医師希望" ? "男性医師" : g; return `□医師希望：${label}`; })()}
 （患者フラグが「○患者疑い（話が長い方）」の場合）□○患者疑い（対応注意）
 （患者フラグが「●患者疑い（出禁対象）」の場合）□●患者疑い（出禁対象・要確認）
 【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）

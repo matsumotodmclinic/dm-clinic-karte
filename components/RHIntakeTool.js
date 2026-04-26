@@ -253,7 +253,7 @@ ${getCurrentMonth()}：${data.voiceMemo?.aiSummary ? '（音声入力AI整形済
 （甲状腺3項目追加済の場合）□甲状腺3項目追加採血済
 （リブレ装着済の場合）□自費CGM（リブレ）装着済
 （新患2枠取得済の場合）□新患2枠取得済み
-（医師希望指定ありの場合）□${data.body.doctorGender === "院長（初回のみ）" ? "院長希望（初回のみ）" : data.body.doctorGender}
+${(() => { const g = data.body.doctorGender; if (!g || g === "指定なし") return ""; const label = g === "女性医師希望" ? "女性医師" : g === "男性医師希望" ? "男性医師" : g; return `□医師希望：${label}`; })()}
 （患者フラグが「○患者疑い（話が長い方）」の場合）□○患者疑い（対応注意）
 （患者フラグが「●患者疑い（出禁対象）」の場合）□●患者疑い（出禁対象・要確認）
 （なければ省略）
