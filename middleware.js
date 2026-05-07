@@ -10,6 +10,22 @@
 import { NextResponse } from 'next/server'
 import { getIronSession } from 'iron-session'
 
+/**
+ * 全レスポンスに no-cache ヘッダーを付与する。
+ *
+ * 2026-05-08 追加: middleware の 302 redirect (/auth, /gate 等) が
+ * ブラウザの HTTP キャッシュに保存されてしまい、cookie 更新後も古いリダイレクトが
+ * 永続的に返却される問題への予防対策。kinkan-app 側で実害が確認されたため、
+ * voice + dm-clinic-karte も予防的に同時対応。
+ * matcher で静的アセットは既に除外されているので、CDN キャッシュへの影響なし。
+ */
+function withNoCache(res) {
+  res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+  res.headers.set('Pragma', 'no-cache')
+  res.headers.set('Expires', '0')
+  return res
+}
+
 const sessionOptions = {
   password: process.env.SECRET_COOKIE_PASSWORD || '',
   cookieName: 'dm_clinic_karte_session',
@@ -69,7 +85,7 @@ export async function middleware(request) {
 
   // ゲート自身のパスは素通り
   if (pathname === '/gate' || pathname === '/api/gate') {
-    return NextResponse.next()
+    return withNoCache(NextResponse.next())
   }
 
   // APP_GATE_PASSWORD 未設定ならゲートは無効（後方互換）
@@ -78,18 +94,20 @@ export async function middleware(request) {
     const gateToken = request.cookies.get(GATE_COOKIE_NAME)?.value
     if (!(await verifyGateCookie(gateToken))) {
       if (pathname.startsWith('/api/')) {
-        return NextResponse.json({ error: 'Gate required' }, { status: 401 })
+        return withNoCache(
+          NextResponse.json({ error: 'Gate required' }, { status: 401 })
+        )
       }
       const url = request.nextUrl.clone()
       url.pathname = '/gate'
       url.search = ''
-      return NextResponse.redirect(url)
+      return withNoCache(NextResponse.redirect(url))
     }
   }
 
   // /auth と /api/auth は（ゲート通過後は）認証不要
   if (pathname.startsWith('/auth') || pathname.startsWith('/api/auth')) {
-    return NextResponse.next()
+    return withNoCache(NextResponse.next())
   }
 
   // セッション検証
@@ -98,14 +116,16 @@ export async function middleware(request) {
 
   if (!session.user) {
     if (pathname.startsWith('/api/')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return withNoCache(
+        NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      )
     }
     const url = request.nextUrl.clone()
     url.pathname = '/auth'
-    return NextResponse.redirect(url)
+    return withNoCache(NextResponse.redirect(url))
   }
 
-  return response
+  return withNoCache(response)
 }
 
 export const config = {
