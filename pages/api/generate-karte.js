@@ -1,4 +1,4 @@
-// 許可する form_type(ホワイトリスト、CLAUDE.md の 7 フォームと同期)
+// 許可する form_type(ホワイトリスト、CLAUDE.md の 13 フォームと同期)
 const ALLOWED_FORM_TYPES = new Set([
   'DM基本',
   '1型糖尿病',
@@ -7,6 +7,12 @@ const ALLOWED_FORM_TYPES = new Set([
   '反応性低血糖',
   '小児1型糖尿病',
   '睡眠時無呼吸症候群',
+  '甲状腺（バセドウ初診）',
+  '甲状腺（バセドウ継続）',
+  '甲状腺（橋本病）',
+  '甲状腺（腫大異常なし）',
+  '甲状腺（腺腫経過観察）',
+  '甲状腺（腺腫悪性疑い）',
 ])
 
 // form_data のサイズ上限(JSON 文字列のバイト数)。
@@ -770,6 +776,140 @@ ${hasDmDiff ? 'DM基本セット' : '基本採血なし'}
 ${buildWeekday()}
 LINE登録ご案内→済　登録確認未・登録できない`
     max_tokens = 1800
+
+  // ────── 甲状腺関連 ──────
+  } else if ([
+    '甲状腺（バセドウ初診）', '甲状腺（バセドウ継続）', '甲状腺（橋本病）',
+    '甲状腺（腫大異常なし）', '甲状腺（腺腫経過観察）', '甲状腺（腺腫悪性疑い）',
+  ].includes(form_type)) {
+    const tTypeMap = {
+      '甲状腺（バセドウ初診）': 'basedow-new',
+      '甲状腺（バセドウ継続）': 'basedow-cont',
+      '甲状腺（橋本病）': 'hashimoto',
+      '甲状腺（腫大異常なし）': 'nodule-normal',
+      '甲状腺（腺腫経過観察）': 'adenoma',
+      '甲状腺（腺腫悪性疑い）': 'malignant',
+    }
+    const tType = tTypeMap[form_type]
+    const is2step = tType === 'nodule-normal' || tType === 'malignant'
+    const isNodule = ['adenoma', 'nodule-normal', 'malignant'].includes(tType)
+
+    let diagnosisName = ''
+    if (tType === 'basedow-new')   diagnosisName = '＃バセドウ病疑い（エコー上）'
+    else if (tType === 'basedow-cont')  diagnosisName = '＃バセドウ病（継続）'
+    else if (tType === 'hashimoto')     diagnosisName = '＃橋本病疑い（エコー上）'
+    else if (tType === 'nodule-normal') diagnosisName = '＃甲状腺腫大（エコー上異常なし）'
+    else if (tType === 'adenoma')       diagnosisName = '＃甲状腺腺腫（経過観察）'
+    else if (tType === 'malignant')     diagnosisName = '＃甲状腺腺腫（悪性疑い）'
+
+    const thySmoke = (() => {
+      if (!d.history) return ''
+      const s = d.history
+      if (s.smoking === 'なし') return 'なし'
+      const base = `${s.smokingAmount}本×${s.smokingYears}年（${s.smokingStartAge}歳〜）`
+      return s.smoking === '禁煙済' ? `${base}、${s.smokingQuitEra}${s.smokingQuitYear}年に禁煙` : base
+    })()
+
+    const thyWeekday = (() => {
+      const days = d.body?.preferredDays || []
+      if (!days.length) return '曜希望'
+      if (days.includes('指定なし')) return '曜希望：指定なし'
+      return `${days.join('・')}曜希望`
+    })()
+
+    const thySymptoms = (d.symptom?.selected || []).join('・') + (d.symptom?.otherText ? `（その他: ${d.symptom.otherText}）` : '')
+
+    const thyJobText = (() => {
+      if (!d.history) return ''
+      const jobs = Array.isArray(d.history.job) ? d.history.job : (d.history.job ? [d.history.job] : [])
+      const note = d.history.jobNote || ''
+      return [jobs.join('、'), note].filter(Boolean).join('・')
+    })()
+
+    const thyBmi = d.body?.height && d.body?.weightNow
+      ? (parseFloat(d.body.weightNow) / Math.pow(parseFloat(d.body.height) / 100, 2)).toFixed(1)
+      : null
+
+    let shinsokuLines = ''
+    if (tType === 'basedow-new' || tType === 'hashimoto') {
+      shinsokuLines = '□甲状腺3項目＋甲状腺抗体3項目の結果を後日確認\n□あくまでエコー上の疑いであり、確定診断は医師が行いカルテ記載を完了する'
+    } else if (tType === 'basedow-cont') {
+      shinsokuLines = '□甲状腺3項目の結果を後日確認\n□あくまでエコー上の所見であり、確定診断は医師が行いカルテ記載を完了する'
+    } else if (tType === 'nodule-normal') {
+      shinsokuLines = '□甲状腺3項目＋抗Tg抗体＋抗TPO抗体の結果を後日確認\n□本日初診にて診察（終診の可能性あり）'
+    } else if (tType === 'adenoma') {
+      shinsokuLines = '□甲状腺3項目＋抗Tg抗体＋抗TPO抗体の結果を後日確認\n□あくまでエコー上の所見であり、確定診断は医師が行いカルテ記載を完了する'
+    } else if (tType === 'malignant') {
+      shinsokuLines = '□当日、初事前診察に変更し専門医療機関へ紹介\n□当院は終診'
+    }
+
+    let footerBloodTest = ''
+    if (tType === 'basedow-new' || tType === 'hashimoto') footerBloodTest = '甲状腺3項目＋甲状腺抗体3項目'
+    else if (tType === 'basedow-cont') footerBloodTest = '甲状腺3項目'
+    else if (tType === 'nodule-normal' || tType === 'adenoma') footerBloodTest = '甲状腺3項目＋抗Tg抗体＋抗TPO抗体'
+
+    const thyDoctorLabel = d.body?.doctorGender === '院長（初回のみ）' ? '院長希望（初回のみ）' : (d.body?.doctorGender || '指定なし')
+
+    prompt = `あなたはまつもと糖尿病クリニックの電子カルテ記載AIです。以下の患者情報をもとに、甲状腺外来の初診カルテ記載文を生成してください。
+
+【ルール】
+- 該当しない項目は省略する
+- フォーマット記号（＃【】□♯）を使用する
+- 空行ルール（厳守）: ①自院管理＃疾患は連続列挙し空行なし ②自院管理ブロックの後、他院管理疾患の前にのみ1行空ける ③【事前聴取時 申し送り事項】の最終□行と【診察にあたっての要望】の間も空行なし
+- 注意書き・内部メモは出力しない。HTMLタグ・style属性は絶対に出力しない
+
+【患者情報】
+受診理由・補足：${d.reason?.summary || '（未記入）'}
+エコー所見：${d.echo?.thyroidEchoFindings || '（未記入）'}
+${isNodule && d.echo?.noduleSize ? `結節サイズ：${d.echo.noduleSize}` : ''}
+${isNodule && d.echo?.noduleCount ? `結節数：${d.echo.noduleCount}` : ''}
+${isNodule && d.echo?.noduleType ? `性状：${d.echo.noduleType}` : ''}
+症状：${thySymptoms || 'なし'}
+年齢：${d.history?.age || '未記入'}歳
+アレルギー：${d.history?.allergy === 'なし' ? 'なし' : (d.history?.allergyDetail || 'あり')}
+${!is2step ? `家族歴（甲状腺）：${d.history?.fh?.thyroid ? ('あり' + (d.history.fh.thyroidWho?.length ? `（${d.history.fh.thyroidWho.join('・')}）` : '')) : 'なし'}
+家族歴（DM）：${d.history?.fh?.dm ? ('あり' + (d.history.fh.dmWho?.length ? `（${d.history.fh.dmWho.join('・')}）` : '')) : 'なし'}
+喫煙歴：${thySmoke}
+健診：${(d.history?.checkup || []).join('・') || 'なし'}
+仕事：${thyJobText || '未記入'}
+活動量：${d.history?.activity || '未記入'}` : ''}
+${tType === 'basedow-cont' ? `手術歴：${d.history?.surgeryHistory ? ('あり' + (d.history.surgeryDetail ? `（${d.history.surgeryDetail}）` : '')) : 'なし'}
+アイソトープ治療歴：${d.history?.isotopeHistory ? ('あり' + (d.history.isotopeDetail ? `（${d.history.isotopeDetail}）` : '')) : 'なし'}
+副作用歴：${d.history?.sideEffectHistory ? ('あり' + (d.history.sideEffectDetail ? `（${d.history.sideEffectDetail}）` : '')) : 'なし'}
+眼科通院歴：${d.history?.eyeHistory ? ('あり' + (d.history.eyeClinic ? `（${d.history.eyeClinic}）` : '')) : 'なし'}` : ''}
+${tType === 'hashimoto' && d.history?.treatmentHistory ? `治療経緯：${d.history.treatmentHistory}` : ''}
+医師希望：${d.body?.doctorGender || '指定なし'}
+患者フラグ：${d.body?.patientFlag || '通常'}
+診察への要望：${d.body?.concern || 'なし'}
+
+【出力フォーマット】
+${getCurrentMonth()}：（受診理由サマリー1〜2行）
+${diagnosisName}（サマリーの直後、空行なし）
+
+【アレルギー歴】（なしまたは内容を同じ行に）
+${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
+【喫煙歴】${thySmoke}
+【健診】${(d.history?.checkup || []).join('・') || '未記入'}
+【仕事】${thyJobText}` : ''}
+---------------------------------------------
+甲状腺エコー：${d.echo?.thyroidEchoFindings || '本日施行'}${isNodule && d.echo?.noduleSize ? `　結節：${d.echo.noduleSize}` : ''}
+---------------------------------------------
+身長:${d.body?.height || '○'}cm　初診時:${d.body?.weightNow || '○'}kg${thyBmi ? `（BMI ${thyBmi}）` : ''}
+---------------------------------------------
+【事前聴取時　申し送り事項】
+□通院のご案内をお渡し済
+${shinsokuLines}
+（新患2枠取得済の場合）□新患2枠取得済み
+（医師希望指定ありの場合）□${thyDoctorLabel}
+（患者フラグが「○患者疑い」の場合）□○患者疑い（対応注意）
+（患者フラグが「●患者疑い」の場合）□●患者疑い（出禁対象・要確認）
+【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
+---------------------------------------------
+${getCurrentMonth()}：${footerBloodTest}
+
+（アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
+${tType !== 'malignant' ? `1月follow\n${thyWeekday}\nLINE登録ご案内→済　登録確認未・登録できない` : '（当日紹介、当院終診）'}`
+    max_tokens = 1200
 
   } else {
     return res.status(400).json({ error: `未対応のform_type: ${form_type}` })

@@ -1,75 +1,37 @@
 import { useRouter } from 'next/router';
 
-const FORMATS = [
+const CATEGORIES = [
   {
     id: 'dm',
-    href: '/dm',
-    label: 'DM基本',
-    sublabel: '2型糖尿病',
-    emoji: '🩺',
+    label: '糖尿病関連',
     color: '#1a5fa8',
-    bg: 'linear-gradient(135deg, #e8f0fe, #f0f7ff)',
-    border: '#bcd4f8',
+    bg: '#e8f0fe',
+    formats: [
+      { id: 'dm',      href: '/dm',      label: 'DM基本',           sublabel: '2型糖尿病',            emoji: '🩺',  color: '#1a5fa8', bg: 'linear-gradient(135deg, #e8f0fe, #f0f7ff)', border: '#bcd4f8' },
+      { id: 'hthl',    href: '/hthl',    label: '高血圧・脂質異常症', sublabel: 'HT / HL',             emoji: '💊',  color: '#2d8653', bg: 'linear-gradient(135deg, #e8f8ee, #f0fff4)', border: '#9ae6b4' },
+      { id: 't1d',     href: '/t1d',     label: '1型糖尿病',         sublabel: '成人',                emoji: '💉',  color: '#c53030', bg: 'linear-gradient(135deg, #fff5f5, #fef2f2)', border: '#feb2b2' },
+      { id: 'gdm',     href: '/gdm',     label: '妊娠糖尿病',        sublabel: 'GDM / 糖尿病合併妊娠', emoji: '🤰', color: '#c05c8a', bg: 'linear-gradient(135deg, #fff0f7, #fff5fb)', border: '#f0b8d4' },
+      { id: 'ped-t1d', href: '/ped-t1d', label: '小児1型糖尿病',     sublabel: '小児・思春期',          emoji: '👶', color: '#3182ce', bg: 'linear-gradient(135deg, #e8f4ff, #f0f7ff)', border: '#90cdf4' },
+      { id: 'rh',      href: '/rh',      label: '反応性低血糖',      sublabel: 'RH',                   emoji: '⚡', color: '#b45309', bg: 'linear-gradient(135deg, #fffbf0, #fff8f0)', border: '#f6ad55' },
+    ],
   },
   {
-    id: 'hthl',
-    href: '/hthl',
-    label: '高血圧・脂質異常症',
-    sublabel: 'HT / HL',
-    emoji: '💊',
-    color: '#2d8653',
-    bg: 'linear-gradient(135deg, #e8f8ee, #f0fff4)',
-    border: '#9ae6b4',
+    id: 'thyroid',
+    label: '甲状腺関連',
+    color: '#0d7d6a',
+    bg: '#e6fff8',
+    formats: [
+      { id: 'thyroid', href: '/thyroid', label: '甲状腺外来', sublabel: 'バセドウ / 橋本病 / 腺腫', emoji: '🦋', color: '#0d7d6a', bg: 'linear-gradient(135deg, #e6fff8, #f0fdf9)', border: '#81e6d9' },
+    ],
   },
   {
-    id: 't1d',
-    href: '/t1d',
-    label: '1型糖尿病',
-    sublabel: '成人',
-    emoji: '💉',
-    color: '#c53030',
-    bg: 'linear-gradient(135deg, #fff5f5, #fef2f2)',
-    border: '#feb2b2',
-  },
-  {
-    id: 'gdm',
-    href: '/gdm',
-    label: '妊娠糖尿病',
-    sublabel: 'GDM / 糖尿病合併妊娠',
-    emoji: '🤰',
-    color: '#c05c8a',
-    bg: 'linear-gradient(135deg, #fff0f7, #fff5fb)',
-    border: '#f0b8d4',
-  },
-  {
-    id: 'ped-t1d',
-    href: '/ped-t1d',
-    label: '小児1型糖尿病',
-    sublabel: '小児・思春期',
-    emoji: '👶',
-    color: '#3182ce',
-    bg: 'linear-gradient(135deg, #e8f4ff, #f0f7ff)',
-    border: '#90cdf4',
-  },
-  {
-    id: 'rh',
-    href: '/rh',
-    label: '反応性低血糖',
-    sublabel: 'RH',
-    emoji: '⚡',
-    color: '#b45309',
-    bg: 'linear-gradient(135deg, #fffbf0, #fff8f0)',
-    border: '#f6ad55',
-  },
-  {
-    id: 'sas',
-    href: '/sas',
-    label: '睡眠時無呼吸症候群',
-    sublabel: 'SAS / CPAP継続',
-    emoji: '🌙',
+    id: 'other',
+    label: 'その他',
     color: '#5a4fa8',
-    bg: 'linear-gradient(135deg, #eef2fb, #f5f4ff)',
-    border: '#c8c0ee',
+    bg: '#eef2fb',
+    formats: [
+      { id: 'sas', href: '/sas', label: '睡眠時無呼吸症候群', sublabel: 'SAS / CPAP継続', emoji: '🌙', color: '#5a4fa8', bg: 'linear-gradient(135deg, #eef2fb, #f5f4ff)', border: '#c8c0ee' },
+    ],
   },
 ];
 
@@ -90,7 +52,7 @@ export default function TopPage() {
       padding: '32px 16px 48px',
     }}>
       {/* ヘッダー */}
-      <div style={{ maxWidth: 640, margin: '0 auto 32px', textAlign: 'center' }}>
+      <div style={{ maxWidth: 640, margin: '0 auto 24px', textAlign: 'center' }}>
         <div style={{
           width: 64, height: 64, borderRadius: 18,
           background: 'linear-gradient(135deg, #1a5fa8, #3b82f6)',
@@ -105,91 +67,93 @@ export default function TopPage() {
           初診事前問診
         </div>
         <div style={{ fontSize: 14, color: '#7a9abf', lineHeight: 1.7 }}>
-          該当するフォーマットを選択してください
+          該当するカテゴリ・フォーマットを選択してください
         </div>
       </div>
-　　　{/* 問診一覧・ログアウトボタン */}
-        <div style={{ maxWidth: 640, margin: '0 auto 16px', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button
-            onClick={() => router.push('/list')}
-            style={{
-              padding: '10px 20px',
-              borderRadius: 10,
-              border: '1.5px solid #d0dff5',
-              background: '#fff',
-              color: '#1a5fa8',
-              fontWeight: 700,
-              fontSize: 14,
-              cursor: 'pointer',
-            }}
-          >
-            📋 問診一覧
-          </button>
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: '10px 20px',
-              borderRadius: 10,
-              border: '1.5px solid #feb2b2',
-              background: '#fff',
-              color: '#c53030',
-              fontWeight: 700,
-              fontSize: 14,
-              cursor: 'pointer',
-            }}
-          >
-            ログアウト
-          </button>
-        </div>
-      {/* フォーマット選択カード */}
-      <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {FORMATS.map((f) => (
-          <button
-            key={f.id}
-            onClick={() => router.push(f.href)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 16,
-              background: f.bg,
-              border: `2px solid ${f.border}`,
-              borderRadius: 16,
-              padding: '18px 20px',
-              cursor: 'pointer',
-              textAlign: 'left',
-              width: '100%',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-              transition: 'transform 0.15s, box-shadow 0.15s',
-            }}
-            onMouseOver={e => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)';
-            }}
-            onMouseOut={e => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
-            }}
-          >
-            {/* アイコン */}
+
+      {/* 問診一覧・ログアウトボタン */}
+      <div style={{ maxWidth: 640, margin: '0 auto 20px', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <button
+          onClick={() => router.push('/list')}
+          style={{ padding: '10px 20px', borderRadius: 10, border: '1.5px solid #d0dff5', background: '#fff', color: '#1a5fa8', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+        >
+          📋 問診一覧
+        </button>
+        <button
+          onClick={handleLogout}
+          style={{ padding: '10px 20px', borderRadius: 10, border: '1.5px solid #feb2b2', background: '#fff', color: '#c53030', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+        >
+          ログアウト
+        </button>
+      </div>
+
+      {/* カテゴリ別カード */}
+      <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {CATEGORIES.map((cat) => (
+          <div key={cat.id}>
+            {/* カテゴリヘッダー */}
             <div style={{
-              width: 52, height: 52, borderRadius: 14,
-              background: '#fff',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 26, flexShrink: 0,
-              boxShadow: `0 2px 8px ${f.color}30`,
+              display: 'flex', alignItems: 'center', gap: 10,
+              marginBottom: 10, paddingLeft: 4,
             }}>
-              {f.emoji}
-            </div>
-            {/* テキスト */}
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 17, fontWeight: 800, color: f.color, marginBottom: 3 }}>
-                {f.label}
-              </div>
-              <div style={{ fontSize: 12, color: '#8899aa', fontWeight: 500 }}>
-                {f.sublabel}
+              <div style={{
+                width: 4, height: 20, borderRadius: 2,
+                background: cat.color,
+              }} />
+              <div style={{ fontSize: 14, fontWeight: 800, color: cat.color, letterSpacing: '0.05em' }}>
+                {cat.label}
               </div>
             </div>
-            {/* 矢印 */}
-            <div style={{ fontSize: 20, color: f.color, opacity: 0.5, flexShrink: 0 }}>›</div>
-          </button>
+
+            {/* フォームカード一覧 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {cat.formats.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => router.push(f.href)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 16,
+                    background: f.bg,
+                    border: `2px solid ${f.border}`,
+                    borderRadius: 16,
+                    padding: '16px 20px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    transition: 'transform 0.15s, box-shadow 0.15s',
+                  }}
+                  onMouseOver={e => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)';
+                  }}
+                  onMouseOut={e => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
+                  }}
+                >
+                  <div style={{
+                    width: 50, height: 50, borderRadius: 14,
+                    background: '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 24, flexShrink: 0,
+                    boxShadow: `0 2px 8px ${f.color}30`,
+                  }}>
+                    {f.emoji}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: f.color, marginBottom: 3 }}>
+                      {f.label}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#8899aa', fontWeight: 500 }}>
+                      {f.sublabel}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 20, color: f.color, opacity: 0.5, flexShrink: 0 }}>›</div>
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
 
