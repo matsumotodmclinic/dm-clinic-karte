@@ -59,8 +59,8 @@ const initialData = {
     otherDiseases: [{name:"",hospital:"",hospitalOther:""}],
   },
   body: { height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
-  voiceMemo: { transcript: "", aiSummary: "" },
-  voicePastHistory: { transcript: "", aiSummary: "" },
+  voiceMemo: { transcript: "", aiSummary: "", needsDoctorReview: false },
+  voicePastHistory: { transcript: "", aiSummary: "", needsDoctorReview: false },
 };
 
 const inp = (x={}) => ({ padding:"9px 12px", border:"1.5px solid #d0dff5", borderRadius:8, fontSize:14, color:"#1a2a3a", background:"#f7faff", outline:"none", boxSizing:"border-box", fontFamily:"inherit", width:"100%", ...x });
@@ -251,7 +251,7 @@ export default function T1DIntakeTool() {
 
 【患者情報JSON】
 ${JSON.stringify(data,null,2)}
-${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}${data.voicePastHistory?.needsDoctorReview ? `\n【既往歴：要ドクター確認フラグあり(申し送り事項に「□ 既往歴：要ドクター確認」を必ず追加)】\nスタッフが既往歴の確認で医師の判断が必要と判定。\n` : ''}${(()=>{
+${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}${data.voiceMemo?.needsDoctorReview ? `\n【現病歴：要DR確認フラグあり(申し送り事項に「□現病歴：問診時間の関係で一部省略、要DR確認」を必ず追加)】\nスタッフが時間制約により現病歴を完全聴取できなかった、または患者発話を完全には拾えなかったと判定。\n` : ''}${data.voicePastHistory?.needsDoctorReview ? `\n【既往歴：要ドクター確認フラグあり(申し送り事項に「□ 既往歴：要ドクター確認」を必ず追加)】\nスタッフが既往歴の確認で医師の判断が必要と判定。\n` : ''}${(()=>{
   const sel=data.disease.dmSymptoms?.selected||[];
   if(sel.length===0)return'';
   const items=sel.filter(s=>s!=='その他');
@@ -291,6 +291,7 @@ ${getCurrentMonth()}：（受診理由1〜2行${data.voiceMemo?.aiSummary ? '。
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 □通院のご案内をお渡し済
+（現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
 （既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
 （眼底検査=受けていない or 連携手帳=持っていない の場合）□糖尿病-眼科連携手帳をお渡し
 （体重減少ありの場合）□体重減少あり（3ヶ月以内に3kg以上）インスリン導入要検討

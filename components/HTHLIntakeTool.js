@@ -42,8 +42,8 @@ const initialData = {
     work: "していない", job: [], jobNote: "", activity: "",
   },
   body: { height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
-  voiceMemo: { transcript: "", aiSummary: "" },
-  voicePastHistory: { transcript: "", aiSummary: "" },
+  voiceMemo: { transcript: "", aiSummary: "", needsDoctorReview: false },
+  voicePastHistory: { transcript: "", aiSummary: "", needsDoctorReview: false },
 };
 
 const inp = (x={}) => ({ padding:"9px 12px", border:"1.5px solid #d0dff5", borderRadius:8, fontSize:14, color:"#1a2a3a", background:"#f7faff", outline:"none", boxSizing:"border-box", fontFamily:"inherit", width:"100%", ...x });
@@ -238,7 +238,7 @@ export default function HTHLIntakeTool() {
 
 【患者情報JSON】
 ${JSON.stringify(data,null,2)}
-${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}${data.voicePastHistory?.needsDoctorReview ? `\n【既往歴：要ドクター確認フラグあり(申し送り事項に「□ 既往歴：要ドクター確認」を必ず追加)】\nスタッフが既往歴の確認で医師の判断が必要と判定。\n` : ''}
+${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}${data.voiceMemo?.needsDoctorReview ? `\n【現病歴：要DR確認フラグあり(申し送り事項に「□現病歴：問診時間の関係で一部省略、要DR確認」を必ず追加)】\nスタッフが時間制約により現病歴を完全聴取できなかった、または患者発話を完全には拾えなかったと判定。\n` : ''}${data.voicePastHistory?.needsDoctorReview ? `\n【既往歴：要ドクター確認フラグあり(申し送り事項に「□ 既往歴：要ドクター確認」を必ず追加)】\nスタッフが既往歴の確認で医師の判断が必要と判定。\n` : ''}
 【ルール追加】
 - 「診察にあたっての要望」は必ず【】付きで記載。記載なければ「なし」と記載
 - その他の病名がある場合は既往歴として記載
@@ -266,6 +266,7 @@ ${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の�
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 □通院のご案内をお渡し済
+（現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
 （既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
 （HLありの場合）□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。
 □初回療養計画書を作成済

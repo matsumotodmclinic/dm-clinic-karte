@@ -50,8 +50,8 @@ const initialData = {
     otherDiseases: [{name:"",hospital:"",hospitalOther:""}],
   },
   body: { height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
-  voiceMemo: { transcript: "", aiSummary: "" },
-  voicePastHistory: { transcript: "", aiSummary: "" },
+  voiceMemo: { transcript: "", aiSummary: "", needsDoctorReview: false },
+  voicePastHistory: { transcript: "", aiSummary: "", needsDoctorReview: false },
 };
 
 const inp = (x={}) => ({ padding:"9px 12px", border:"1.5px solid #d0dff5", borderRadius:8, fontSize:14, color:"#1a2a3a", background:"#f7faff", outline:"none", boxSizing:"border-box", fontFamily:"inherit", width:"100%", ...x });
@@ -232,7 +232,7 @@ export default function RHIntakeTool() {
 
 【患者情報JSON】
 ${JSON.stringify(data,null,2)}
-${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}${data.voicePastHistory?.needsDoctorReview ? `\n【既往歴：要ドクター確認フラグあり(申し送り事項に「□ 既往歴：要ドクター確認」を必ず追加)】\nスタッフが既往歴の確認で医師の判断が必要と判定。\n` : ''}
+${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}${data.voiceMemo?.needsDoctorReview ? `\n【現病歴：要DR確認フラグあり(申し送り事項に「□現病歴：問診時間の関係で一部省略、要DR確認」を必ず追加)】\nスタッフが時間制約により現病歴を完全聴取できなかった、または患者発話を完全には拾えなかったと判定。\n` : ''}${data.voicePastHistory?.needsDoctorReview ? `\n【既往歴：要ドクター確認フラグあり(申し送り事項に「□ 既往歴：要ドクター確認」を必ず追加)】\nスタッフが既往歴の確認で医師の判断が必要と判定。\n` : ''}
 【出力フォーマット】
 ${getCurrentMonth()}：${data.voiceMemo?.aiSummary ? '（音声入力AI整形済みテキストを優先・統合して使用）' : ''}
 ♯反応性低血糖疑い
@@ -255,6 +255,7 @@ ${getCurrentMonth()}：${data.voiceMemo?.aiSummary ? '（音声入力AI整形済
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 □通院のご案内をお渡し済
+（現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
 □自費CGM（リブレ）装着済（反応性低血糖疑いは全例必須記載）
 （既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
 （甲状腺3項目追加済の場合）□甲状腺3項目追加採血済

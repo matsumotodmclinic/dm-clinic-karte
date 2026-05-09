@@ -168,6 +168,11 @@ export default async function handler(req, res) {
     ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合、内容に応じて他院管理表記等も補完)】\n${d.voicePastHistory.aiSummary}\n`
     : ''
 
+  // 現病歴：要DR確認フラグ (申し送り事項に追加)
+  const voiceMemoNeedsReviewBlock = d.voiceMemo?.needsDoctorReview
+    ? `\n【現病歴：要DR確認フラグ(申し送り事項に「□現病歴：問診時間の関係で一部省略、要DR確認」を必ず追加)】\nスタッフが時間制約により現病歴を完全聴取できなかった、または患者発話を完全には拾えなかったと判定。\n`
+    : ''
+
   // 既往歴：要ドクター確認フラグ (申し送り事項に追加)
   const needsDoctorReviewBlock = d.voicePastHistory?.needsDoctorReview
     ? `\n【既往歴：要ドクター確認フラグ(申し送り事項に「□ 既往歴：要ドクター確認」を必ず追加)】\nスタッフが既往歴の確認で医師の判断が必要と判定。\n`
@@ -229,7 +234,7 @@ ${JSON.stringify(d, null, 2)}
 体重減少：${d.alert?.weightLoss || ''}
 HTあり：${d.disease?.ht || false}
 HLあり：${d.disease?.hl || false}
-${voiceMemoBlock}${voicePastHistoryBlock}${needsDoctorReviewBlock}
+${voiceMemoBlock}${voicePastHistoryBlock}${voiceMemoNeedsReviewBlock}${needsDoctorReviewBlock}
 【出力フォーマット（必ずこの順序で。該当なければ省略）】
 （体重減少が「あり」かつ3kg以上の場合のみ）【⚠️ 体重減少あり・早急なインスリン導入を検討】
 
@@ -261,6 +266,7 @@ ${d.reason?.dmConcern ? '＃糖尿病 or IGT or 正常耐糖能' : `＃糖尿病
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 □通院のご案内をお渡し済
+（現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
 （既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
 （眼底検査=受けていない or 連携手帳=持っていない の場合）□糖尿病-眼科連携手帳をお渡し
 （体重減少ありかつ3kg以上の場合）□体重減少あり（3ヶ月以内に3kg以上）インスリン導入要検討
@@ -307,7 +313,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 
 【患者情報JSON】
 ${JSON.stringify(d, null, 2)}
-${voiceMemoBlock}${voicePastHistoryBlock}${needsDoctorReviewBlock}
+${voiceMemoBlock}${voicePastHistoryBlock}${voiceMemoNeedsReviewBlock}${needsDoctorReviewBlock}
 【出力フォーマット】
 （体重減少ありなら）【⚠️ 体重減少あり・早急なインスリン導入を検討】
 
@@ -337,6 +343,7 @@ ${getCurrentMonth()}：（受診理由1〜2行${voiceMemoNote}）
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 □通院のご案内をお渡し済
+（現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
 （既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
 （眼底検査=受けていない or 連携手帳=持っていない の場合）□糖尿病-眼科連携手帳をお渡し
 （体重減少ありの場合）□体重減少あり（3ヶ月以内に3kg以上）インスリン導入要検討
@@ -388,7 +395,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 
 【患者情報JSON】
 ${JSON.stringify(d, null, 2)}
-${voiceMemoBlock}${voicePastHistoryBlock}${needsDoctorReviewBlock}
+${voiceMemoBlock}${voicePastHistoryBlock}${voiceMemoNeedsReviewBlock}${needsDoctorReviewBlock}
 【出力フォーマット】
 ${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の場合は気になる理由も含めて記載${voiceMemoNote}）
 ＃IGT（該当時のみ、受診理由の直後、空行なし）
@@ -412,6 +419,7 @@ ${echoLine(d.disease?.echoNeck, d.disease?.echoAbdomen)}（必ず1行に横配�
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 □通院のご案内をお渡し済
+（現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
 （既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
 （HLありの場合）□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。
 □初回療養計画書を作成済
@@ -455,7 +463,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 
 【患者情報JSON】
 ${JSON.stringify({ disease: d.disease, history: d.history, body: d.body, reason: d.reason }, null, 2)}
-${voiceMemoBlock}${voicePastHistoryBlock}${needsDoctorReviewBlock}
+${voiceMemoBlock}${voicePastHistoryBlock}${voiceMemoNeedsReviewBlock}${needsDoctorReviewBlock}
 【出力フォーマット】
 ${getCurrentMonth()}：（受診理由1〜2行${voiceMemoNote}）
 ＃妊娠糖尿病（または＃糖尿病合併妊娠）
@@ -480,6 +488,7 @@ ${echoLine(d.disease?.echoNeck, d.disease?.echoAbdomen)}（必ず1行に横配�
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 □通院のご案内をお渡し済
+（現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
 （既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
 （糖尿病合併妊娠の場合のみ：眼底検査=受けていない or 連携手帳=持っていない の場合）□糖尿病-眼科連携手帳をお渡し
 □リブレ（自費CGM）取り付けに同意済
@@ -518,7 +527,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 
 【患者情報JSON】
 ${JSON.stringify(d, null, 2)}
-${voiceMemoBlock}${voicePastHistoryBlock}${needsDoctorReviewBlock}
+${voiceMemoBlock}${voicePastHistoryBlock}${voiceMemoNeedsReviewBlock}${needsDoctorReviewBlock}
 【出力フォーマット】
 ${getCurrentMonth()}：${voiceMemoNote ? '（' + voiceMemoNote.replace(/^。/, '') + '）' : ''}
 ♯反応性低血糖疑い
@@ -541,6 +550,7 @@ ${getCurrentMonth()}：${voiceMemoNote ? '（' + voiceMemoNote.replace(/^。/, '
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 □通院のご案内をお渡し済
+（現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
 □自費CGM（リブレ）装着済（反応性低血糖疑いは全例必須記載）
 （既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
 （甲状腺3項目追加済の場合）□甲状腺3項目追加採血済
@@ -577,7 +587,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 
 【患者情報JSON】
 ${JSON.stringify({ disease: d.disease, history: d.history, body: d.body, reason: d.reason, support: d.support, chronic: d.chronic }, null, 2)}
-${voiceMemoBlock}${voicePastHistoryBlock}${needsDoctorReviewBlock}
+${voiceMemoBlock}${voicePastHistoryBlock}${voiceMemoNeedsReviewBlock}${needsDoctorReviewBlock}
 【出力フォーマット（空行は一切入れないこと）】
 ${getCurrentMonth()}：（受診理由1〜2行${voiceMemoNote}）
 ＃1型糖尿病（タイプ）（発症時期）
@@ -608,6 +618,7 @@ ${getCurrentMonth()}：（受診理由1〜2行${voiceMemoNote}）
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 □通院のご案内をお渡し済
+（現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
 （既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
 （眼底検査=受けていない or 連携手帳=持っていない の場合）□糖尿病-眼科連携手帳をお渡し
 □甲状腺3項目・GAD抗体・CPRを初診時採血
