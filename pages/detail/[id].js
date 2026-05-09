@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import SASDmDiffEditor from '../../components/SASDmDiffEditor';
 
 // 確認中を削除：新規→完了の2ステップ
 const STATUS_LABEL = { new: '新規', done: '完了' };
@@ -14,6 +15,9 @@ export default function DetailPage() {
   const [generating, setGenerating] = useState(false);
   const [karte, setKarte]       = useState('');
   const [saveMsg, setSaveMsg]   = useState('');
+  const [showDmDiffEditor, setShowDmDiffEditor] = useState(false);
+  const [savingDmDiff, setSavingDmDiff] = useState(false);
+  const [dmDiffMsg, setDmDiffMsg] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -74,6 +78,34 @@ export default function DetailPage() {
     } catch (e) { setSaveMsg('保存に失敗しました'); setTimeout(() => setSaveMsg(''), 3000); }
   };
 
+  const handleSaveDmDiff = async (newDmDiff) => {
+    if (savingDmDiff) return;
+    setSavingDmDiff(true);
+    setDmDiffMsg('');
+    try {
+      const newFormData = { ...record.form_data, dmDiff: newDmDiff };
+      const res = await fetch('/api/questionnaire', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, form_data: newFormData }),
+      });
+      if (res.ok) {
+        setRecord(prev => ({ ...prev, form_data: newFormData }));
+        setShowDmDiffEditor(false);
+        setDmDiffMsg('✓ DM差分問診を保存しました。「🔄 再生成」を押してSAS+DM統合カルテを生成してください。');
+        setTimeout(() => setDmDiffMsg(''), 8000);
+      } else {
+        setDmDiffMsg('保存に失敗しました');
+        setTimeout(() => setDmDiffMsg(''), 3000);
+      }
+    } catch (e) {
+      setDmDiffMsg('保存に失敗しました');
+      setTimeout(() => setDmDiffMsg(''), 3000);
+    } finally {
+      setSavingDmDiff(false);
+    }
+  };
+
   const handleGenerate = async () => {
     setGenerating(true);
     try {
@@ -110,6 +142,8 @@ export default function DetailPage() {
 
   const statusColor = STATUS_COLOR[record.status] || '#718096';
   const statusLabel = STATUS_LABEL[record.status] || record.status;
+  const isSAS = record.form_type === '睡眠時無呼吸症候群';
+  const dmDiffCompleted = !!record.form_data?.dmDiff?.completed;
 
   return (
     <div style={{ minHeight:'100vh', background:'#f7faff', fontFamily:"'Noto Sans JP',sans-serif", padding:'16px' }}>
@@ -151,6 +185,45 @@ export default function DetailPage() {
             </button>
           )}
         </div>
+
+        {/* SAS: DM差分問診（採血で糖尿病判明時にスタッフが追加聴取） */}
+        {isSAS && (
+          <div style={{ background:'#fff', borderRadius:16, padding:'18px 20px', marginBottom:12, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', border: dmDiffCompleted ? '2px solid #1a5fa8' : '1.5px dashed #bcd4f8' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10, marginBottom: showDmDiffEditor ? 12 : 0 }}>
+              <div>
+                <div style={{ fontSize:14, fontWeight:900, color:'#1a5fa8', marginBottom:4 }}>
+                  {dmDiffCompleted ? '✓ DM差分問診（入力済）' : '📝 DM差分問診（採血で糖尿病判明時）'}
+                </div>
+                <div style={{ fontSize:12, color:'#5580a8', lineHeight:1.6 }}>
+                  {dmDiffCompleted
+                    ? '採血で糖尿病が判明した患者の追加聴取が完了しています。再生成すると SAS+DM 統合カルテになります。'
+                    : '当院の事前採血で HbA1c が高値で糖尿病と診断された場合、DM 初期評価に必要な追加項目をここで聴取してください。'}
+                </div>
+              </div>
+              {!showDmDiffEditor && (
+                <button onClick={() => setShowDmDiffEditor(true)}
+                  style={{ padding:'10px 18px', borderRadius:8, border:'none', background: dmDiffCompleted ? '#5a8fc8' : 'linear-gradient(135deg,#1a5fa8,#3b82f6)', color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer' }}>
+                  {dmDiffCompleted ? '✏️ 編集' : '＋ DM差分問診を入力'}
+                </button>
+              )}
+            </div>
+            {dmDiffMsg && (
+              <div style={{ marginTop:8, padding:'10px 14px', background: dmDiffMsg.startsWith('✓') ? '#f0fff4' : '#fff5f5', border: `1.5px solid ${dmDiffMsg.startsWith('✓') ? '#9ae6b4' : '#feb2b2'}`, borderRadius:8, fontSize:13, color: dmDiffMsg.startsWith('✓') ? '#276749' : '#c53030', fontWeight:700 }}>
+                {dmDiffMsg}
+              </div>
+            )}
+            {showDmDiffEditor && (
+              <div style={{ marginTop:14 }}>
+                <SASDmDiffEditor
+                  value={record.form_data?.dmDiff}
+                  onSave={handleSaveDmDiff}
+                  onCancel={() => setShowDmDiffEditor(false)}
+                  saving={savingDmDiff}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* カルテ文 */}
         <div style={{ background:'#fff', borderRadius:16, padding:'20px', marginBottom:12, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>

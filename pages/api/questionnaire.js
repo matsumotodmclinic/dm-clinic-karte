@@ -55,7 +55,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-    const { id, status, generated_karte, markAllDone } = req.body
+    const { id, status, generated_karte, form_data, markAllDone } = req.body
     const session = await getSession(req, res)
 
     // 全件完了化（院長・事務長・リーダーのみ）
@@ -89,6 +89,17 @@ export default async function handler(req, res) {
     const updates = { updated_at: new Date().toISOString() }
     if (status) updates.status = status
     if (generated_karte) updates.generated_karte = generated_karte
+    if (form_data) {
+      // SAS問診の DM差分問診追記など、form_data 全体を更新する用途。
+      // object 型・サイズチェック（generate-karte と同じ 100KB 上限）。
+      if (typeof form_data !== 'object' || Array.isArray(form_data)) {
+        return res.status(400).json({ error: 'form_data must be an object' })
+      }
+      if (JSON.stringify(form_data).length > 100 * 1024) {
+        return res.status(413).json({ error: 'form_data too large' })
+      }
+      updates.form_data = form_data
+    }
 
     const { error } = await supabase
       .from('questionnaires')

@@ -43,13 +43,15 @@
 │   ├── GDMIntakeTool.js           # 妊娠糖尿病
 │   ├── RHIntakeTool.js            # 反応性低血糖
 │   ├── PedT1DIntakeTool.js        # 小児1型糖尿病
+│   ├── SASIntakeTool.js           # 睡眠時無呼吸症候群（CPAP継続/簡易PSG検査希望）
+│   ├── SASDmDiffEditor.js         # SAS用 DM差分問診エディタ（採血で糖尿病判明時、詳細画面でスタッフが追記）
 │   └── VoiceMemoSection.js        # 音声入力UI（mode=currentIllness/pastHistory）+ 要DR確認チェック
 ├── pages/
-│   ├── index.js                   # トップ（6フォーム選択カード）
+│   ├── index.js                   # トップ（7フォーム選択カード）
 │   ├── auth.js                    # ログイン画面
-│   ├── dm.js / t1d.js / hthl.js / gdm.js / rh.js / ped-t1d.js  # 各→re-export
+│   ├── dm.js / t1d.js / hthl.js / gdm.js / rh.js / ped-t1d.js / sas.js  # 各→re-export
 │   ├── list.js                    # 一覧（日付フィルタ・検索・30秒自動更新・削除）
-│   ├── detail/[id].js             # 詳細（カルテ表示・コピー・再生成・ステータス変更）
+│   ├── detail/[id].js             # 詳細（カルテ表示・コピー・再生成・ステータス変更・SAS用 DM差分問診）
 │   └── api/
 │       ├── auth.js                # POST: パスワード認証→cookie
 │       ├── generate.js            # POST: Anthropic APIプロキシ（経路A用）
@@ -58,7 +60,7 @@
 │       └── questionnaire/detail.js # GET: 単一レコード取得
 ```
 
-## 6つの問診フォーム（2026-04-26時点 step構成）
+## 7つの問診フォーム（2026-05-09時点 step構成）
 
 | form_type | コンポーネント | パス | ステップ |
 |---|---|---|---|
@@ -68,6 +70,7 @@
 | 妊娠糖尿病 | GDMIntakeTool | /gdm | 受診理由→妊娠・病名→既往・生活歴→体格・要望→**病歴・経緯の聴取** |
 | 反応性低血糖 | RHIntakeTool | /rh | 症状・きっかけ→既往・生活歴→体格・要望→**病歴・経緯の聴取** |
 | 小児1型糖尿病 | PedT1DIntakeTool | /ped-t1d | 受診理由→1型糖尿病→協力体制→小児慢性→生活・家族→体格・要望→**病歴・経緯の聴取** |
+| 睡眠時無呼吸症候群 | SASIntakeTool | /sas | 受診理由→**SAS区分・症状**→既往・生活歴→体格・要望→**病歴・経緯の聴取** |
 
 ### 「病歴・経緯の聴取」step（2026-04-26追加）
 全フォーム最終 step。VoiceMemoSection 2つを集約:
@@ -90,8 +93,8 @@ DMのみ「病気について」step を解体し以下に分散:
 `detail/[id].js` → `/api/generate-karte`（サーバー側でプロンプト組立）→ Claude API → `/api/questionnaire` PATCH で上書き
 
 ### ⚠️ プロンプト二重管理（最重要注意点）
-プロンプトは経路A（コンポーネント内、6ファイル）と経路B（generate-karte.js、6 form_type分）の**計7箇所に同一内容が存在**する。
-**プロンプト修正時は必ず7ファイル全て同期すること。** 片方だけだと初回生成と再生成で不整合が出る。
+プロンプトは経路A（コンポーネント内、7ファイル）と経路B（generate-karte.js、7 form_type分）の**計8箇所に同一内容が存在**する。
+**プロンプト修正時は必ず8ファイル全て同期すること。** 片方だけだと初回生成と再生成で不整合が出る。
 
 修正対象パターン:
 ```
@@ -101,8 +104,20 @@ components/PedT1DIntakeTool.js   (小児1型糖尿病 client)
 components/HTHLIntakeTool.js     (高血圧・脂質異常症 client)
 components/GDMIntakeTool.js      (妊娠糖尿病 client)
 components/RHIntakeTool.js       (反応性低血糖 client)
-pages/api/generate-karte.js      (再生成用 server, 6 form_type 全部含む)
+components/SASIntakeTool.js      (睡眠時無呼吸症候群 client)
+pages/api/generate-karte.js      (再生成用 server, 7 form_type 全部含む)
 ```
+
+### SAS フォームの dmDiff（採血後 DM 判明時の差分問診）
+SAS問診は当院の事前採血（全例）で HbA1c 高値→糖尿病確定するケースを想定。
+- 初回生成: SAS問診のみで `＃SAS / ＃SAS疑い` を主病名にカルテ生成
+- 詳細画面（`detail/[id].js`）に **SAS固有の「DM差分問診」入力UI**（`SASDmDiffEditor.js`）を表示
+- スタッフが採血結果を見て差分入力 → `form_data.dmDiff.completed=true` で保存（PATCH `/api/questionnaire`）
+- 「🔄 再生成」を押すと `generate-karte.js` の SAS分岐が `dmDiff.completed` を見て **SAS+DM 統合プロンプト**に切り替わる
+- 同レコード上で `generated_karte` のみ上書き（履歴は `updated_at` で追跡）
+
+dmDiff フォームで聞く項目（DM基本との差分のみ）:
+体重減少 / 糖尿病の症状9項目 / 過去の HbA1c指摘歴 / 既知の糖尿病発症時期 / インスリン使用 / 家族歴(DM/HL) / 眼底検査・連携手帳・網膜症 / 重要既往（胃癌・膵癌・IHD・脳梗塞）/ 治療希望 / 自由記載
 
 ## 音声入力サブシステム（2026-04-26時点）
 
@@ -327,6 +342,23 @@ pages/api/generate-karte.js      (再生成用 server, 6 form_type 全部含む)
 ## タスク履歴
 
 （ここに完了タスクを追記していく）
+
+### 2026-05-09 SAS問診追加セッション
+
+#### 新規追加: 7番目のフォーム「睡眠時無呼吸症候群」
+- `components/SASIntakeTool.js` 新規（HTHLベース、+ SAS固有 step）
+- `components/SASDmDiffEditor.js` 新規（DM差分問診のインラインエディタ）
+- `pages/sas.js` re-export
+- `pages/index.js` トップに7枚目カード追加（紫系・🌙）
+- `pages/api/generate-karte.js` SAS分岐（dmDiff有無で2系統プロンプト）+ ホワイトリスト 7→7
+- `pages/detail/[id].js` SAS用 DM差分問診ブロック追加
+- `pages/api/questionnaire.js` PATCH で form_data 更新を許可（100KB上限・object型チェック）
+
+#### SAS固有の運用フロー
+- 全例当院スタッフが問診（患者の自己記入ではない）
+- CPAP継続希望: 前医情報提供書を問診時に持参 → 確認OKならチェック → 申し送りに「□CPAP継続：前医情報提供書 確認済」、未確認なら「確認要」
+- 検査希望: 申し送りに「□SAS 簡易PSG発送手配 要」自動付与
+- SAS患者は全例事前採血 → HbA1c高値で糖尿病判明 → 詳細画面の DM差分問診を入力 → 再生成で SAS+DM統合カルテ → 申し送りに「□採血で DM判明 → DM初期評価追加実施済」自動付与
 
 ### 2026-04-24 クリニックセッション
 

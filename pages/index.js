@@ -61,6 +61,16 @@ const FORMATS = [
     bg: 'linear-gradient(135deg, #fffbf0, #fff8f0)',
     border: '#f6ad55',
   },
+  {
+    id: 'sas',
+    href: '/sas',
+    label: '睡眠時無呼吸症候群',
+    sublabel: 'SAS / CPAP継続',
+    emoji: '🌙',
+    color: '#5a4fa8',
+    bg: 'linear-gradient(135deg, #eef2fb, #f5f4ff)',
+    border: '#c8c0ee',
+  },
 ];
 
 export default function TopPage() {
