@@ -578,7 +578,7 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
 
       <div style={{ maxWidth: 680, margin: "0 auto 18px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={() => router.push("/thyroid")} style={{ padding: "6px 10px", borderRadius: 8, border: "1.5px solid #a7f3d0", background: "#fff", color: TC, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>← 甲状腺選択</button>
+          <button onClick={() => router.push("/")} style={{ padding: "6px 10px", borderRadius: 8, border: "1.5px solid #a7f3d0", background: "#fff", color: TC, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>← トップへ戻る</button>
           <div style={{ width: 42, height: 42, borderRadius: 12, background: `linear-gradient(135deg,${TC},#34d399)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>🦋</div>
           <div>
             <div style={{ fontSize: 11, color: "#2d8a78", fontWeight: 700, letterSpacing: "0.08em" }}>まつもと糖尿病クリニック</div>
@@ -658,7 +658,7 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "none", background: `linear-gradient(135deg,${TC},#34d399)`, color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer" }} onClick={() => copyToClipboard(result)}>📋 コピー</button>
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: `1.5px solid ${TC}`, background: "#f0fdf9", color: TC, fontWeight: 700, fontSize: 14, cursor: "pointer" }} onClick={() => { setDone(false); setStep(0); setTimeout(scrollTop, 50); }}>✏️ 修正する</button>
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #a7f3d0", background: "#f0fdf9", color: "#2d8a78", fontWeight: 700, fontSize: 14, cursor: "pointer" }} onClick={() => { setDone(false); setStep(0); setData(initialData); setResult(""); setVisitCode(""); setRecordId(""); setSaveMsg(""); setShowKarte(false); setSaveError(false); setTimeout(scrollTop, 50); }}>🔄 最初から</button>
-              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #a7f3d0", background: "#f0fdf9", color: "#2d8a78", fontWeight: 700, fontSize: 14, cursor: "pointer" }} onClick={() => { window.location.href = "/thyroid"; }}>🦋 甲状腺選択へ</button>
+              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #a7f3d0", background: "#f0fdf9", color: "#2d8a78", fontWeight: 700, fontSize: 14, cursor: "pointer" }} onClick={() => { window.location.href = "/"; }}>🏠 トップへ戻る</button>
             </div>
           </div>
         )}
