@@ -7,8 +7,11 @@ export default function ThyroidPage() {
   const [selectedType, setSelectedType] = useState(null);
 
   useEffect(() => {
-    if (router.isReady && router.query.type) {
+    if (!router.isReady) return;
+    if (router.query.type) {
       setSelectedType(router.query.type);
+    } else {
+      router.replace("/");
     }
   }, [router.isReady, router.query.type]);
 
@@ -16,7 +19,5 @@ export default function ThyroidPage() {
     return <ThyroidIntakeTool formType={selectedType} />;
   }
 
-  // クエリパラメータなし・直接アクセス時のフォールバック
-  router.replace("/");
   return null;
 }
