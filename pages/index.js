@@ -1,11 +1,15 @@
+import { useState } from 'react';
 import { useRouter } from 'next/router';
 
 const CATEGORIES = [
   {
     id: 'dm',
     label: '糖尿病関連',
+    sublabel: '2型DM / 1型DM / 妊娠糖尿病 / 小児1型 / 反応性低血糖 / 高血圧・脂質異常症',
+    emoji: '🩺',
     color: '#1a5fa8',
-    bg: '#e8f0fe',
+    bg: 'linear-gradient(135deg, #e8f0fe, #f0f7ff)',
+    border: '#bcd4f8',
     formats: [
       { id: 'dm',      href: '/dm',      label: 'DM基本',           sublabel: '2型糖尿病',            emoji: '🩺',  color: '#1a5fa8', bg: 'linear-gradient(135deg, #e8f0fe, #f0f7ff)', border: '#bcd4f8' },
       { id: 'hthl',    href: '/hthl',    label: '高血圧・脂質異常症', sublabel: 'HT / HL',             emoji: '💊',  color: '#2d8653', bg: 'linear-gradient(135deg, #e8f8ee, #f0fff4)', border: '#9ae6b4' },
@@ -18,8 +22,11 @@ const CATEGORIES = [
   {
     id: 'thyroid',
     label: '甲状腺関連',
+    sublabel: 'バセドウ病 / 橋本病 / 甲状腺腫大 / 腺腫',
+    emoji: '🦋',
     color: '#0d7d6a',
-    bg: '#e6fff8',
+    bg: 'linear-gradient(135deg, #e6fff8, #f0fdf9)',
+    border: '#81e6d9',
     formats: [
       { id: 'thyroid', href: '/thyroid', label: '甲状腺外来', sublabel: 'バセドウ / 橋本病 / 腺腫', emoji: '🦋', color: '#0d7d6a', bg: 'linear-gradient(135deg, #e6fff8, #f0fdf9)', border: '#81e6d9' },
     ],
@@ -27,8 +34,11 @@ const CATEGORIES = [
   {
     id: 'other',
     label: 'その他',
+    sublabel: '睡眠時無呼吸症候群（SAS / CPAP継続）',
+    emoji: '🌙',
     color: '#5a4fa8',
-    bg: '#eef2fb',
+    bg: 'linear-gradient(135deg, #eef2fb, #f5f4ff)',
+    border: '#c8c0ee',
     formats: [
       { id: 'sas', href: '/sas', label: '睡眠時無呼吸症候群', sublabel: 'SAS / CPAP継続', emoji: '🌙', color: '#5a4fa8', bg: 'linear-gradient(135deg, #eef2fb, #f5f4ff)', border: '#c8c0ee' },
     ],
@@ -37,12 +47,15 @@ const CATEGORIES = [
 
 export default function TopPage() {
   const router = useRouter();
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   const handleLogout = async () => {
     if (!confirm('ログアウトしますか？')) return;
     await fetch('/api/auth', { method: 'DELETE' });
     router.push('/auth');
   };
+
+  const cat = selectedCategory ? CATEGORIES.find(c => c.id === selectedCategory) : null;
 
   return (
     <div style={{
@@ -67,7 +80,7 @@ export default function TopPage() {
           初診事前問診
         </div>
         <div style={{ fontSize: 14, color: '#7a9abf', lineHeight: 1.7 }}>
-          該当するカテゴリ・フォーマットを選択してください
+          {cat ? `${cat.label}のフォームを選択してください` : '該当するカテゴリを選択してください'}
         </div>
       </div>
 
@@ -87,74 +100,124 @@ export default function TopPage() {
         </button>
       </div>
 
-      {/* カテゴリ別カード */}
-      <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        {CATEGORIES.map((cat) => (
-          <div key={cat.id}>
-            {/* カテゴリヘッダー */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              marginBottom: 10, paddingLeft: 4,
-            }}>
+      {/* カテゴリ選択 or フォーム一覧 */}
+      <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {!cat ? (
+          /* カテゴリ選択画面 */
+          CATEGORIES.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setSelectedCategory(c.id)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 18,
+                background: c.bg,
+                border: `2px solid ${c.border}`,
+                borderRadius: 18,
+                padding: '22px 24px',
+                cursor: 'pointer',
+                textAlign: 'left',
+                width: '100%',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.07)',
+                transition: 'transform 0.15s, box-shadow 0.15s',
+              }}
+              onMouseOver={e => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
+              }}
+              onMouseOut={e => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.07)';
+              }}
+            >
               <div style={{
-                width: 4, height: 20, borderRadius: 2,
-                background: cat.color,
-              }} />
-              <div style={{ fontSize: 14, fontWeight: 800, color: cat.color, letterSpacing: '0.05em' }}>
+                width: 58, height: 58, borderRadius: 16,
+                background: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 28, flexShrink: 0,
+                boxShadow: `0 2px 10px ${c.color}25`,
+              }}>
+                {c.emoji}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 18, fontWeight: 900, color: c.color, marginBottom: 5 }}>
+                  {c.label}
+                </div>
+                <div style={{ fontSize: 12, color: '#8899aa', fontWeight: 500, lineHeight: 1.5 }}>
+                  {c.sublabel}
+                </div>
+              </div>
+              <div style={{ fontSize: 22, color: c.color, opacity: 0.5, flexShrink: 0 }}>›</div>
+            </button>
+          ))
+        ) : (
+          /* フォーム一覧画面 */
+          <>
+            <button
+              onClick={() => setSelectedCategory(null)}
+              style={{
+                alignSelf: 'flex-start', padding: '7px 14px', borderRadius: 8,
+                border: `1.5px solid ${cat.border}`, background: '#fff',
+                color: cat.color, fontWeight: 700, fontSize: 12, cursor: 'pointer', marginBottom: 4,
+              }}
+            >
+              ← カテゴリに戻る
+            </button>
+
+            {/* カテゴリヘッダー */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 4 }}>
+              <div style={{ width: 4, height: 22, borderRadius: 2, background: cat.color }} />
+              <div style={{ fontSize: 16, fontWeight: 800, color: cat.color, letterSpacing: '0.05em' }}>
                 {cat.label}
               </div>
             </div>
 
-            {/* フォームカード一覧 */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {cat.formats.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => router.push(f.href)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 16,
-                    background: f.bg,
-                    border: `2px solid ${f.border}`,
-                    borderRadius: 16,
-                    padding: '16px 20px',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    width: '100%',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                    transition: 'transform 0.15s, box-shadow 0.15s',
-                  }}
-                  onMouseOver={e => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)';
-                  }}
-                  onMouseOut={e => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
-                  }}
-                >
-                  <div style={{
-                    width: 50, height: 50, borderRadius: 14,
-                    background: '#fff',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 24, flexShrink: 0,
-                    boxShadow: `0 2px 8px ${f.color}30`,
-                  }}>
-                    {f.emoji}
+            {cat.formats.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => router.push(f.href)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 16,
+                  background: f.bg,
+                  border: `2px solid ${f.border}`,
+                  borderRadius: 16,
+                  padding: '16px 20px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  width: '100%',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  transition: 'transform 0.15s, box-shadow 0.15s',
+                }}
+                onMouseOver={e => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)';
+                }}
+                onMouseOut={e => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
+                }}
+              >
+                <div style={{
+                  width: 50, height: 50, borderRadius: 14,
+                  background: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 24, flexShrink: 0,
+                  boxShadow: `0 2px 8px ${f.color}30`,
+                }}>
+                  {f.emoji}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: f.color, marginBottom: 3 }}>
+                    {f.label}
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: f.color, marginBottom: 3 }}>
-                      {f.label}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#8899aa', fontWeight: 500 }}>
-                      {f.sublabel}
-                    </div>
+                  <div style={{ fontSize: 12, color: '#8899aa', fontWeight: 500 }}>
+                    {f.sublabel}
                   </div>
-                  <div style={{ fontSize: 20, color: f.color, opacity: 0.5, flexShrink: 0 }}>›</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+                </div>
+                <div style={{ fontSize: 20, color: f.color, opacity: 0.5, flexShrink: 0 }}>›</div>
+              </button>
+            ))}
+          </>
+        )}
       </div>
 
       {/* フッター */}
