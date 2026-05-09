@@ -126,6 +126,9 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
   const [needsDoctorReview, setNeedsDoctorReview] = useState(!!initialValue?.needsDoctorReview)
+  // 現病歴用: 警告ボックスとチェックボックスの文言
+  const CURRENT_ILLNESS_REVIEW_LABEL = '現病歴：問診時間の関係で一部省略、要DR確認'
+  const CURRENT_ILLNESS_REVIEW_HELP = '診察時に医師が確認します。'
   // 初回録音パネルの折りたたみ（AI整形完了後は省スペース化、ボタンで再展開可）
   const [recordCollapsed, setRecordCollapsed] = useState(false)
 
@@ -197,86 +200,120 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
   const labelStyle = buildLabelStyle(cfg)
   const helperStyle = buildHelperStyle(cfg)
 
+  // 現病歴のみ: 上部に赤枠の警告メッセージ(セクション外側、大きめフォント)
+  const warningBox = mode === 'currentIllness' ? (
+    <div style={{
+      background: '#fff5f5',
+      border: '3px solid #c53030',
+      borderRadius: 12,
+      padding: '14px 18px',
+      marginBottom: 12,
+      fontSize: 16,
+      fontWeight: 800,
+      color: '#c53030',
+      lineHeight: 1.6,
+    }}>
+      必要なければ省略可。<br />
+      問診完了までに15分以上かかる見込みの場合は、省略のうえ<br />
+      下のチェックボックス『{CURRENT_ILLNESS_REVIEW_LABEL}』にチェックを入れること
+    </div>
+  ) : null
+
+  // 現病歴・既往歴の両モード共通: チェックボックス(常時表示)
+  // 既往歴モードは既存の「📝 各疾患について確認・追記してください」リストも含む
+  const reviewBox = (mode === 'currentIllness' || mode === 'pastHistory') ? (
+    <div style={{ marginTop: 12, padding: '14px 16px', background: '#fff7e6', borderRadius: 10, border: '2px solid #fbbf24' }}>
+      {mode === 'pastHistory' && (
+        <>
+          <div style={{ fontSize: 13, fontWeight: 800, color: '#92400e', marginBottom: 6 }}>
+            📝 各疾患について以下を確認・追記してください
+          </div>
+          <ul style={{ margin: '4px 0 12px 18px', padding: 0, fontSize: 12, color: '#78350f', lineHeight: 1.7 }}>
+            <li>発症時期（和暦：H/R 形式）</li>
+            <li>治療内容（必要ならば手術、抗がん剤、内服など）</li>
+            <li>現在通院中の医療機関</li>
+            <li>follow間隔（○ヶ月に1回 など）</li>
+          </ul>
+        </>
+      )}
+      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: needsDoctorReview ? '#fff5f5' : '#fff', borderRadius: 8, border: `2px solid ${needsDoctorReview ? '#c53030' : '#fbbf24'}`, cursor: 'pointer' }}>
+        <input
+          type="checkbox"
+          checked={!!needsDoctorReview}
+          onChange={(e) => handleNeedsDoctorReviewChange(e.target.checked)}
+          style={{ marginTop: 3, width: 20, height: 20, cursor: 'pointer' }}
+        />
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 900, color: needsDoctorReview ? '#c53030' : '#92400e' }}>
+            🔲 {mode === 'currentIllness' ? CURRENT_ILLNESS_REVIEW_LABEL : '要ドクター確認'}
+          </div>
+          <div style={{ fontSize: 11, color: '#7a7a7a', marginTop: 2, lineHeight: 1.5 }}>
+            {mode === 'currentIllness'
+              ? CURRENT_ILLNESS_REVIEW_HELP
+              : 'チェックすると、カルテの申し送り事項に「□ 既往歴：要ドクター確認」が自動追加されます。'}
+          </div>
+        </div>
+      </label>
+    </div>
+  ) : null
+
   // 非対応ブラウザ
   if (!sr.isSupported) {
     return (
-      <div style={sectionStyle}>
-        <div style={labelStyle}>{cfg.title}</div>
-        <div style={{ ...helperStyle, color: '#c62828' }}>
-          このブラウザは音声入力に対応していません(Safari/Chrome/Edge を推奨)。
-          直接テキスト入力で内容を残したい場合は下のテキストエリアにご記入ください。
-        </div>
-        <textarea
-          style={taStyle}
-          value={sr.transcript}
-          onChange={handleEditTranscript}
-          placeholder={mode === 'pastHistory' ? '既往歴をテキスト入力できます' : '患者さんから聞いた経緯をテキスト入力できます'}
-        />
-        <div style={{ marginTop: 10 }}>
-          <button
-            type="button"
-            style={btnPrimary(aiLoading || !sr.transcript)}
-            disabled={aiLoading || !sr.transcript}
-            onClick={handleSummarize}
-          >
-            {aiLoading ? '✨ AI整形中...' : '✨ AI で整形してカルテに追加'}
-          </button>
-        </div>
-        {aiError && <div style={{ color: '#c62828', fontSize: 12, marginTop: 8 }}>{aiError}</div>}
-        {aiSummary && (
-          <div style={{ marginTop: 10 }}>
-            <div style={{ ...labelStyle, color: '#1a5fa8' }}>{cfg.summaryLabel}</div>
-            {(() => {
-              const minRowsForMode = mode === 'pastHistory' ? 12 : 7
-              const baseHeight = minRowsForMode * 28
-              const rows = computeAutoRows(aiSummary, minRowsForMode)
-              const dynamicHeight = Math.max(baseHeight, rows * 28)
-              return (
-                <textarea
-                  style={{ ...summaryStyle, minHeight: `${dynamicHeight}px`, height: `${dynamicHeight}px` }}
-                  rows={rows}
-                  value={aiSummary}
-                  onChange={handleEditSummary}
-                />
-              )
-            })()}
-            {mode === 'pastHistory' && (
-              <div style={{ marginTop: 12, padding: '14px 16px', background: '#fff7e6', borderRadius: 10, border: '2px solid #fbbf24' }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#92400e', marginBottom: 6 }}>
-                  📝 各疾患について以下を確認・追記してください
-                </div>
-                <ul style={{ margin: '4px 0 12px 18px', padding: 0, fontSize: 12, color: '#78350f', lineHeight: 1.7 }}>
-                  <li>発症時期（和暦：H/R 形式）</li>
-                  <li>治療内容（必要ならば手術、抗がん剤、内服など）</li>
-                  <li>現在通院中の医療機関</li>
-                  <li>follow間隔（○ヶ月に1回 など）</li>
-                </ul>
-                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: needsDoctorReview ? '#fff5f5' : '#fff', borderRadius: 8, border: `2px solid ${needsDoctorReview ? '#c53030' : '#fbbf24'}`, cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={!!needsDoctorReview}
-                    onChange={(e) => handleNeedsDoctorReviewChange(e.target.checked)}
-                    style={{ marginTop: 3, width: 20, height: 20, cursor: 'pointer' }}
-                  />
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 900, color: needsDoctorReview ? '#c53030' : '#92400e' }}>
-                      🔲 要ドクター確認
-                    </div>
-                    <div style={{ fontSize: 11, color: '#7a7a7a', marginTop: 2, lineHeight: 1.5 }}>
-                      チェックすると、カルテの申し送り事項に「□ 既往歴：要ドクター確認」が自動追加されます。
-                    </div>
-                  </div>
-                </label>
-              </div>
-            )}
+      <>
+        {warningBox}
+        <div style={sectionStyle}>
+          <div style={labelStyle}>{cfg.title}</div>
+          <div style={{ ...helperStyle, color: '#c62828' }}>
+            このブラウザは音声入力に対応していません(Safari/Chrome/Edge を推奨)。
+            直接テキスト入力で内容を残したい場合は下のテキストエリアにご記入ください。
           </div>
-        )}
-      </div>
+          <textarea
+            style={taStyle}
+            value={sr.transcript}
+            onChange={handleEditTranscript}
+            placeholder={mode === 'pastHistory' ? '既往歴をテキスト入力できます' : '患者さんから聞いた経緯をテキスト入力できます'}
+          />
+          <div style={{ marginTop: 10 }}>
+            <button
+              type="button"
+              style={btnPrimary(aiLoading || !sr.transcript)}
+              disabled={aiLoading || !sr.transcript}
+              onClick={handleSummarize}
+            >
+              {aiLoading ? '✨ AI整形中...' : '✨ AI で整形してカルテに追加'}
+            </button>
+          </div>
+          {aiError && <div style={{ color: '#c62828', fontSize: 12, marginTop: 8 }}>{aiError}</div>}
+          {aiSummary && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ ...labelStyle, color: '#1a5fa8' }}>{cfg.summaryLabel}</div>
+              {(() => {
+                const minRowsForMode = mode === 'pastHistory' ? 12 : 7
+                const baseHeight = minRowsForMode * 28
+                const rows = computeAutoRows(aiSummary, minRowsForMode)
+                const dynamicHeight = Math.max(baseHeight, rows * 28)
+                return (
+                  <textarea
+                    style={{ ...summaryStyle, minHeight: `${dynamicHeight}px`, height: `${dynamicHeight}px` }}
+                    rows={rows}
+                    value={aiSummary}
+                    onChange={handleEditSummary}
+                  />
+                )
+              })()}
+            </div>
+          )}
+          {reviewBox}
+        </div>
+      </>
     )
   }
 
   return (
-    <div style={sectionStyle}>
+    <>
+      {warningBox}
+      <div style={sectionStyle}>
       <div style={labelStyle}>{cfg.title}</div>
       <div style={helperStyle}>
         {cfg.helper}<br />
@@ -364,37 +401,12 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
           <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
             {cfg.summaryHint}
           </div>
-          {mode === 'pastHistory' && (
-            <div style={{ marginTop: 12, padding: '14px 16px', background: '#fff7e6', borderRadius: 10, border: '2px solid #fbbf24' }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#92400e', marginBottom: 6 }}>
-                📝 各疾患について以下を確認・追記してください
-              </div>
-              <ul style={{ margin: '4px 0 12px 18px', padding: 0, fontSize: 12, color: '#78350f', lineHeight: 1.7 }}>
-                <li>発症時期（和暦：H/R 形式）</li>
-                <li>治療内容（必要ならば手術、抗がん剤、内服など）</li>
-                <li>現在通院中の医療機関</li>
-                <li>follow間隔（○ヶ月に1回 など）</li>
-              </ul>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: needsDoctorReview ? '#fff5f5' : '#fff', borderRadius: 8, border: `2px solid ${needsDoctorReview ? '#c53030' : '#fbbf24'}`, cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={!!needsDoctorReview}
-                  onChange={(e) => handleNeedsDoctorReviewChange(e.target.checked)}
-                  style={{ marginTop: 3, width: 20, height: 20, cursor: 'pointer' }}
-                />
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 900, color: needsDoctorReview ? '#c53030' : '#92400e' }}>
-                    🔲 要ドクター確認
-                  </div>
-                  <div style={{ fontSize: 11, color: '#7a7a7a', marginTop: 2, lineHeight: 1.5 }}>
-                    チェックすると、カルテの申し送り事項に「□ 既往歴：要ドクター確認」が自動追加されます。
-                  </div>
-                </div>
-              </label>
-            </div>
-          )}
         </div>
       )}
-    </div>
+
+      {/* 要DR確認 / 要ドクター確認 チェックボックス(常時表示) */}
+      {reviewBox}
+      </div>
+    </>
   )
 }
