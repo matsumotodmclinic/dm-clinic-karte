@@ -897,7 +897,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
           ? `当院エコーにて${thyEchoItems.join('、')}の所見を認め橋本病を疑う`
           : `当院エコーにて${thyEchoItems.join('、')}の所見を認めバセドウ病を疑う`
       : ''
-    const thyReasonText = (tType === 'basedow-new' || tType === 'hashimoto') ? (() => {
+    const thyReasonText = (tType === 'basedow-new' || tType === 'hashimoto' || tType === 'basedow-cont') ? (() => {
       const r = d.reason || {}
       const parts = []
       if (r.type === '紹介') {
@@ -924,7 +924,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 - バセドウ初診の「甲状腺エコー：」行は後ろに何も追記せず「甲状腺エコー：」のみ出力する
 
 【患者情報】
-受診理由：${(tType === 'basedow-new' || tType === 'hashimoto') ? (thyReasonText || d.reason?.summary || '（未記入）') : (d.reason?.summary || '（未記入）')}
+受診理由：${(tType === 'basedow-new' || tType === 'hashimoto' || tType === 'basedow-cont') ? (thyReasonText || d.reason?.summary || '（未記入）') : (d.reason?.summary || '（未記入）')}
 ${tType === 'basedow-cont' ? `診断時期：${d.history?.diagnosisEra || '令和'}${d.history?.diagnosisYear || '（不明）'}年\n内服薬：${contMedsText || '（未選択）'}` : ''}
 エコー所見：${useCheckboxEcho ? (thyEchoLine || '（未選択）') : (d.echo?.thyroidEchoFindings || '（未記入）')}
 ${useCheckboxEcho && d.echo?.ecg ? `ECG：${d.echo.ecg}` : ''}

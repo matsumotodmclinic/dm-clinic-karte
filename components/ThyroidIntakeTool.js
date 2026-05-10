@@ -257,7 +257,7 @@ export default function ThyroidIntakeTool({ formType }) {
           ? `当院エコーにて${thyEchoItems.join("、")}の所見を認め橋本病を疑う`
           : `当院エコーにて${thyEchoItems.join("、")}の所見を認めバセドウ病を疑う`
       : "";
-    const thyReasonText = (formType === 'basedow-new' || formType === 'hashimoto') ? (() => {
+    const thyReasonText = (formType === 'basedow-new' || formType === 'hashimoto' || formType === 'basedow-cont') ? (() => {
       const r = data.reason;
       const parts = [];
       if (r.type === "紹介") {
@@ -284,7 +284,7 @@ export default function ThyroidIntakeTool({ formType }) {
 - バセドウ初診の「甲状腺エコー：」行は後ろに何も追記せず「甲状腺エコー：」のみ出力する
 
 【患者情報】
-受診理由：${(formType === 'basedow-new' || formType === 'hashimoto') ? (thyReasonText || data.reason.summary || "（未記入）") : (data.reason.summary || "（未記入）")}
+受診理由：${(formType === 'basedow-new' || formType === 'hashimoto' || formType === 'basedow-cont') ? (thyReasonText || data.reason.summary || "（未記入）") : (data.reason.summary || "（未記入）")}
 ${formType === 'basedow-cont' ? `診断時期：${data.history.diagnosisEra}${data.history.diagnosisYear || "（不明）"}年\n内服薬：${contMedsText || "（未選択）"}` : ""}
 エコー所見：${useCheckboxEcho ? (thyEchoLine || "（未選択）") : (data.echo.thyroidEchoFindings || "（未記入）")}
 ${useCheckboxEcho && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
@@ -371,7 +371,7 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
   // ── Step 0: 受診理由・エコー所見 ──────────────────────────
   const renderStep0 = () => (
     <div>
-      {(formType === 'basedow-new' || formType === 'hashimoto') ? (
+      {(formType === 'basedow-new' || formType === 'hashimoto' || formType === 'basedow-cont') ? (
         <>
           <label style={lbl()}>受診理由</label>
           <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 14 }}>
@@ -443,39 +443,6 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
           )}
 
           <label style={{ ...lbl(), marginTop: 8 }}>自由記入欄（任意）</label>
-          <textarea style={{ ...inp(), minHeight: 60, resize: "vertical", marginBottom: 14 }} placeholder="補足があれば記載" value={data.reason.summary} onChange={e => up("reason", "summary", e.target.value)} />
-        </>
-      ) : formType === 'basedow-cont' ? (
-        <>
-          <div style={{ marginBottom: 14 }}>
-            <label style={lbl()}>診断時期</label>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <select style={{ ...inp(), width: 80 }} value={data.history.diagnosisEra} onChange={e => up("history", "diagnosisEra", e.target.value)}>
-                <option>昭和</option><option>平成</option><option>令和</option>
-              </select>
-              <input style={{ ...inp(), width: 58 }} type="number" placeholder="年" value={data.history.diagnosisYear} onChange={e => up("history", "diagnosisYear", e.target.value)} />
-              <span style={{ fontSize: 13, color: "#666" }}>年</span>
-              <input style={{ ...inp(), width: 50 }} type="number" placeholder="月" min="1" max="12" value={data.history.diagnosisMonth} onChange={e => up("history", "diagnosisMonth", e.target.value)} />
-              <span style={{ fontSize: 13, color: "#666" }}>月ごろ</span>
-            </div>
-          </div>
-          <div style={{ marginBottom: 14 }}>
-            <label style={lbl()}>内服薬（複数選択可）</label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-              {["メルカゾール", "ヨウ化カリウム", "プロパジール"].map(med => {
-                const sel = (data.history.medications || []).includes(med);
-                return (
-                  <button key={med} style={btn(sel)}
-                    onClick={() => up("history", "medications", sel
-                      ? (data.history.medications || []).filter(m => m !== med)
-                      : [...(data.history.medications || []), med])}>
-                    {sel ? "✓ " : ""}{med}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <label style={{ ...lbl(), marginTop: 4 }}>自由記入欄（任意）</label>
           <textarea style={{ ...inp(), minHeight: 60, resize: "vertical", marginBottom: 14 }} placeholder="補足があれば記載" value={data.reason.summary} onChange={e => up("reason", "summary", e.target.value)} />
         </>
       ) : (
@@ -658,15 +625,49 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
 
       {formType === 'basedow-cont' && (
         <div style={sBox({ background: "#fff8e1", border: "1.5px solid #fbd38d" })}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: "#a67000", marginBottom: 12 }}>🔄 バセドウ病：治療歴（継続患者）</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#a67000", marginBottom: 14 }}>🔄 バセドウ病：治療歴（継続患者）</div>
+
+          {/* 診断時期 */}
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#a67000", marginBottom: 6 }}>診断時期</div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <select style={{ ...inp(), width: 80 }} value={data.history.diagnosisEra} onChange={e => up("history", "diagnosisEra", e.target.value)}>
+                <option>昭和</option><option>平成</option><option>令和</option>
+              </select>
+              <input style={{ ...inp(), width: 56 }} type="number" placeholder="年" value={data.history.diagnosisYear} onChange={e => up("history", "diagnosisYear", e.target.value)} />
+              <span style={{ fontSize: 13, color: "#666" }}>年</span>
+              <input style={{ ...inp(), width: 48 }} type="number" placeholder="月" min="1" max="12" value={data.history.diagnosisMonth} onChange={e => up("history", "diagnosisMonth", e.target.value)} />
+              <span style={{ fontSize: 13, color: "#666" }}>月ごろ</span>
+            </div>
+          </div>
+
+          {/* 内服薬 */}
+          <div style={{ marginBottom: 16, paddingBottom: 14, borderBottom: "1px solid #fbd38d" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#a67000", marginBottom: 6 }}>内服薬（複数選択可）</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {["メルカゾール", "ヨウ化カリウム", "プロパジール"].map(med => {
+                const sel = (data.history.medications || []).includes(med);
+                return (
+                  <button key={med} style={btn(sel, "#a67000")}
+                    onClick={() => up("history", "medications", sel
+                      ? (data.history.medications || []).filter(m => m !== med)
+                      : [...(data.history.medications || []), med])}>
+                    {sel ? "✓ " : ""}{med}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {/* 手術歴 */}
-          <div style={{ marginBottom: 12 }}>
-            <button style={btn(data.history.surgeryHistory, "#a67000", { padding: "5px 12px", fontSize: 12 })} onClick={() => up("history", "surgeryHistory", !data.history.surgeryHistory)}>
-              手術歴：{data.history.surgeryHistory ? "あり" : "なし"}
-            </button>
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#a67000", marginBottom: 6 }}>手術歴</div>
+            <div style={{ display: "flex", gap: 4, marginBottom: 6 }}>
+              <button style={btn(data.history.surgeryHistory === true, "#a67000", { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "surgeryHistory", true)}>あり</button>
+              <button style={btn(data.history.surgeryHistory === false, "#a67000", { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "surgeryHistory", false)}>なし</button>
+            </div>
             {data.history.surgeryHistory && (
-              <div style={{ marginTop: 8, paddingLeft: 4 }}>
+              <div style={{ paddingLeft: 4, marginTop: 4 }}>
                 <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: "#a67000" }}>R</span>
                   <input style={{ ...inp(), width: 52 }} type="number" placeholder="年" value={data.history.surgeryYear} onChange={e => up("history", "surgeryYear", e.target.value)} />
@@ -675,7 +676,7 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
                 </div>
                 <div style={{ display: "flex", gap: 3 }}>
                   {["全摘", "部分切除"].map(v => (
-                    <button key={v} style={{ ...btn(data.history.surgeryType === v, "#a67000"), padding: "5px 12px", fontSize: 12 }}
+                    <button key={v} style={{ ...btn(data.history.surgeryType === v, "#a67000"), padding: "5px 14px", fontSize: 12 }}
                       onClick={() => up("history", "surgeryType", v)}>{v}</button>
                   ))}
                 </div>
@@ -684,30 +685,35 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
           </div>
 
           {/* アイソトープ */}
-          <div style={{ marginBottom: 12 }}>
-            <button style={btn(data.history.isotopeHistory, "#a67000", { padding: "5px 12px", fontSize: 12 })} onClick={() => up("history", "isotopeHistory", !data.history.isotopeHistory)}>
-              放射性ヨウ素（アイソトープ）内用療法：{data.history.isotopeHistory ? "あり" : "なし"}
-            </button>
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#a67000", marginBottom: 6 }}>放射性ヨウ素（アイソトープ）内用療法</div>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button style={btn(data.history.isotopeHistory === true, "#a67000", { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "isotopeHistory", true)}>あり</button>
+              <button style={btn(data.history.isotopeHistory === false, "#a67000", { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "isotopeHistory", false)}>なし</button>
+            </div>
           </div>
 
-          {/* 副作用歴 */}
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#a67000", marginBottom: 6 }}>薬の副作用歴</div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {/* 薬の副作用歴 */}
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#a67000", marginBottom: 8 }}>薬の副作用歴</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {[["sideEffectMmz", "メルカゾール"], ["sideEffectPtz", "プロパジール"]].map(([field, drug]) => (
-                <button key={field} style={btn(data.history[field], "#a67000", { padding: "5px 12px", fontSize: 12 })}
-                  onClick={() => up("history", field, !data.history[field])}>
-                  {drug}：{data.history[field] ? "あり" : "なし"}
-                </button>
+                <div key={field} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#7a6000", width: 92, flexShrink: 0 }}>{drug}</span>
+                  <button style={btn(data.history[field] === true, "#a67000", { padding: "4px 16px", fontSize: 12 })} onClick={() => up("history", field, true)}>あり</button>
+                  <button style={btn(data.history[field] === false, "#a67000", { padding: "4px 16px", fontSize: 12 })} onClick={() => up("history", field, false)}>なし</button>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* 眼科 */}
+          {/* 眼科通院歴 */}
           <div>
-            <button style={btn(data.history.eyeHistory, "#a67000", { padding: "5px 12px", fontSize: 12 })} onClick={() => up("history", "eyeHistory", !data.history.eyeHistory)}>
-              眼科通院歴：{data.history.eyeHistory ? "あり" : "なし"}
-            </button>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#a67000", marginBottom: 6 }}>眼科通院歴</div>
+            <div style={{ display: "flex", gap: 4, marginBottom: 6 }}>
+              <button style={btn(data.history.eyeHistory === true, "#a67000", { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "eyeHistory", true)}>あり</button>
+              <button style={btn(data.history.eyeHistory === false, "#a67000", { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "eyeHistory", false)}>なし</button>
+            </div>
             {data.history.eyeHistory && <input style={{ ...inp(), marginTop: 4 }} placeholder="眼科名（任意）" value={data.history.eyeClinic} onChange={e => up("history", "eyeClinic", e.target.value)} />}
           </div>
         </div>
