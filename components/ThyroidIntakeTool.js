@@ -196,7 +196,7 @@ export default function ThyroidIntakeTool({ formType }) {
     if (formType === 'basedow-new' || formType === 'hashimoto') {
       shinsokuLines = "□甲状腺3項目＋甲状腺抗体3項目の結果を後日確認\n□あくまでエコー上の疑いであり、確定診断は医師が行いカルテ記載を完了する";
     } else if (formType === 'basedow-cont') {
-      shinsokuLines = "□甲状腺3項目の結果を後日確認\n□あくまでエコー上の所見であり、確定診断は医師が行いカルテ記載を完了する";
+      shinsokuLines = "□甲状腺3項目＋甲状腺抗体3項目の結果を後日確認\n□あくまでエコー上の所見であり、確定診断は医師が行いカルテ記載を完了する";
     } else if (formType === 'nodule-normal') {
       shinsokuLines = "□甲状腺3項目＋抗Tg抗体＋抗TPO抗体の結果を後日確認\n□本日初診にて診察（終診の可能性あり）";
     } else if (formType === 'adenoma') {
@@ -208,7 +208,7 @@ export default function ThyroidIntakeTool({ formType }) {
     let footerBloodTest = "";
     if (formType === 'basedow-new') footerBloodTest = "甲状腺3項目：　TRAb：　TPO抗体：　抗Tg抗体：";
     else if (formType === 'hashimoto') footerBloodTest = "甲状腺3項目＋甲状腺抗体3項目";
-    else if (formType === 'basedow-cont') footerBloodTest = "甲状腺3項目";
+    else if (formType === 'basedow-cont') footerBloodTest = "甲状腺3項目＋甲状腺抗体3項目";
     else if (formType === 'nodule-normal' || formType === 'adenoma') footerBloodTest = "甲状腺3項目＋抗Tg抗体＋抗TPO抗体";
 
     const jobText = (() => {

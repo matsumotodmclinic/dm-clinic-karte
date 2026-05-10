@@ -839,7 +839,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
     if (tType === 'basedow-new' || tType === 'hashimoto') {
       shinsokuLines = '□甲状腺3項目＋甲状腺抗体3項目の結果を後日確認\n□あくまでエコー上の疑いであり、確定診断は医師が行いカルテ記載を完了する'
     } else if (tType === 'basedow-cont') {
-      shinsokuLines = '□甲状腺3項目の結果を後日確認\n□あくまでエコー上の所見であり、確定診断は医師が行いカルテ記載を完了する'
+      shinsokuLines = '□甲状腺3項目＋甲状腺抗体3項目の結果を後日確認\n□あくまでエコー上の所見であり、確定診断は医師が行いカルテ記載を完了する'
     } else if (tType === 'nodule-normal') {
       shinsokuLines = '□甲状腺3項目＋抗Tg抗体＋抗TPO抗体の結果を後日確認\n□本日初診にて診察（終診の可能性あり）'
     } else if (tType === 'adenoma') {
@@ -851,7 +851,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
     let footerBloodTest = ''
     if (tType === 'basedow-new') footerBloodTest = '甲状腺3項目：　TRAb：　TPO抗体：　抗Tg抗体：'
     else if (tType === 'hashimoto') footerBloodTest = '甲状腺3項目＋甲状腺抗体3項目'
-    else if (tType === 'basedow-cont') footerBloodTest = '甲状腺3項目'
+    else if (tType === 'basedow-cont') footerBloodTest = '甲状腺3項目＋甲状腺抗体3項目'
     else if (tType === 'nodule-normal' || tType === 'adenoma') footerBloodTest = '甲状腺3項目＋抗Tg抗体＋抗TPO抗体'
 
     const thyDoctorLabel = d.body?.doctorGender === '院長（初回のみ）' ? '院長希望（初回のみ）' : (d.body?.doctorGender || '指定なし')
