@@ -234,6 +234,7 @@ export default function ThyroidIntakeTool({ formType }) {
 - フォーマット記号（＃【】□♯）を使用する
 - 空行ルール（厳守）: ①自院管理＃疾患は連続列挙し空行なし ②自院管理ブロックの後、他院管理疾患の前にのみ1行空ける ③【事前聴取時 申し送り事項】の最終□行と【診察にあたっての要望】の間も空行なし
 - 注意書き・内部メモは出力しない。HTMLタグ・style属性は絶対に出力しない
+- バセドウ初診の「甲状腺エコー：」行は後ろに何も追記せず「甲状腺エコー：」のみ出力する
 
 【患者情報】
 受診理由：${formType === 'basedow-new' ? (thyReasonText || data.reason.summary || "（未記入）") : (data.reason.summary || "（未記入）")}
@@ -360,7 +361,7 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
               </div>
               <label style={lbl()}>紹介の理由</label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                {["甲状腺疾患精査のため", "甲状腺腫大のため", "専門的管理のため", "内容不明"].map(v => (
+                {["甲状腺疾患精査のため", "甲状腺腫大のため", "専門的管理のため", "安定している為", "内容不明"].map(v => (
                   <button key={v} style={btn(data.reason.referralDetail === v)} onClick={() => up("reason", "referralDetail", v)}>{v}</button>
                 ))}
               </div>
