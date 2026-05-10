@@ -795,7 +795,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
     const isNodule = ['adenoma', 'nodule-normal', 'malignant'].includes(tType)
 
     let diagnosisName = ''
-    if (tType === 'basedow-new')   diagnosisName = '＃バセドウ病疑い（エコー上）'
+    if (tType === 'basedow-new')   diagnosisName = '＃バセドウ病疑い（エコー上の疑い）'
     else if (tType === 'basedow-cont')  diagnosisName = '＃バセドウ病（継続）'
     else if (tType === 'hashimoto')     diagnosisName = '＃橋本病疑い（エコー上）'
     else if (tType === 'nodule-normal') diagnosisName = '＃甲状腺腫大（エコー上異常なし）'
@@ -913,6 +913,7 @@ ${tType === 'hashimoto' && d.history?.treatmentHistory ? `治療経緯：${d.his
 【出力フォーマット】
 ${getCurrentMonth()}：（受診理由サマリー1〜2行）
 ${diagnosisName}（サマリーの直後、空行なし）
+${tType === 'basedow-new' && thySymptoms ? `症状：${thySymptoms}を認める` : ''}
 ${tType === 'basedow-new' && thyEchoLine ? thyEchoLine : ''}
 ${tType === 'basedow-new' && d.echo?.ecg ? `ECG：${d.echo.ecg}` : ''}
 

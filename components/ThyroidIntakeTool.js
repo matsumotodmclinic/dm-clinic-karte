@@ -171,7 +171,7 @@ export default function ThyroidIntakeTool({ formType }) {
     const symptomsText = (data.symptom.selected || []).join("・") + (data.symptom.otherText ? `（その他: ${data.symptom.otherText}）` : "");
 
     let diagnosisName = "";
-    if (formType === 'basedow-new') diagnosisName = "＃バセドウ病疑い（エコー上）";
+    if (formType === 'basedow-new') diagnosisName = "＃バセドウ病疑い（エコー上の疑い）";
     else if (formType === 'basedow-cont') diagnosisName = "＃バセドウ病（継続）";
     else if (formType === 'hashimoto') diagnosisName = "＃橋本病疑い（エコー上）";
     else if (formType === 'nodule-normal') diagnosisName = "＃甲状腺腫大（エコー上異常なし）";
@@ -264,6 +264,7 @@ ${formType === 'hashimoto' && data.history.treatmentHistory ? `治療経緯：${
 【出力フォーマット】
 ${getCurrentMonth()}：（受診理由サマリー1〜2行）
 ${diagnosisName}（サマリーの直後、空行なし）
+${formType === 'basedow-new' && symptomsText ? `症状：${symptomsText}を認める` : ""}
 ${formType === 'basedow-new' && thyEchoLine ? thyEchoLine : ""}
 ${formType === 'basedow-new' && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
 
