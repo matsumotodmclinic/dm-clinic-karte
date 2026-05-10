@@ -39,8 +39,8 @@ const btn = (active, color = TC, x = {}) => ({ padding: "8px 14px", borderRadius
 const sBox = (x = {}) => ({ background: "#f0fdf9", border: "1.5px solid #a7f3d0", borderRadius: 10, padding: "14px 16px", marginBottom: 14, ...x });
 
 const initialData = {
-  reason: { summary: "" },
-  echo: { thyroidEchoFindings: "", noduleSize: "", noduleCount: "", noduleType: "" },
+  reason: { summary: "", type: "", referralFrom: "", referralDept: "", referralDetail: "", checkupType: "", transferFrom: "", transferDetail: "" },
+  echo: { thyroidEchoFindings: "", noduleSize: "", noduleCount: "", noduleType: "", thyroidEnlarged: false, bloodFlowRich: false, echoLevelLow: false, ecg: "" },
   symptom: { selected: [], otherText: "" },
   history: {
     surgeryHistory: false, surgeryDetail: "",
@@ -192,7 +192,8 @@ export default function ThyroidIntakeTool({ formType }) {
     }
 
     let footerBloodTest = "";
-    if (formType === 'basedow-new' || formType === 'hashimoto') footerBloodTest = "甲状腺3項目＋甲状腺抗体3項目";
+    if (formType === 'basedow-new') footerBloodTest = "甲状腺3項目：　TRAb：　TPO抗体：　抗Tg抗体：";
+    else if (formType === 'hashimoto') footerBloodTest = "甲状腺3項目＋甲状腺抗体3項目";
     else if (formType === 'basedow-cont') footerBloodTest = "甲状腺3項目";
     else if (formType === 'nodule-normal' || formType === 'adenoma') footerBloodTest = "甲状腺3項目＋抗Tg抗体＋抗TPO抗体";
 
@@ -201,6 +202,30 @@ export default function ThyroidIntakeTool({ formType }) {
       const note = data.history.jobNote || "";
       return [jobs.join("、"), note].filter(Boolean).join("・");
     })();
+
+    const thyEchoItems = formType === 'basedow-new' ? [
+      data.echo.thyroidEnlarged && "甲状腺腫大(+)",
+      data.echo.bloodFlowRich   && "実質血流豊富(+)",
+      data.echo.echoLevelLow    && "実質エコーレベル低下(+)",
+    ].filter(Boolean) : [];
+    const thyEchoLine = thyEchoItems.length > 0
+      ? `当院エコーにて${thyEchoItems.join("、")}の所見を認めバセドウ病を疑う` : "";
+    const thyReasonText = formType === 'basedow-new' ? (() => {
+      const r = data.reason;
+      const parts = [];
+      if (r.type === "紹介") {
+        const ref = [r.referralFrom, r.referralDept].filter(Boolean).join("・");
+        if (ref) parts.push(`${ref}より紹介`);
+        if (r.referralDetail) parts.push(r.referralDetail);
+      } else if (r.type === "検診異常") {
+        parts.push(`${r.checkupType || "健診"}にて甲状腺異常を指摘`);
+      } else if (r.type === "自主転院") {
+        if (r.transferFrom) parts.push(`${r.transferFrom}より転院`);
+        if (r.transferDetail) parts.push(r.transferDetail);
+      }
+      if (r.summary) parts.push(r.summary);
+      return parts.join("、");
+    })() : "";
 
     const prompt = `あなたはまつもと糖尿病クリニックの電子カルテ記載AIです。以下の患者情報をもとに、甲状腺外来の初診カルテ記載文を生成してください。
 
@@ -211,8 +236,9 @@ export default function ThyroidIntakeTool({ formType }) {
 - 注意書き・内部メモは出力しない。HTMLタグ・style属性は絶対に出力しない
 
 【患者情報】
-受診理由・補足：${data.reason.summary || "（未記入）"}
-エコー所見：${data.echo.thyroidEchoFindings || "（未記入）"}
+受診理由：${formType === 'basedow-new' ? (thyReasonText || data.reason.summary || "（未記入）") : (data.reason.summary || "（未記入）")}
+エコー所見：${formType === 'basedow-new' ? (thyEchoLine || "（未選択）") : (data.echo.thyroidEchoFindings || "（未記入）")}
+${formType === 'basedow-new' && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
 ${isNodule && data.echo.noduleSize ? `結節サイズ：${data.echo.noduleSize}` : ""}
 ${isNodule && data.echo.noduleCount ? `結節数：${data.echo.noduleCount}` : ""}
 ${isNodule && data.echo.noduleType ? `性状：${data.echo.noduleType}` : ""}
@@ -237,6 +263,8 @@ ${formType === 'hashimoto' && data.history.treatmentHistory ? `治療経緯：${
 【出力フォーマット】
 ${getCurrentMonth()}：（受診理由サマリー1〜2行）
 ${diagnosisName}（サマリーの直後、空行なし）
+${formType === 'basedow-new' && thyEchoLine ? thyEchoLine : ""}
+${formType === 'basedow-new' && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
 
 【アレルギー歴】（なしまたは内容を同じ行に）
 ${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
@@ -244,7 +272,7 @@ ${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
 【健診】
 【仕事】職業・活動量` : ""}
 ---------------------------------------------
-甲状腺エコー：${data.echo.thyroidEchoFindings || "本日施行"}${isNodule && data.echo.noduleSize ? `　結節：${data.echo.noduleSize}` : ""}
+甲状腺エコー：${formType === 'basedow-new' ? "" : (data.echo.thyroidEchoFindings || "本日施行")}${isNodule && data.echo.noduleSize ? `　結節：${data.echo.noduleSize}` : ""}
 ---------------------------------------------
 身長:${data.body.height || "○"}cm　初診時:${data.body.weightNow || "○"}kg${bmi ? `（BMI ${bmi}）` : ""}
 ---------------------------------------------
@@ -292,13 +320,118 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
   // ── Step 0: 受診理由・エコー所見 ──────────────────────────
   const renderStep0 = () => (
     <div>
-      <label style={lbl()}>受診理由・補足（任意）</label>
-      <textarea style={{ ...inp(), minHeight: 60, resize: "vertical", marginBottom: 14 }} placeholder="例：他院からの紹介、本日エコーで指摘" value={data.reason.summary} onChange={e => up("reason", "summary", e.target.value)} />
+      {formType === 'basedow-new' ? (
+        <>
+          <label style={lbl()}>受診理由</label>
+          <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 14 }}>
+            {["紹介", "検診異常", "自主転院"].map(r => (
+              <button key={r} style={btn(data.reason.type === r)} onClick={() => up("reason", "type", r)}>{r}</button>
+            ))}
+          </div>
+
+          {data.reason.type === "紹介" && (
+            <div style={sBox()}>
+              <label style={lbl()}>よく使う紹介元</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
+                {[
+                  { hosp: "上尾中央総合病院", dept: "内科" },
+                  { hosp: "自治医大さいたま医療センター", dept: "内分泌内科" },
+                  { hosp: "さいたま赤十字病院", dept: "内分泌内科" },
+                ].map(({ hosp, dept }) => {
+                  const selected = data.reason.referralFrom === hosp && data.reason.referralDept === dept;
+                  return (
+                    <button key={hosp + dept}
+                      style={{ ...btn(selected, "#0f9668"), fontSize: 12, padding: "7px 14px", border: selected ? "2px solid #0f9668" : "2px dashed #0f9668", background: selected ? "#0f9668" : "#f0fff8", color: selected ? "#fff" : "#0f9668" }}
+                      onClick={() => setData(p => ({ ...p, reason: { ...p.reason, referralFrom: selected ? "" : hosp, referralDept: selected ? "" : dept } }))}>
+                      {selected ? "✓ " : ""}{hosp}・{dept}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+                <div style={{ flex: 2 }}>
+                  <label style={lbl()}>その他の病院名</label>
+                  <input style={inp()} placeholder="上記以外の場合" value={data.reason.referralFrom} onChange={e => up("reason", "referralFrom", e.target.value)} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={lbl()}>科名</label>
+                  <input style={inp()} placeholder="例：内科" value={data.reason.referralDept} onChange={e => up("reason", "referralDept", e.target.value)} />
+                </div>
+              </div>
+              <label style={lbl()}>紹介の理由</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                {["甲状腺疾患精査のため", "甲状腺腫大のため", "専門的管理のため", "内容不明"].map(v => (
+                  <button key={v} style={btn(data.reason.referralDetail === v)} onClick={() => up("reason", "referralDetail", v)}>{v}</button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {data.reason.type === "検診異常" && (
+            <div style={sBox()}>
+              <label style={lbl()}>検診の種類</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                {["会社健診", "市健診", "人間ドック"].map(v => (
+                  <button key={v} style={btn(data.reason.checkupType === v)} onClick={() => up("reason", "checkupType", v)}>{v}</button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {data.reason.type === "自主転院" && (
+            <div style={sBox()}>
+              <label style={lbl()}>転院元 医療機関名</label>
+              <input style={{ ...inp(), marginBottom: 12 }} placeholder="例：○○クリニック（任意）" value={data.reason.transferFrom} onChange={e => up("reason", "transferFrom", e.target.value)} />
+              <label style={lbl()}>転院の理由</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                {["コントロール改善しないため", "転居のため", "より専門的な治療を希望", "その他"].map(v => (
+                  <button key={v} style={btn(data.reason.transferDetail === v)} onClick={() => up("reason", "transferDetail", v)}>{v}</button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <label style={{ ...lbl(), marginTop: 8 }}>自由記入欄（任意）</label>
+          <textarea style={{ ...inp(), minHeight: 60, resize: "vertical", marginBottom: 14 }} placeholder="補足があれば記載" value={data.reason.summary} onChange={e => up("reason", "summary", e.target.value)} />
+        </>
+      ) : (
+        <>
+          <label style={lbl()}>受診理由・補足（任意）</label>
+          <textarea style={{ ...inp(), minHeight: 60, resize: "vertical", marginBottom: 14 }} placeholder="例：他院からの紹介、本日エコーで指摘" value={data.reason.summary} onChange={e => up("reason", "summary", e.target.value)} />
+        </>
+      )}
 
       <div style={sBox({ background: "#e6fff8", border: "1.5px solid #81e6d9" })}>
         <div style={{ fontSize: 13, fontWeight: 800, color: TC, marginBottom: 8 }}>🔬 甲状腺エコー所見</div>
-        <label style={lbl()}>エコー所見の要約</label>
-        <textarea style={{ ...inp(), minHeight: 80, resize: "vertical", marginBottom: 12 }} placeholder="例：甲状腺びまん性腫大、血流増加あり（バセドウパターン）" value={data.echo.thyroidEchoFindings} onChange={e => up("echo", "thyroidEchoFindings", e.target.value)} />
+
+        {formType === 'basedow-new' ? (
+          <>
+            <label style={lbl()}>エコー所見（該当するものを選択）</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 14 }}>
+              {[
+                { key: "thyroidEnlarged", label: "甲状腺腫大" },
+                { key: "bloodFlowRich",   label: "実質血流豊富" },
+                { key: "echoLevelLow",    label: "実質エコーレベル低下" },
+              ].map(({ key, label }) => (
+                <button key={key} style={btn(data.echo[key])} onClick={() => up("echo", key, !data.echo[key])}>
+                  {data.echo[key] ? "✓ " : ""}{label}
+                </button>
+              ))}
+            </div>
+            <label style={lbl()}>ECG</label>
+            <div style={{ display: "flex", gap: 3 }}>
+              {["正常範囲", "心房細動"].map(v => (
+                <button key={v} style={btn(data.echo.ecg === v, v === "心房細動" ? "#c53030" : TC)}
+                  onClick={() => up("echo", "ecg", data.echo.ecg === v ? "" : v)}>{v}</button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <label style={lbl()}>エコー所見の要約</label>
+            <textarea style={{ ...inp(), minHeight: 80, resize: "vertical", marginBottom: 12 }} placeholder="例：甲状腺びまん性腫大、血流増加あり（バセドウパターン）" value={data.echo.thyroidEchoFindings} onChange={e => up("echo", "thyroidEchoFindings", e.target.value)} />
+          </>
+        )}
 
         {isNodule && (
           <>

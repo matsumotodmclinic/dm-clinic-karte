@@ -844,11 +844,37 @@ LINE登録ご案内→済　登録確認未・登録できない`
     }
 
     let footerBloodTest = ''
-    if (tType === 'basedow-new' || tType === 'hashimoto') footerBloodTest = '甲状腺3項目＋甲状腺抗体3項目'
+    if (tType === 'basedow-new') footerBloodTest = '甲状腺3項目：　TRAb：　TPO抗体：　抗Tg抗体：'
+    else if (tType === 'hashimoto') footerBloodTest = '甲状腺3項目＋甲状腺抗体3項目'
     else if (tType === 'basedow-cont') footerBloodTest = '甲状腺3項目'
     else if (tType === 'nodule-normal' || tType === 'adenoma') footerBloodTest = '甲状腺3項目＋抗Tg抗体＋抗TPO抗体'
 
     const thyDoctorLabel = d.body?.doctorGender === '院長（初回のみ）' ? '院長希望（初回のみ）' : (d.body?.doctorGender || '指定なし')
+
+    // basedow-new 専用: エコー所見テキスト・受診理由テキストを事前構築
+    const thyEchoItems = tType === 'basedow-new' ? [
+      d.echo?.thyroidEnlarged && '甲状腺腫大(+)',
+      d.echo?.bloodFlowRich   && '実質血流豊富(+)',
+      d.echo?.echoLevelLow    && '実質エコーレベル低下(+)',
+    ].filter(Boolean) : []
+    const thyEchoLine = thyEchoItems.length > 0
+      ? `当院エコーにて${thyEchoItems.join('、')}の所見を認めバセドウ病を疑う` : ''
+    const thyReasonText = tType === 'basedow-new' ? (() => {
+      const r = d.reason || {}
+      const parts = []
+      if (r.type === '紹介') {
+        const ref = [r.referralFrom, r.referralDept].filter(Boolean).join('・')
+        if (ref) parts.push(`${ref}より紹介`)
+        if (r.referralDetail) parts.push(r.referralDetail)
+      } else if (r.type === '検診異常') {
+        parts.push(`${r.checkupType || '健診'}にて甲状腺異常を指摘`)
+      } else if (r.type === '自主転院') {
+        if (r.transferFrom) parts.push(`${r.transferFrom}より転院`)
+        if (r.transferDetail) parts.push(r.transferDetail)
+      }
+      if (r.summary) parts.push(r.summary)
+      return parts.join('、')
+    })() : ''
 
     prompt = `あなたはまつもと糖尿病クリニックの電子カルテ記載AIです。以下の患者情報をもとに、甲状腺外来の初診カルテ記載文を生成してください。
 
@@ -859,8 +885,9 @@ LINE登録ご案内→済　登録確認未・登録できない`
 - 注意書き・内部メモは出力しない。HTMLタグ・style属性は絶対に出力しない
 
 【患者情報】
-受診理由・補足：${d.reason?.summary || '（未記入）'}
-エコー所見：${d.echo?.thyroidEchoFindings || '（未記入）'}
+受診理由：${tType === 'basedow-new' ? (thyReasonText || d.reason?.summary || '（未記入）') : (d.reason?.summary || '（未記入）')}
+エコー所見：${tType === 'basedow-new' ? (thyEchoLine || '（未選択）') : (d.echo?.thyroidEchoFindings || '（未記入）')}
+${tType === 'basedow-new' && d.echo?.ecg ? `ECG：${d.echo.ecg}` : ''}
 ${isNodule && d.echo?.noduleSize ? `結節サイズ：${d.echo.noduleSize}` : ''}
 ${isNodule && d.echo?.noduleCount ? `結節数：${d.echo.noduleCount}` : ''}
 ${isNodule && d.echo?.noduleType ? `性状：${d.echo.noduleType}` : ''}
@@ -885,6 +912,8 @@ ${tType === 'hashimoto' && d.history?.treatmentHistory ? `治療経緯：${d.his
 【出力フォーマット】
 ${getCurrentMonth()}：（受診理由サマリー1〜2行）
 ${diagnosisName}（サマリーの直後、空行なし）
+${tType === 'basedow-new' && thyEchoLine ? thyEchoLine : ''}
+${tType === 'basedow-new' && d.echo?.ecg ? `ECG：${d.echo.ecg}` : ''}
 
 【アレルギー歴】（なしまたは内容を同じ行に）
 ${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
@@ -892,7 +921,7 @@ ${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
 【健診】${(d.history?.checkup || []).join('・') || '未記入'}
 【仕事】${thyJobText}` : ''}
 ---------------------------------------------
-甲状腺エコー：${d.echo?.thyroidEchoFindings || '本日施行'}${isNodule && d.echo?.noduleSize ? `　結節：${d.echo.noduleSize}` : ''}
+甲状腺エコー：${tType === 'basedow-new' ? '' : (d.echo?.thyroidEchoFindings || '本日施行')}${isNodule && d.echo?.noduleSize ? `　結節：${d.echo.noduleSize}` : ''}
 ---------------------------------------------
 身長:${d.body?.height || '○'}cm　初診時:${d.body?.weightNow || '○'}kg${thyBmi ? `（BMI ${thyBmi}）` : ''}
 ---------------------------------------------
