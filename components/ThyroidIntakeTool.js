@@ -25,6 +25,13 @@ const HASHIMOTO_SYMPTOMS = [
 const NODULE_SYMPTOMS = [
   "甲状腺の腫れ・しこり感", "嚥下困難", "頸部の違和感・疼痛", "声のかすれ", "その他",
 ];
+const BASEDOW_CONT_SYMPTOMS = [
+  "現在は症状なし",
+  "動悸", "発汗", "手の震え", "いらいら", "便秘", "皮膚の乾燥",
+  "声の枯れ", "動作がゆっくり", "物忘れが多い", "1日中眠い",
+  "月経不順", "食べても痩せる", "体重が増えてきた", "疲れやすい",
+  "むくみ（顔　足）", "圧痛がある→Dr.へ報告",
+];
 
 function getStepTitles(formType) {
   const is2step = formType === 'nodule-normal' || formType === 'malignant';
@@ -48,6 +55,7 @@ const initialData = {
     sideEffectHistory: false, sideEffectDetail: "",
     eyeHistory: false, eyeClinic: "",
     treatmentHistory: "",
+    diagnosisEra: "令和", diagnosisYear: "", medications: [],
     age: "", allergy: "なし", allergyDetail: "",
     fh: { thyroid: false, thyroidWho: [], dm: false, dmWho: [] },
     smoking: "なし", smokingAmount: "", smokingYears: "", smokingStartAge: "",
@@ -124,6 +132,7 @@ export default function ThyroidIntakeTool({ formType }) {
     return `R${now.getFullYear() - 2018}.${now.getMonth() + 1}`;
   };
   const getSymptomList = () => {
+    if (formType === 'basedow-cont') return BASEDOW_CONT_SYMPTOMS;
     if (isBasedow) return BASEDOW_SYMPTOMS;
     if (isHashimoto) return HASHIMOTO_SYMPTOMS;
     return NODULE_SYMPTOMS;
@@ -172,8 +181,13 @@ export default function ThyroidIntakeTool({ formType }) {
 
     let diagnosisName = "";
     if (formType === 'basedow-new') diagnosisName = "＃バセドウ病疑い（エコー上の疑い）";
-    else if (formType === 'basedow-cont') diagnosisName = "＃バセドウ病（継続）";
-    else if (formType === 'hashimoto') diagnosisName = "＃橋本病疑い（エコー上）";
+    else if (formType === 'basedow-cont') {
+      const dYear = data.history.diagnosisYear
+        ? `${data.history.diagnosisEra}${data.history.diagnosisYear}年`
+        : "診断時期不明";
+      diagnosisName = `＃バセドウ病　甲状腺機能亢進症（診断時期：${dYear}）`;
+    }
+    else if (formType === 'hashimoto') diagnosisName = "＃橋本病疑い（エコー上の疑い）";
     else if (formType === 'nodule-normal') diagnosisName = "＃甲状腺腫大（エコー上異常なし）";
     else if (formType === 'adenoma') diagnosisName = "＃甲状腺腺腫（経過観察）";
     else if (formType === 'malignant') diagnosisName = "＃甲状腺腺腫（悪性疑い）";
@@ -203,14 +217,27 @@ export default function ThyroidIntakeTool({ formType }) {
       return [jobs.join("、"), note].filter(Boolean).join("・");
     })();
 
-    const thyEchoItems = formType === 'basedow-new' ? [
+    const contMedsText = (data.history.medications || []).join("・");
+    const contTimeline = formType === 'basedow-cont' && contMedsText && data.history.diagnosisYear
+      ? `${data.history.diagnosisEra}${data.history.diagnosisYear}年に（${contMedsText}）内服にて症状安定`
+      : formType === 'basedow-cont' && contMedsText
+      ? `（${contMedsText}）内服にて症状安定`
+      : "";
+
+    const useCheckboxEcho = formType === 'basedow-new' || formType === 'basedow-cont' || formType === 'hashimoto';
+    const thyEchoItems = useCheckboxEcho ? [
       data.echo.thyroidEnlarged && "甲状腺腫大(+)",
       data.echo.bloodFlowRich   && "実質血流豊富(+)",
       data.echo.echoLevelLow    && "実質エコーレベル低下(+)",
     ].filter(Boolean) : [];
     const thyEchoLine = thyEchoItems.length > 0
-      ? `当院エコーにて${thyEchoItems.join("、")}の所見を認めバセドウ病を疑う` : "";
-    const thyReasonText = formType === 'basedow-new' ? (() => {
+      ? formType === 'basedow-cont'
+        ? `当院エコーにて${thyEchoItems.join("、")}の所見を認める`
+        : formType === 'hashimoto'
+          ? `当院エコーにて${thyEchoItems.join("、")}の所見を認め橋本病を疑う`
+          : `当院エコーにて${thyEchoItems.join("、")}の所見を認めバセドウ病を疑う`
+      : "";
+    const thyReasonText = (formType === 'basedow-new' || formType === 'hashimoto') ? (() => {
       const r = data.reason;
       const parts = [];
       if (r.type === "紹介") {
@@ -237,9 +264,10 @@ export default function ThyroidIntakeTool({ formType }) {
 - バセドウ初診の「甲状腺エコー：」行は後ろに何も追記せず「甲状腺エコー：」のみ出力する
 
 【患者情報】
-受診理由：${formType === 'basedow-new' ? (thyReasonText || data.reason.summary || "（未記入）") : (data.reason.summary || "（未記入）")}
-エコー所見：${formType === 'basedow-new' ? (thyEchoLine || "（未選択）") : (data.echo.thyroidEchoFindings || "（未記入）")}
-${formType === 'basedow-new' && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
+受診理由：${(formType === 'basedow-new' || formType === 'hashimoto') ? (thyReasonText || data.reason.summary || "（未記入）") : (data.reason.summary || "（未記入）")}
+${formType === 'basedow-cont' ? `診断時期：${data.history.diagnosisEra}${data.history.diagnosisYear || "（不明）"}年\n内服薬：${contMedsText || "（未選択）"}` : ""}
+エコー所見：${useCheckboxEcho ? (thyEchoLine || "（未選択）") : (data.echo.thyroidEchoFindings || "（未記入）")}
+${useCheckboxEcho && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
 ${isNodule && data.echo.noduleSize ? `結節サイズ：${data.echo.noduleSize}` : ""}
 ${isNodule && data.echo.noduleCount ? `結節数：${data.echo.noduleCount}` : ""}
 ${isNodule && data.echo.noduleType ? `性状：${data.echo.noduleType}` : ""}
@@ -264,9 +292,10 @@ ${formType === 'hashimoto' && data.history.treatmentHistory ? `治療経緯：${
 【出力フォーマット】
 ${getCurrentMonth()}：（受診理由サマリー1〜2行）
 ${diagnosisName}（サマリーの直後、空行なし）
-${formType === 'basedow-new' && symptomsText ? `症状：${symptomsText}を認める` : ""}
-${formType === 'basedow-new' && thyEchoLine ? thyEchoLine : ""}
-${formType === 'basedow-new' && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
+${formType === 'basedow-cont' && contTimeline ? contTimeline : ""}
+${useCheckboxEcho && symptomsText ? `症状：${symptomsText}を認める` : ""}
+${useCheckboxEcho && thyEchoLine ? thyEchoLine : ""}
+${useCheckboxEcho && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
 
 【アレルギー歴】（なしまたは内容を同じ行に）
 ${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
@@ -274,7 +303,7 @@ ${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
 【健診】
 【仕事】職業・活動量` : ""}
 ---------------------------------------------
-甲状腺エコー：${formType === 'basedow-new' ? "" : (data.echo.thyroidEchoFindings || "本日施行")}${isNodule && data.echo.noduleSize ? `　結節：${data.echo.noduleSize}` : ""}
+甲状腺エコー：${formType === 'basedow-new' ? "" : (formType === 'basedow-cont' || formType === 'hashimoto') ? (thyEchoItems.length > 0 ? thyEchoItems.join("、") : "本日施行") : (data.echo.thyroidEchoFindings || "本日施行")}${isNodule && data.echo.noduleSize ? `　結節：${data.echo.noduleSize}` : ""}
 ---------------------------------------------
 身長:${data.body.height || "○"}cm　初診時:${data.body.weightNow || "○"}kg${bmi ? `（BMI ${bmi}）` : ""}
 ---------------------------------------------
@@ -322,7 +351,7 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
   // ── Step 0: 受診理由・エコー所見 ──────────────────────────
   const renderStep0 = () => (
     <div>
-      {formType === 'basedow-new' ? (
+      {(formType === 'basedow-new' || formType === 'hashimoto') ? (
         <>
           <label style={lbl()}>受診理由</label>
           <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 14 }}>
@@ -396,6 +425,33 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
           <label style={{ ...lbl(), marginTop: 8 }}>自由記入欄（任意）</label>
           <textarea style={{ ...inp(), minHeight: 60, resize: "vertical", marginBottom: 14 }} placeholder="補足があれば記載" value={data.reason.summary} onChange={e => up("reason", "summary", e.target.value)} />
         </>
+      ) : formType === 'basedow-cont' ? (
+        <>
+          <div style={{ marginBottom: 14 }}>
+            <label style={lbl()}>診断時期（バセドウ病と診断された時期）</label>
+            <EraYear era={data.history.diagnosisEra} year={data.history.diagnosisYear}
+              onEraChange={v => up("history", "diagnosisEra", v)}
+              onYearChange={v => up("history", "diagnosisYear", v)} />
+          </div>
+          <div style={{ marginBottom: 14 }}>
+            <label style={lbl()}>内服薬（複数選択可）</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {["メルカゾール", "ヨウ化カリウム", "プロパジール"].map(med => {
+                const sel = (data.history.medications || []).includes(med);
+                return (
+                  <button key={med} style={btn(sel)}
+                    onClick={() => up("history", "medications", sel
+                      ? (data.history.medications || []).filter(m => m !== med)
+                      : [...(data.history.medications || []), med])}>
+                    {sel ? "✓ " : ""}{med}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <label style={{ ...lbl(), marginTop: 4 }}>自由記入欄（任意）</label>
+          <textarea style={{ ...inp(), minHeight: 60, resize: "vertical", marginBottom: 14 }} placeholder="補足があれば記載" value={data.reason.summary} onChange={e => up("reason", "summary", e.target.value)} />
+        </>
       ) : (
         <>
           <label style={lbl()}>受診理由・補足（任意）</label>
@@ -406,7 +462,7 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
       <div style={sBox({ background: "#e6fff8", border: "1.5px solid #81e6d9" })}>
         <div style={{ fontSize: 13, fontWeight: 800, color: TC, marginBottom: 8 }}>🔬 甲状腺エコー所見</div>
 
-        {formType === 'basedow-new' ? (
+        {(formType === 'basedow-new' || formType === 'basedow-cont' || formType === 'hashimoto') ? (
           <>
             <label style={lbl()}>エコー所見（該当するものを選択）</label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 14 }}>
@@ -430,6 +486,14 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
           </>
         ) : (
           <>
+            {formType === 'nodule-normal' && (
+              <div style={{ marginBottom: 8 }}>
+                <button style={{ ...btn(data.echo.thyroidEchoFindings === "所見なし"), padding: "6px 14px", fontSize: 12 }}
+                  onClick={() => up("echo", "thyroidEchoFindings", data.echo.thyroidEchoFindings === "所見なし" ? "" : "所見なし")}>
+                  所見なし
+                </button>
+              </div>
+            )}
             <label style={lbl()}>エコー所見の要約</label>
             <textarea style={{ ...inp(), minHeight: 80, resize: "vertical", marginBottom: 12 }} placeholder="例：甲状腺びまん性腫大、血流増加あり（バセドウパターン）" value={data.echo.thyroidEchoFindings} onChange={e => up("echo", "thyroidEchoFindings", e.target.value)} />
           </>
@@ -613,11 +677,15 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
         <input style={{ ...inp(), marginBottom: 14 }} placeholder="その他の症状の詳細" value={data.symptom.otherText} onChange={e => setData(p => ({ ...p, symptom: { ...p.symptom, otherText: e.target.value } }))} />
       )}
 
-      <label style={lbl()}>患者様の年齢</label>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-        <input style={{ ...inp(), width: 80 }} type="number" placeholder="歳" value={data.history.age} onChange={e => up("history", "age", e.target.value)} />
-        <span style={{ fontSize: 13, color: "#666" }}>歳</span>
-      </div>
+      {formType !== 'nodule-normal' && (
+        <>
+          <label style={lbl()}>患者様の年齢</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+            <input style={{ ...inp(), width: 80 }} type="number" placeholder="歳" value={data.history.age} onChange={e => up("history", "age", e.target.value)} />
+            <span style={{ fontSize: 13, color: "#666" }}>歳</span>
+          </div>
+        </>
+      )}
 
       <label style={lbl()}>アレルギー歴</label>
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
