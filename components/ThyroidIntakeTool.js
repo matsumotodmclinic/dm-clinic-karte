@@ -50,12 +50,12 @@ const initialData = {
   echo: { thyroidEchoFindings: "", noduleSize: "", noduleCount: "", noduleType: "", thyroidEnlarged: false, bloodFlowRich: false, echoLevelLow: false, ecg: "" },
   symptom: { selected: [], otherText: "" },
   history: {
-    surgeryHistory: false, surgeryDetail: "",
-    isotopeHistory: false, isotopeDetail: "",
-    sideEffectHistory: false, sideEffectDetail: "",
+    surgeryHistory: false, surgeryYear: "", surgeryMonth: "", surgeryType: "",
+    isotopeHistory: false,
+    sideEffectMmz: false, sideEffectPtz: false,
     eyeHistory: false, eyeClinic: "",
     treatmentHistory: "",
-    diagnosisEra: "令和", diagnosisYear: "", medications: [],
+    diagnosisEra: "令和", diagnosisYear: "", diagnosisMonth: "", medications: [],
     age: "", allergy: "なし", allergyDetail: "",
     fh: { thyroid: false, thyroidWho: [], dm: false, dmWho: [] },
     smoking: "なし", smokingAmount: "", smokingYears: "", smokingStartAge: "",
@@ -218,11 +218,31 @@ export default function ThyroidIntakeTool({ formType }) {
     })();
 
     const contMedsText = (data.history.medications || []).join("・");
-    const contTimeline = formType === 'basedow-cont' && contMedsText && data.history.diagnosisYear
-      ? `${data.history.diagnosisEra}${data.history.diagnosisYear}年に（${contMedsText}）内服にて症状安定`
-      : formType === 'basedow-cont' && contMedsText
-      ? `（${contMedsText}）内服にて症状安定`
-      : "";
+    const contTimeline = (() => {
+      if (formType !== 'basedow-cont' || !contMedsText) return "";
+      const year = data.history.diagnosisYear;
+      const month = data.history.diagnosisMonth;
+      const era = data.history.diagnosisEra;
+      if (!year) return `（${contMedsText}）内服にて症状安定`;
+      const dateStr = era === "令和"
+        ? `R${year}${month ? `/${month}` : ""}`
+        : `${era}${year}年${month ? `${month}月` : ""}`;
+      return `${dateStr}に（${contMedsText}）内服にて症状安定`;
+    })();
+    const surgeryText = (() => {
+      if (!data.history.surgeryHistory) return "なし";
+      const yr = data.history.surgeryYear;
+      const mo = data.history.surgeryMonth;
+      const type = data.history.surgeryType || "";
+      const dateStr = yr ? `R${yr}${mo ? `/${mo}` : ""}` : "";
+      return `あり（${[dateStr, type].filter(Boolean).join(" ")}）`;
+    })();
+    const sideEffectText = (() => {
+      const parts = [];
+      if (data.history.sideEffectMmz) parts.push("メルカゾール");
+      if (data.history.sideEffectPtz) parts.push("プロパジール");
+      return parts.length ? `${parts.join("・")}副作用あり` : "なし";
+    })();
 
     const useCheckboxEcho = formType === 'basedow-new' || formType === 'basedow-cont' || formType === 'hashimoto';
     const thyEchoItems = useCheckboxEcho ? [
@@ -280,9 +300,9 @@ ${!is2step ? `家族歴（甲状腺）：${data.history.fh.thyroid ? ("あり" +
 健診：${(data.history.checkup || []).join("・") || "なし"}
 仕事：${jobText || "未記入"}
 活動量：${data.history.activity || "未記入"}` : ""}
-${formType === 'basedow-cont' ? `手術歴：${data.history.surgeryHistory ? ("あり" + (data.history.surgeryDetail ? `（${data.history.surgeryDetail}）` : "")) : "なし"}
-アイソトープ治療歴：${data.history.isotopeHistory ? ("あり" + (data.history.isotopeDetail ? `（${data.history.isotopeDetail}）` : "")) : "なし"}
-副作用歴：${data.history.sideEffectHistory ? ("あり" + (data.history.sideEffectDetail ? `（${data.history.sideEffectDetail}）` : "")) : "なし"}
+${formType === 'basedow-cont' ? `手術歴：${surgeryText}
+アイソトープ治療歴：${data.history.isotopeHistory ? "あり" : "なし"}
+薬の副作用歴：${sideEffectText}
 眼科通院歴：${data.history.eyeHistory ? ("あり" + (data.history.eyeClinic ? `（${data.history.eyeClinic}）` : "")) : "なし"}` : ""}
 ${formType === 'hashimoto' && data.history.treatmentHistory ? `治療経緯：${data.history.treatmentHistory}` : ""}
 医師希望：${data.body.doctorGender || "指定なし"}
@@ -428,10 +448,16 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
       ) : formType === 'basedow-cont' ? (
         <>
           <div style={{ marginBottom: 14 }}>
-            <label style={lbl()}>診断時期（バセドウ病と診断された時期）</label>
-            <EraYear era={data.history.diagnosisEra} year={data.history.diagnosisYear}
-              onEraChange={v => up("history", "diagnosisEra", v)}
-              onYearChange={v => up("history", "diagnosisYear", v)} />
+            <label style={lbl()}>診断時期</label>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <select style={{ ...inp(), width: 80 }} value={data.history.diagnosisEra} onChange={e => up("history", "diagnosisEra", e.target.value)}>
+                <option>昭和</option><option>平成</option><option>令和</option>
+              </select>
+              <input style={{ ...inp(), width: 58 }} type="number" placeholder="年" value={data.history.diagnosisYear} onChange={e => up("history", "diagnosisYear", e.target.value)} />
+              <span style={{ fontSize: 13, color: "#666" }}>年</span>
+              <input style={{ ...inp(), width: 50 }} type="number" placeholder="月" min="1" max="12" value={data.history.diagnosisMonth} onChange={e => up("history", "diagnosisMonth", e.target.value)} />
+              <span style={{ fontSize: 13, color: "#666" }}>月ごろ</span>
+            </div>
           </div>
           <div style={{ marginBottom: 14 }}>
             <label style={lbl()}>内服薬（複数選択可）</label>
@@ -633,18 +659,51 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
       {formType === 'basedow-cont' && (
         <div style={sBox({ background: "#fff8e1", border: "1.5px solid #fbd38d" })}>
           <div style={{ fontSize: 13, fontWeight: 800, color: "#a67000", marginBottom: 12 }}>🔄 バセドウ病：治療歴（継続患者）</div>
-          {[
-            ["surgeryHistory", "surgeryDetail", "手術歴", "例：甲状腺亜全摘術（R5年）"],
-            ["isotopeHistory", "isotopeDetail", "アイソトープ（131I）治療歴", "例：○○病院にて施行（H30年）"],
-            ["sideEffectHistory", "sideEffectDetail", "薬の副作用歴（チアマゾール等）", "例：無顆粒球症（R2年）"],
-          ].map(([flag, detail, label, placeholder]) => (
-            <div key={flag} style={{ marginBottom: 10 }}>
-              <button style={btn(data.history[flag], "#a67000", { padding: "5px 12px", fontSize: 12 })} onClick={() => up("history", flag, !data.history[flag])}>
-                {label}：{data.history[flag] ? "あり" : "なし"}
-              </button>
-              {data.history[flag] && <input style={{ ...inp(), marginTop: 4 }} placeholder={placeholder} value={data.history[detail]} onChange={e => up("history", detail, e.target.value)} />}
+
+          {/* 手術歴 */}
+          <div style={{ marginBottom: 12 }}>
+            <button style={btn(data.history.surgeryHistory, "#a67000", { padding: "5px 12px", fontSize: 12 })} onClick={() => up("history", "surgeryHistory", !data.history.surgeryHistory)}>
+              手術歴：{data.history.surgeryHistory ? "あり" : "なし"}
+            </button>
+            {data.history.surgeryHistory && (
+              <div style={{ marginTop: 8, paddingLeft: 4 }}>
+                <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#a67000" }}>R</span>
+                  <input style={{ ...inp(), width: 52 }} type="number" placeholder="年" value={data.history.surgeryYear} onChange={e => up("history", "surgeryYear", e.target.value)} />
+                  <span style={{ fontSize: 13, color: "#666" }}>/</span>
+                  <input style={{ ...inp(), width: 46 }} type="number" placeholder="月" min="1" max="12" value={data.history.surgeryMonth} onChange={e => up("history", "surgeryMonth", e.target.value)} />
+                </div>
+                <div style={{ display: "flex", gap: 3 }}>
+                  {["全摘", "部分切除"].map(v => (
+                    <button key={v} style={{ ...btn(data.history.surgeryType === v, "#a67000"), padding: "5px 12px", fontSize: 12 }}
+                      onClick={() => up("history", "surgeryType", v)}>{v}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* アイソトープ */}
+          <div style={{ marginBottom: 12 }}>
+            <button style={btn(data.history.isotopeHistory, "#a67000", { padding: "5px 12px", fontSize: 12 })} onClick={() => up("history", "isotopeHistory", !data.history.isotopeHistory)}>
+              放射性ヨウ素（アイソトープ）内用療法：{data.history.isotopeHistory ? "あり" : "なし"}
+            </button>
+          </div>
+
+          {/* 副作用歴 */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#a67000", marginBottom: 6 }}>薬の副作用歴</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {[["sideEffectMmz", "メルカゾール"], ["sideEffectPtz", "プロパジール"]].map(([field, drug]) => (
+                <button key={field} style={btn(data.history[field], "#a67000", { padding: "5px 12px", fontSize: 12 })}
+                  onClick={() => up("history", field, !data.history[field])}>
+                  {drug}：{data.history[field] ? "あり" : "なし"}
+                </button>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* 眼科 */}
           <div>
             <button style={btn(data.history.eyeHistory, "#a67000", { padding: "5px 12px", fontSize: 12 })} onClick={() => up("history", "eyeHistory", !data.history.eyeHistory)}>
               眼科通院歴：{data.history.eyeHistory ? "あり" : "なし"}

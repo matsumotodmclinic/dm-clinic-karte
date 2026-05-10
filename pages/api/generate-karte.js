@@ -858,11 +858,31 @@ LINE登録ご案内→済　登録確認未・登録できない`
 
     // basedow-new/cont/hashimoto 共通: エコー所見テキスト・受診理由テキストを事前構築
     const contMedsText = (d.history?.medications || []).join('・')
-    const contTimeline = tType === 'basedow-cont' && contMedsText && d.history?.diagnosisYear
-      ? `${d.history?.diagnosisEra || '令和'}${d.history.diagnosisYear}年に（${contMedsText}）内服にて症状安定`
-      : tType === 'basedow-cont' && contMedsText
-      ? `（${contMedsText}）内服にて症状安定`
-      : ''
+    const contTimeline = (() => {
+      if (tType !== 'basedow-cont' || !contMedsText) return ''
+      const year = d.history?.diagnosisYear
+      const month = d.history?.diagnosisMonth
+      const era = d.history?.diagnosisEra || '令和'
+      if (!year) return `（${contMedsText}）内服にて症状安定`
+      const dateStr = era === '令和'
+        ? `R${year}${month ? `/${month}` : ''}`
+        : `${era}${year}年${month ? `${month}月` : ''}`
+      return `${dateStr}に（${contMedsText}）内服にて症状安定`
+    })()
+    const thyContSurgeryText = (() => {
+      if (!d.history?.surgeryHistory) return 'なし'
+      const yr = d.history?.surgeryYear
+      const mo = d.history?.surgeryMonth
+      const type = d.history?.surgeryType || ''
+      const dateStr = yr ? `R${yr}${mo ? `/${mo}` : ''}` : ''
+      return `あり（${[dateStr, type].filter(Boolean).join(' ')}）`
+    })()
+    const thyContSideEffectText = (() => {
+      const parts = []
+      if (d.history?.sideEffectMmz) parts.push('メルカゾール')
+      if (d.history?.sideEffectPtz) parts.push('プロパジール')
+      return parts.length ? `${parts.join('・')}副作用あり` : 'なし'
+    })()
 
     const useCheckboxEcho = tType === 'basedow-new' || tType === 'basedow-cont' || tType === 'hashimoto'
     const thyEchoItems = useCheckboxEcho ? [
@@ -920,9 +940,9 @@ ${!is2step ? `家族歴（甲状腺）：${d.history?.fh?.thyroid ? ('あり' + 
 健診：${(d.history?.checkup || []).join('・') || 'なし'}
 仕事：${thyJobText || '未記入'}
 活動量：${d.history?.activity || '未記入'}` : ''}
-${tType === 'basedow-cont' ? `手術歴：${d.history?.surgeryHistory ? ('あり' + (d.history.surgeryDetail ? `（${d.history.surgeryDetail}）` : '')) : 'なし'}
-アイソトープ治療歴：${d.history?.isotopeHistory ? ('あり' + (d.history.isotopeDetail ? `（${d.history.isotopeDetail}）` : '')) : 'なし'}
-副作用歴：${d.history?.sideEffectHistory ? ('あり' + (d.history.sideEffectDetail ? `（${d.history.sideEffectDetail}）` : '')) : 'なし'}
+${tType === 'basedow-cont' ? `手術歴：${thyContSurgeryText}
+アイソトープ治療歴：${d.history?.isotopeHistory ? 'あり' : 'なし'}
+薬の副作用歴：${thyContSideEffectText}
 眼科通院歴：${d.history?.eyeHistory ? ('あり' + (d.history.eyeClinic ? `（${d.history.eyeClinic}）` : '')) : 'なし'}` : ''}
 ${tType === 'hashimoto' && d.history?.treatmentHistory ? `治療経緯：${d.history.treatmentHistory}` : ''}
 医師希望：${d.body?.doctorGender || '指定なし'}
