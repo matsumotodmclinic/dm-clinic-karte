@@ -313,6 +313,7 @@ ${formType === 'hashimoto' && data.history.treatmentHistory ? `治療経緯：${
 ${getCurrentMonth()}：（受診理由サマリー1〜2行）
 ${diagnosisName}（サマリーの直後、空行なし）
 ${formType === 'basedow-cont' && contTimeline ? contTimeline : ""}
+${formType === 'basedow-cont' ? `手術歴：${surgeryText}　アイソトープ歴：${data.history.isotopeHistory ? "あり" : "なし"}　副作用歴：${sideEffectText}　眼科：${data.history.eyeHistory ? ("あり" + (data.history.eyeClinic ? `（${data.history.eyeClinic}）` : "")) : "なし"}` : ""}
 ${useCheckboxEcho && symptomsText ? `症状：${symptomsText}を認める` : ""}
 ${useCheckboxEcho && thyEchoLine ? thyEchoLine : ""}
 ${useCheckboxEcho && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
