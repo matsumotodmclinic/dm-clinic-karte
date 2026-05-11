@@ -399,7 +399,7 @@ ${(formType === 'malignant' || formType === 'nodule-normal' || formType === 'ade
   return segs.length ? segs.join("　") : "本日施行";
 })()}`}
 ---------------------------------------------
-${formType === 'malignant' ? '' : `身長:${data.body.height || "○"}cm　初診時:${data.body.weightNow || "○"}kg${bmi ? `（BMI ${bmi}）` : ""}
+${(formType === 'malignant' || formType === 'adenoma') ? '' : `身長:${data.body.height || "○"}cm　初診時:${data.body.weightNow || "○"}kg${bmi ? `（BMI ${bmi}）` : ""}
 ---------------------------------------------`}
 【事前聴取時　申し送り事項】
 ${formType === 'malignant' ? '' : '□通院のご案内をお渡し済'}
