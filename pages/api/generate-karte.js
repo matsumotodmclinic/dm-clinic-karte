@@ -804,7 +804,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
     }
     else if (tType === 'hashimoto')     diagnosisName = '＃橋本病疑い（エコー上の疑い）'
     else if (tType === 'nodule-normal') diagnosisName = '＃甲状腺腫大（エコー上異常なし）'
-    else if (tType === 'adenoma')       diagnosisName = '＃甲状腺腺腫（経過観察）'
+    else if (tType === 'adenoma')       diagnosisName = '＃甲状腺腺腫（経過観察）疑い'
     else if (tType === 'malignant')     diagnosisName = '＃甲状腺腺腫（悪性疑い）'
 
     const thySmoke = (() => {
@@ -853,7 +853,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
     else if (tType === 'hashimoto') footerBloodTest = '甲状腺3項目＋甲状腺抗体3項目'
     else if (tType === 'basedow-cont') footerBloodTest = '甲状腺3項目＋甲状腺抗体3項目'
     else if (tType === 'nodule-normal') footerBloodTest = '甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：'
-    else if (tType === 'adenoma') footerBloodTest = '甲状腺3項目＋抗Tg抗体＋抗TPO抗体'
+    else if (tType === 'adenoma') footerBloodTest = '甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：'
 
     const thyDoctorLabel = d.body?.doctorGender === '院長（初回のみ）' ? '院長希望（初回のみ）' : (d.body?.doctorGender || '指定なし')
 
@@ -900,7 +900,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
     // フォーム別: メイン「当院エコーにて...」結語行
     const thyEchoConclusion = (() => {
       if (tType === 'malignant')     return '当院エコーにて悪性を疑う所見を認め当日紹介。'
-      if (tType === 'adenoma')       return '当院エコーにて結節を認める（経過観察）'
+      if (tType === 'adenoma')       return '当院エコーにて結節を認めたため、エコー定期followとする。'
       if (tType === 'nodule-normal') return thyBaseFindings.length > 0
         ? `当院エコーにて${thyBaseFindingsText}を認める`
         : '当院エコーにて明らかな異常所見なし'
@@ -1012,7 +1012,7 @@ ${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
 【健診】${(d.history?.checkup || []).join('・') || '未記入'}
 【仕事】${thyJobText}` : ''}
 ---------------------------------------------
-${(tType === 'malignant' || tType === 'nodule-normal') ? '空欄：検査技師が後ほど貼り付けます。' : `甲状腺エコー：${tType === 'basedow-new' ? '' : (() => {
+${(tType === 'malignant' || tType === 'nodule-normal' || tType === 'adenoma') ? '空欄：検査技師が後ほど貼り付けます。' : `甲状腺エコー：${tType === 'basedow-new' ? '' : (() => {
   const segs = []
   if (thyBaseFindingsText) segs.push(thyBaseFindingsText)
   if (noduleEchoLine) segs.push(noduleEchoLine)
@@ -1034,7 +1034,7 @@ ${d.reason?.thyroidConcern && tType !== 'malignant' ? '□「甲状腺疾患が�
 ${getCurrentMonth()}：${footerBloodTest}
 
 （アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
-${tType !== 'malignant' ? `1月follow\n${thyWeekday}\nLINE登録ご案内→済　登録確認未・登録できない` : '（当日紹介、当院終診）'}`
+${tType === 'malignant' ? '（当日紹介、当院終診）' : tType === 'adenoma' ? `6か月follow\n${thyWeekday}\nLINE登録ご案内→済　登録確認未・登録できない` : `1月follow\n${thyWeekday}\nLINE登録ご案内→済　登録確認未・登録できない`}`
     max_tokens = 1200
 
   } else {

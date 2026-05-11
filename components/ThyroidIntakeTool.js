@@ -206,7 +206,7 @@ export default function ThyroidIntakeTool({ formType }) {
     }
     else if (formType === 'hashimoto') diagnosisName = "＃橋本病疑い（エコー上の疑い）";
     else if (formType === 'nodule-normal') diagnosisName = "＃甲状腺腫大（エコー上異常なし）";
-    else if (formType === 'adenoma') diagnosisName = "＃甲状腺腺腫（経過観察）";
+    else if (formType === 'adenoma') diagnosisName = "＃甲状腺腺腫（経過観察）疑い";
     else if (formType === 'malignant') diagnosisName = "＃甲状腺腺腫（悪性疑い）";
 
     let shinsokuLines = "";
@@ -227,7 +227,7 @@ export default function ThyroidIntakeTool({ formType }) {
     else if (formType === 'hashimoto') footerBloodTest = "甲状腺3項目＋甲状腺抗体3項目";
     else if (formType === 'basedow-cont') footerBloodTest = "甲状腺3項目＋甲状腺抗体3項目";
     else if (formType === 'nodule-normal') footerBloodTest = "甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：";
-    else if (formType === 'adenoma') footerBloodTest = "甲状腺3項目＋抗Tg抗体＋抗TPO抗体";
+    else if (formType === 'adenoma') footerBloodTest = "甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：";
 
     const jobText = (() => {
       const jobs = Array.isArray(data.history.job) ? data.history.job : (data.history.job ? [data.history.job] : []);
@@ -278,7 +278,7 @@ export default function ThyroidIntakeTool({ formType }) {
     // フォーム別: メイン「当院エコーにて...」結語行
     const thyEchoConclusion = (() => {
       if (formType === 'malignant')     return '当院エコーにて悪性を疑う所見を認め当日紹介。';
-      if (formType === 'adenoma')       return '当院エコーにて結節を認める（経過観察）';
+      if (formType === 'adenoma')       return '当院エコーにて結節を認めたため、エコー定期followとする。';
       if (formType === 'nodule-normal') return thyBaseFindings.length > 0
         ? `当院エコーにて${thyBaseFindingsText}を認める`
         : '当院エコーにて明らかな異常所見なし';
@@ -391,7 +391,7 @@ ${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
 【健診】
 【仕事】職業・活動量` : ""}
 ---------------------------------------------
-${(formType === 'malignant' || formType === 'nodule-normal') ? '空欄：検査技師が後ほど貼り付けます。' : `甲状腺エコー：${formType === 'basedow-new' ? "" : (() => {
+${(formType === 'malignant' || formType === 'nodule-normal' || formType === 'adenoma') ? '空欄：検査技師が後ほど貼り付けます。' : `甲状腺エコー：${formType === 'basedow-new' ? "" : (() => {
   const segs = [];
   if (thyBaseFindingsText) segs.push(thyBaseFindingsText);
   if (noduleEchoLine) segs.push(noduleEchoLine);
@@ -413,7 +413,7 @@ ${data.reason.thyroidConcern && formType !== 'malignant' ? '□「甲状腺疾�
 ${getCurrentMonth()}：${footerBloodTest}
 
 （アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
-${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内→済　登録確認未・登録できない` : "（当日紹介、当院終診）"}`;
+${formType === 'malignant' ? '（当日紹介、当院終診）' : formType === 'adenoma' ? `6か月follow\n${buildWeekday()}\nLINE登録ご案内→済　登録確認未・登録できない` : `1月follow\n${buildWeekday()}\nLINE登録ご案内→済　登録確認未・登録できない`}`;
 
     try {
       const res = await fetch("/api/generate", {
@@ -758,12 +758,16 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
         ))}
       </div>
 
-      <label style={lbl()}>患者様の年齢</label>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-        <input style={{ ...inp(), width: 80 }} type="number" placeholder="歳" value={data.history.age} onChange={e => up("history", "age", e.target.value)} />
-        <span style={{ fontSize: 13, color: "#666" }}>歳</span>
-        {age > 0 && <span style={{ fontSize: 12, fontWeight: 700, padding: "4px 12px", borderRadius: 20, color: isOver60 ? "#c05621" : "#276749", background: isOver60 ? "#fffaf0" : "#f0fff4", border: `1px solid ${isOver60 ? "#fbd38d" : "#9ae6b4"}` }}>{isOver60 ? "60歳以上：ワクチン確認あり" : "60歳未満：ワクチン確認不要"}</span>}
-      </div>
+      {formType !== 'adenoma' && (
+        <>
+          <label style={lbl()}>患者様の年齢</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+            <input style={{ ...inp(), width: 80 }} type="number" placeholder="歳" value={data.history.age} onChange={e => up("history", "age", e.target.value)} />
+            <span style={{ fontSize: 13, color: "#666" }}>歳</span>
+            {age > 0 && <span style={{ fontSize: 12, fontWeight: 700, padding: "4px 12px", borderRadius: 20, color: isOver60 ? "#c05621" : "#276749", background: isOver60 ? "#fffaf0" : "#f0fff4", border: `1px solid ${isOver60 ? "#fbd38d" : "#9ae6b4"}` }}>{isOver60 ? "60歳以上：ワクチン確認あり" : "60歳未満：ワクチン確認不要"}</span>}
+          </div>
+        </>
+      )}
 
       <label style={lbl()}>アレルギー歴</label>
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
@@ -807,23 +811,27 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
         </div>
       )}
 
-      <label style={lbl({ marginTop: 8 })}>喫煙歴</label>
-      <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-        {["なし", "あり", "禁煙済"].map(v => <button key={v} style={btn(data.history.smoking === v)} onClick={() => up("history", "smoking", v)}>{v}</button>)}
-      </div>
-      {(data.history.smoking === "あり" || data.history.smoking === "禁煙済") && (
-        <div style={sBox({ border: "1.5px solid #a7f3d0", background: "#e6fff8", marginBottom: 10 })}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-            <div style={{ flex: "1 1 80px" }}><label style={lbl()}>1日の本数</label><input style={inp()} type="number" placeholder="本/日" value={data.history.smokingAmount} onChange={e => up("history", "smokingAmount", e.target.value)} /></div>
-            <div style={{ flex: "1 1 80px" }}><label style={lbl()}>喫煙年数</label><input style={inp()} type="number" placeholder="年" value={data.history.smokingYears} onChange={e => up("history", "smokingYears", e.target.value)} /></div>
-            <div style={{ flex: "1 1 80px" }}><label style={lbl()}>開始年齢</label><input style={inp()} type="number" placeholder="歳〜" value={data.history.smokingStartAge} onChange={e => up("history", "smokingStartAge", e.target.value)} /></div>
+      {formType !== 'adenoma' && (
+        <>
+          <label style={lbl({ marginTop: 8 })}>喫煙歴</label>
+          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            {["なし", "あり", "禁煙済"].map(v => <button key={v} style={btn(data.history.smoking === v)} onClick={() => up("history", "smoking", v)}>{v}</button>)}
           </div>
-          {data.history.smoking === "禁煙済" && (
-            <div><label style={lbl()}>禁煙した時期</label>
-              <EraYear era={data.history.smokingQuitEra} year={data.history.smokingQuitYear} onEraChange={v => up("history", "smokingQuitEra", v)} onYearChange={v => up("history", "smokingQuitYear", v)} />
+          {(data.history.smoking === "あり" || data.history.smoking === "禁煙済") && (
+            <div style={sBox({ border: "1.5px solid #a7f3d0", background: "#e6fff8", marginBottom: 10 })}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                <div style={{ flex: "1 1 80px" }}><label style={lbl()}>1日の本数</label><input style={inp()} type="number" placeholder="本/日" value={data.history.smokingAmount} onChange={e => up("history", "smokingAmount", e.target.value)} /></div>
+                <div style={{ flex: "1 1 80px" }}><label style={lbl()}>喫煙年数</label><input style={inp()} type="number" placeholder="年" value={data.history.smokingYears} onChange={e => up("history", "smokingYears", e.target.value)} /></div>
+                <div style={{ flex: "1 1 80px" }}><label style={lbl()}>開始年齢</label><input style={inp()} type="number" placeholder="歳〜" value={data.history.smokingStartAge} onChange={e => up("history", "smokingStartAge", e.target.value)} /></div>
+              </div>
+              {data.history.smoking === "禁煙済" && (
+                <div><label style={lbl()}>禁煙した時期</label>
+                  <EraYear era={data.history.smokingQuitEra} year={data.history.smokingQuitYear} onEraChange={v => up("history", "smokingQuitEra", v)} onYearChange={v => up("history", "smokingQuitYear", v)} />
+                </div>
+              )}
             </div>
           )}
-        </div>
+        </>
       )}
 
       <label style={lbl()}>健診の種類</label>
@@ -831,19 +839,23 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
         {["市の健診", "会社の健診", "人間ドック", "なし"].map(v => <button key={v} style={btn((data.history.checkup || []).includes(v))} onClick={() => toggleArr("history", "checkup", v)}>{v}</button>)}
       </div>
 
-      <label style={lbl()}>仕事</label>
-      <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-        {["している", "していない"].map(v => <button key={v} style={btn(data.history.work === v)} onClick={() => up("history", "work", v)}>{v}</button>)}
-      </div>
-      {data.history.work === "している" && (
-        <div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 8 }}>
-            {["会社員（デスクワーク）", "会社員（現場・営業）", "自営業", "パート・アルバイト", "医療・福祉職", "専業主婦・主夫", "学生"].map(v => (
-              <button key={v} style={{ ...btn((data.history.job || []).includes(v)), padding: "6px 10px", fontSize: 12 }} onClick={() => toggleArr("history", "job", v)}>{v}</button>
-            ))}
+      {formType !== 'adenoma' && (
+        <>
+          <label style={lbl()}>仕事</label>
+          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            {["している", "していない"].map(v => <button key={v} style={btn(data.history.work === v)} onClick={() => up("history", "work", v)}>{v}</button>)}
           </div>
-          <input style={{ ...inp(), marginBottom: 10 }} placeholder="補足・その他" value={data.history.jobNote} onChange={e => up("history", "jobNote", e.target.value)} />
-        </div>
+          {data.history.work === "している" && (
+            <div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 8 }}>
+                {["会社員（デスクワーク）", "会社員（現場・営業）", "自営業", "パート・アルバイト", "医療・福祉職", "専業主婦・主夫", "学生"].map(v => (
+                  <button key={v} style={{ ...btn((data.history.job || []).includes(v)), padding: "6px 10px", fontSize: 12 }} onClick={() => toggleArr("history", "job", v)}>{v}</button>
+                ))}
+              </div>
+              <input style={{ ...inp(), marginBottom: 10 }} placeholder="補足・その他" value={data.history.jobNote} onChange={e => up("history", "jobNote", e.target.value)} />
+            </div>
+          )}
+        </>
       )}
       <label style={lbl()}>活動量</label>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 14 }}>
@@ -921,16 +933,20 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
   // ── Step 2 (3-step forms): 生活情報・体格 ────────────────
   const renderStep2_3step = () => (
     <div>
-      <label style={lbl()}>身長・体重</label>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
-        {[["height", "身長", "cm"], ["weightNow", "現在の体重", "kg"], ["weight20", "20歳時の体重", "kg"], ["weightMax", "最大体重", "kg"], ["weightMaxAge", "最大体重の年齢", "歳"]].map(([k, l, u]) => (
-          <div key={k} style={{ flex: "1 1 130px", maxWidth: "calc(20% - 8px)" }}>
-            <label style={lbl()}>{l}（{u}）</label>
-            <input style={inp()} type="number" placeholder={u} value={data.body[k]} onChange={e => up("body", k, e.target.value)} />
+      {formType !== 'adenoma' && (
+        <>
+          <label style={lbl()}>身長・体重</label>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
+            {[["height", "身長", "cm"], ["weightNow", "現在の体重", "kg"], ["weight20", "20歳時の体重", "kg"], ["weightMax", "最大体重", "kg"], ["weightMaxAge", "最大体重の年齢", "歳"]].map(([k, l, u]) => (
+              <div key={k} style={{ flex: "1 1 130px", maxWidth: "calc(20% - 8px)" }}>
+                <label style={lbl()}>{l}（{u}）</label>
+                <input style={inp()} type="number" placeholder={u} value={data.body[k]} onChange={e => up("body", k, e.target.value)} />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      {bmi && <div style={{ marginBottom: 16, padding: "10px 16px", background: "#e6fff8", borderRadius: 8, fontSize: 14, fontWeight: 700, color: TC }}>BMI：{bmi}　{parseFloat(bmi) < 18.5 ? "（低体重）" : parseFloat(bmi) < 25 ? "（普通体重）" : parseFloat(bmi) < 30 ? "（肥満1度）" : "（肥満2度以上）"}</div>}
+          {bmi && <div style={{ marginBottom: 16, padding: "10px 16px", background: "#e6fff8", borderRadius: 8, fontSize: 14, fontWeight: 700, color: TC }}>BMI：{bmi}　{parseFloat(bmi) < 18.5 ? "（低体重）" : parseFloat(bmi) < 25 ? "（普通体重）" : parseFloat(bmi) < 30 ? "（肥満1度）" : "（肥満2度以上）"}</div>}
+        </>
+      )}
 
       <label style={lbl()}>希望曜日（複数選択可）</label>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 14 }}>
