@@ -346,11 +346,10 @@ ${formType === 'hashimoto' && data.history.treatmentHistory ? `治療経緯：${
 診察への要望：${data.body.concern || "なし"}
 
 【出力フォーマット】
-${getCurrentMonth()}：（受診理由サマリー1〜2行。症状チェックがある場合は末尾に「${symptomsText ? symptomsText + 'の訴えあり' : ''}」のように追記）
+${getCurrentMonth()}：（受診理由サマリー1〜2行。${symptomsText ? `自覚症状チェックあり: ${symptomsText} → サマリー末尾に「${symptomsText}の訴えあり。」を必ず追記し、＃診断名の上に位置するようにする` : '自覚症状なしの場合は症状追記は省略'}）
 ${diagnosisName}（サマリーの直後、空行なし）
 ${formType === 'basedow-cont' && contTimeline ? contTimeline : ""}
 ${formType === 'basedow-cont' ? `手術歴：${surgeryText}　アイソトープ歴：${data.history.isotopeHistory ? "あり" : "なし"}　副作用歴：${sideEffectText}　眼科：${data.history.eyeHistory ? ("あり" + (data.history.eyeClinic ? `（${data.history.eyeClinic}）` : "")) : "なし"}` : ""}
-${useCheckboxEcho && symptomsText ? `症状：${symptomsText}を認める` : ""}
 ${useCheckboxEcho && thyEchoLine ? thyEchoLine : ""}
 ${useCheckboxEcho && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
 ${isNodule && noduleHeaderLine ? noduleHeaderLine : ""}
