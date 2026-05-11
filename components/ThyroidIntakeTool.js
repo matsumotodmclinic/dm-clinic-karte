@@ -354,7 +354,7 @@ export default function ThyroidIntakeTool({ formType }) {
 ${data.reason.thyroidConcern ? `※「甲状腺疾患が気になって受診」の患者です。受診理由サマリーは検査前の暫定的な経緯として記載してください。` : ""}
 ${formType === 'basedow-cont' ? `診断時期：${data.history.diagnosisEra}${data.history.diagnosisYear || "（不明）"}年\n内服薬：${contMedsText || "（未選択）"}` : ""}
 甲状腺ベース所見：${thyBaseFindingsText || "（未選択 or 全て正常）"}
-${data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
+${formType === 'basedow-new' && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
 結節について：${data.echo.hasNodule || "未選択"}
 ${data.echo.hasNodule === "あり" && noduleEchoLine ? `結節所見（整形済み）：${noduleEchoLine}` : ""}
 症状：${symptomsText || "なし"}
@@ -383,7 +383,7 @@ ${formType === 'basedow-cont' ? `手術歴：${surgeryText}　アイソトープ
 ${thyEchoConclusion}
 ${thyBaseExtraLine}
 ${noduleEchoLine}
-${data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
+${formType === 'basedow-new' && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
 
 【アレルギー歴】（なしまたは内容を同じ行に）
 ${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
@@ -669,13 +669,17 @@ ${formType === 'malignant' ? '（当日紹介、当院終診）' : formType === 
           </div>
         </div>
 
-        <label style={lbl()}>ECG</label>
-        <div style={{ display: "flex", gap: 3, marginBottom: 14 }}>
-          {["正常範囲", "心房細動"].map(v => (
-            <button key={v} style={btn(data.echo.ecg === v, v === "心房細動" ? "#c53030" : TC)}
-              onClick={() => up("echo", "ecg", data.echo.ecg === v ? "" : v)}>{v}</button>
-          ))}
-        </div>
+        {formType === 'basedow-new' && (
+          <>
+            <label style={lbl()}>ECG</label>
+            <div style={{ display: "flex", gap: 3, marginBottom: 14 }}>
+              {["正常範囲", "心房細動"].map(v => (
+                <button key={v} style={btn(data.echo.ecg === v, v === "心房細動" ? "#c53030" : TC)}
+                  onClick={() => up("echo", "ecg", data.echo.ecg === v ? "" : v)}>{v}</button>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* 結節について（全フォーム共通、ありの場合のみアコーディオン展開） */}
         <label style={lbl()}>結節について</label>

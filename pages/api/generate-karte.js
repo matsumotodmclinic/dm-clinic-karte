@@ -975,7 +975,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 ${d.reason?.thyroidConcern ? '※「甲状腺疾患が気になって受診」の患者です。受診理由サマリーは検査前の暫定的な経緯として記載してください。' : ''}
 ${tType === 'basedow-cont' ? `診断時期：${d.history?.diagnosisEra || '令和'}${d.history?.diagnosisYear || '（不明）'}年\n内服薬：${contMedsText || '（未選択）'}` : ''}
 甲状腺ベース所見：${thyBaseFindingsText || '（未選択 or 全て正常）'}
-${d.echo?.ecg ? `ECG：${d.echo.ecg}` : ''}
+${tType === 'basedow-new' && d.echo?.ecg ? `ECG：${d.echo.ecg}` : ''}
 結節について：${d.echo?.hasNodule || '未選択'}
 ${d.echo?.hasNodule === 'あり' && noduleEchoLine ? `結節所見（整形済み）：${noduleEchoLine}` : ''}
 症状：${thySymptoms || 'なし'}
@@ -1004,7 +1004,7 @@ ${tType === 'basedow-cont' ? `手術歴：${thyContSurgeryText}　アイソト�
 ${thyEchoConclusion}
 ${thyBaseExtraLine}
 ${noduleEchoLine}
-${d.echo?.ecg ? `ECG：${d.echo.ecg}` : ''}
+${tType === 'basedow-new' && d.echo?.ecg ? `ECG：${d.echo.ecg}` : ''}
 
 【アレルギー歴】（なしまたは内容を同じ行に）
 ${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
