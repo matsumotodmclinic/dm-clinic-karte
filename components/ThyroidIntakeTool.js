@@ -376,45 +376,66 @@ ${formType === 'hashimoto' && data.history.treatmentHistory ? `治療経緯：${
 患者フラグ：${data.body.patientFlag || "通常"}
 診察への要望：${data.body.concern || "なし"}
 
-【出力フォーマット】
-${getCurrentMonth()}：（受診理由サマリー1〜2行。${symptomsText ? `自覚症状チェックあり: ${symptomsText} → サマリー末尾に「${symptomsText}の訴えあり。」を必ず追記し、＃診断名の上に位置するようにする` : '自覚症状なしの場合は症状追記は省略'}）
-${diagnosisName}（サマリーの直後、空行なし）
-${formType === 'basedow-cont' && contTimeline ? contTimeline : ""}
-${formType === 'basedow-cont' ? `手術歴：${surgeryText}　アイソトープ歴：${data.history.isotopeHistory ? "あり" : "なし"}　副作用歴：${sideEffectText}　眼科：${data.history.eyeHistory ? ("あり" + (data.history.eyeClinic ? `（${data.history.eyeClinic}）` : "")) : "なし"}` : ""}
-${thyEchoConclusion}
-${thyBaseExtraLine}
-${noduleEchoLine}
-${formType === 'basedow-new' && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
+${(() => {
+  // 出力フォーマットを空行が混ざらないよう配列で組み立てて join する
+  const reasonLine = `${getCurrentMonth()}：（受診理由サマリー1〜2行。${symptomsText ? `自覚症状チェックあり: ${symptomsText} → サマリー末尾に「${symptomsText}の訴えあり。」を必ず追記し、＃診断名の上に位置するようにする` : '自覚症状なしの場合は症状追記は省略'}）`;
+  const diagnosisLine = `${diagnosisName}（サマリーの直後、空行なし）`;
+  const echoBlock = [
+    formType === 'basedow-cont' && contTimeline ? contTimeline : '',
+    formType === 'basedow-cont' ? `手術歴：${surgeryText}　アイソトープ歴：${data.history.isotopeHistory ? "あり" : "なし"}　副作用歴：${sideEffectText}　眼科：${data.history.eyeHistory ? ("あり" + (data.history.eyeClinic ? `（${data.history.eyeClinic}）` : "")) : "なし"}` : '',
+    thyEchoConclusion,
+    thyBaseExtraLine,
+    noduleEchoLine,
+    formType === 'basedow-new' && data.echo.ecg ? `ECG：${data.echo.ecg}` : '',
+  ].filter(Boolean).join('\n');
+
+  const fhBlock = !is2step ? '【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）\n【喫煙歴】（整形済みテキスト）\n【健診】\n【仕事】職業・活動量' : '';
+
+  const dividerEchoLine = (formType === 'malignant' || formType === 'nodule-normal' || formType === 'adenoma')
+    ? '空欄：検査技師が後ほど貼り付けます。'
+    : `甲状腺エコー：${formType === 'basedow-new' ? '' : (() => {
+        const segs = [];
+        if (thyBaseFindingsText) segs.push(thyBaseFindingsText);
+        if (noduleEchoLine) segs.push(noduleEchoLine);
+        return segs.length ? segs.join('　') : '本日施行';
+      })()}`;
+
+  const heightBlock = (formType === 'malignant' || formType === 'adenoma') ? '' : `身長:${data.body.height || "○"}cm　初診時:${data.body.weightNow || "○"}kg${bmi ? `（BMI ${bmi}）` : ""}\n---------------------------------------------`;
+
+  const shinsokuItems = [
+    formType === 'malignant' ? '' : '□通院のご案内をお渡し済',
+    shinsokuLines,
+    data.reason.thyroidConcern && formType !== 'malignant' ? '□「甲状腺疾患が気になる」で受診→甲状腺機能・抗体の結果により上段の診断を確定してください' : '',
+    '（新患2枠取得済の場合）□新患2枠取得済み',
+    `（医師希望指定ありの場合）□${data.body.doctorGender || "指定なし"}`,
+    '（患者フラグが「○患者疑い」の場合）□○患者疑い（対応注意）',
+    '（患者フラグが「●患者疑い」の場合）□●患者疑い（出禁対象・要確認）',
+  ].filter(Boolean).join('\n');
+
+  const footerTrailing = formType === 'malignant'
+    ? '（当日紹介、当院終診）'
+    : formType === 'adenoma'
+      ? `6か月follow\n${buildWeekday()}\nLINE登録ご案内→済　登録確認未・登録できない`
+      : `1月follow\n${buildWeekday()}\nLINE登録ご案内→済　登録確認未・登録できない`;
+
+  return `【出力フォーマット】
+${reasonLine}
+${diagnosisLine}
+${echoBlock}
 
 【アレルギー歴】（なしまたは内容を同じ行に）
-${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
-【喫煙歴】（整形済みテキスト）
-【健診】
-【仕事】職業・活動量` : ""}
+${fhBlock ? fhBlock + '\n' : ''}---------------------------------------------
+${dividerEchoLine}
 ---------------------------------------------
-${(formType === 'malignant' || formType === 'nodule-normal' || formType === 'adenoma') ? '空欄：検査技師が後ほど貼り付けます。' : `甲状腺エコー：${formType === 'basedow-new' ? "" : (() => {
-  const segs = [];
-  if (thyBaseFindingsText) segs.push(thyBaseFindingsText);
-  if (noduleEchoLine) segs.push(noduleEchoLine);
-  return segs.length ? segs.join("　") : "本日施行";
-})()}`}
----------------------------------------------
-${(formType === 'malignant' || formType === 'adenoma') ? '' : `身長:${data.body.height || "○"}cm　初診時:${data.body.weightNow || "○"}kg${bmi ? `（BMI ${bmi}）` : ""}
----------------------------------------------`}
-【事前聴取時　申し送り事項】
-${formType === 'malignant' ? '' : '□通院のご案内をお渡し済'}
-${shinsokuLines}
-${data.reason.thyroidConcern && formType !== 'malignant' ? '□「甲状腺疾患が気になる」で受診→甲状腺機能・抗体の結果により上段の診断を確定してください' : ''}
-（新患2枠取得済の場合）□新患2枠取得済み
-（医師希望指定ありの場合）□${data.body.doctorGender || "指定なし"}
-（患者フラグが「○患者疑い」の場合）□○患者疑い（対応注意）
-（患者フラグが「●患者疑い」の場合）□●患者疑い（出禁対象・要確認）
+${heightBlock ? heightBlock + '\n' : ''}【事前聴取時　申し送り事項】
+${shinsokuItems}
 【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
 ---------------------------------------------
 ${getCurrentMonth()}：${footerBloodTest}
 
 （アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
-${formType === 'malignant' ? '（当日紹介、当院終診）' : formType === 'adenoma' ? `6か月follow\n${buildWeekday()}\nLINE登録ご案内→済　登録確認未・登録できない` : `1月follow\n${buildWeekday()}\nLINE登録ご案内→済　登録確認未・登録できない`}`;
+${footerTrailing}`;
+})()}`;
 
     try {
       const res = await fetch("/api/generate", {
@@ -423,7 +444,12 @@ ${formType === 'malignant' ? '（当日紹介、当院終診）' : formType === 
         body: JSON.stringify({ model: "claude-sonnet-4-5", max_tokens: 1200, messages: [{ role: "user", content: prompt }] }),
       });
       const json = await res.json();
-      const generated = json.content?.[0]?.text || "生成に失敗しました";
+      const raw = json.content?.[0]?.text || "生成に失敗しました";
+      // 連続する空行を最大1行に圧縮（条件付き行が空展開された箇所のクリーンアップ）
+      const generated = raw
+        .split('\n').map(l => l.replace(/[ 　\t]+$/, '')).join('\n')  // 各行の末尾空白除去
+        .replace(/\n{3,}/g, '\n\n')                                     // 連続改行を2つに圧縮
+        .trim();
       setResult(generated);
 
       try {
@@ -908,7 +934,7 @@ ${formType === 'malignant' ? '（当日紹介、当院終診）' : formType === 
         <input style={{ ...inp(), marginBottom: 14 }} placeholder="内容" value={data.history.allergyDetail} onChange={e => up("history", "allergyDetail", e.target.value)} />
       )}
 
-      {formType !== 'malignant' && (
+      {formType !== 'malignant' && formType !== 'nodule-normal' && (
         <>
           <label style={lbl({ marginTop: 8 })}>身長・体重</label>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>

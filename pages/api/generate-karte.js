@@ -997,45 +997,66 @@ ${tType === 'hashimoto' && d.history?.treatmentHistory ? `治療経緯：${d.his
 患者フラグ：${d.body?.patientFlag || '通常'}
 診察への要望：${d.body?.concern || 'なし'}
 
-【出力フォーマット】
-${getCurrentMonth()}：（受診理由サマリー1〜2行。${thySymptoms ? `自覚症状チェックあり: ${thySymptoms} → サマリー末尾に「${thySymptoms}の訴えあり。」を必ず追記し、＃診断名の上に位置するようにする` : '自覚症状なしの場合は症状追記は省略'}）
-${diagnosisName}（サマリーの直後、空行なし）
-${tType === 'basedow-cont' && contTimeline ? contTimeline : ''}
-${tType === 'basedow-cont' ? `手術歴：${thyContSurgeryText}　アイソトープ歴：${d.history?.isotopeHistory ? 'あり' : 'なし'}　副作用歴：${thyContSideEffectText}　眼科：${d.history?.eyeHistory ? ('あり' + (d.history.eyeClinic ? `（${d.history.eyeClinic}）` : '')) : 'なし'}` : ''}
-${thyEchoConclusion}
-${thyBaseExtraLine}
-${noduleEchoLine}
-${tType === 'basedow-new' && d.echo?.ecg ? `ECG：${d.echo.ecg}` : ''}
+${(() => {
+  // 出力フォーマットを空行が混ざらないよう配列で組み立てて join する
+  const reasonLine = `${getCurrentMonth()}：（受診理由サマリー1〜2行。${thySymptoms ? `自覚症状チェックあり: ${thySymptoms} → サマリー末尾に「${thySymptoms}の訴えあり。」を必ず追記し、＃診断名の上に位置するようにする` : '自覚症状なしの場合は症状追記は省略'}）`
+  const diagnosisLine = `${diagnosisName}（サマリーの直後、空行なし）`
+  const echoBlock = [
+    tType === 'basedow-cont' && contTimeline ? contTimeline : '',
+    tType === 'basedow-cont' ? `手術歴：${thyContSurgeryText}　アイソトープ歴：${d.history?.isotopeHistory ? 'あり' : 'なし'}　副作用歴：${thyContSideEffectText}　眼科：${d.history?.eyeHistory ? ('あり' + (d.history.eyeClinic ? `（${d.history.eyeClinic}）` : '')) : 'なし'}` : '',
+    thyEchoConclusion,
+    thyBaseExtraLine,
+    noduleEchoLine,
+    tType === 'basedow-new' && d.echo?.ecg ? `ECG：${d.echo.ecg}` : '',
+  ].filter(Boolean).join('\n')
+
+  const fhBlock = !is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）\n【喫煙歴】${thySmoke}\n【健診】${(d.history?.checkup || []).join('・') || '未記入'}\n【仕事】${thyJobText}` : ''
+
+  const dividerEchoLine = (tType === 'malignant' || tType === 'nodule-normal' || tType === 'adenoma')
+    ? '空欄：検査技師が後ほど貼り付けます。'
+    : `甲状腺エコー：${tType === 'basedow-new' ? '' : (() => {
+        const segs = []
+        if (thyBaseFindingsText) segs.push(thyBaseFindingsText)
+        if (noduleEchoLine) segs.push(noduleEchoLine)
+        return segs.length ? segs.join('　') : '本日施行'
+      })()}`
+
+  const heightBlock = (tType === 'malignant' || tType === 'adenoma') ? '' : `身長:${d.body?.height || '○'}cm　初診時:${d.body?.weightNow || '○'}kg${thyBmi ? `（BMI ${thyBmi}）` : ''}\n---------------------------------------------`
+
+  const shinsokuItems = [
+    tType === 'malignant' ? '' : '□通院のご案内をお渡し済',
+    shinsokuLines,
+    d.reason?.thyroidConcern && tType !== 'malignant' ? '□「甲状腺疾患が気になる」で受診→甲状腺機能・抗体の結果により上段の診断を確定してください' : '',
+    '（新患2枠取得済の場合）□新患2枠取得済み',
+    `（医師希望指定ありの場合）□${thyDoctorLabel}`,
+    '（患者フラグが「○患者疑い」の場合）□○患者疑い（対応注意）',
+    '（患者フラグが「●患者疑い」の場合）□●患者疑い（出禁対象・要確認）',
+  ].filter(Boolean).join('\n')
+
+  const footerTrailing = tType === 'malignant'
+    ? '（当日紹介、当院終診）'
+    : tType === 'adenoma'
+      ? `6か月follow\n${thyWeekday}\nLINE登録ご案内→済　登録確認未・登録できない`
+      : `1月follow\n${thyWeekday}\nLINE登録ご案内→済　登録確認未・登録できない`
+
+  return `【出力フォーマット】
+${reasonLine}
+${diagnosisLine}
+${echoBlock}
 
 【アレルギー歴】（なしまたは内容を同じ行に）
-${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
-【喫煙歴】${thySmoke}
-【健診】${(d.history?.checkup || []).join('・') || '未記入'}
-【仕事】${thyJobText}` : ''}
+${fhBlock ? fhBlock + '\n' : ''}---------------------------------------------
+${dividerEchoLine}
 ---------------------------------------------
-${(tType === 'malignant' || tType === 'nodule-normal' || tType === 'adenoma') ? '空欄：検査技師が後ほど貼り付けます。' : `甲状腺エコー：${tType === 'basedow-new' ? '' : (() => {
-  const segs = []
-  if (thyBaseFindingsText) segs.push(thyBaseFindingsText)
-  if (noduleEchoLine) segs.push(noduleEchoLine)
-  return segs.length ? segs.join('　') : '本日施行'
-})()}`}
----------------------------------------------
-${(tType === 'malignant' || tType === 'adenoma') ? '' : `身長:${d.body?.height || '○'}cm　初診時:${d.body?.weightNow || '○'}kg${thyBmi ? `（BMI ${thyBmi}）` : ''}
----------------------------------------------`}
-【事前聴取時　申し送り事項】
-${tType === 'malignant' ? '' : '□通院のご案内をお渡し済'}
-${shinsokuLines}
-${d.reason?.thyroidConcern && tType !== 'malignant' ? '□「甲状腺疾患が気になる」で受診→甲状腺機能・抗体の結果により上段の診断を確定してください' : ''}
-（新患2枠取得済の場合）□新患2枠取得済み
-（医師希望指定ありの場合）□${thyDoctorLabel}
-（患者フラグが「○患者疑い」の場合）□○患者疑い（対応注意）
-（患者フラグが「●患者疑い」の場合）□●患者疑い（出禁対象・要確認）
+${heightBlock ? heightBlock + '\n' : ''}【事前聴取時　申し送り事項】
+${shinsokuItems}
 【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
 ---------------------------------------------
 ${getCurrentMonth()}：${footerBloodTest}
 
 （アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
-${tType === 'malignant' ? '（当日紹介、当院終診）' : tType === 'adenoma' ? `6か月follow\n${thyWeekday}\nLINE登録ご案内→済　登録確認未・登録できない` : `1月follow\n${thyWeekday}\nLINE登録ご案内→済　登録確認未・登録できない`}`
+${footerTrailing}`
+})()}`
     max_tokens = 1200
 
   } else {
@@ -1060,7 +1081,12 @@ ${tType === 'malignant' ? '（当日紹介、当院終診）' : tType === 'adeno
     })
 
     const data = await response.json()
-    const karte = data.content?.[0]?.text || '生成に失敗しました'
+    const rawKarte = data.content?.[0]?.text || '生成に失敗しました'
+    // 連続する空行を最大1行に圧縮（条件付き行が空展開された箇所のクリーンアップ、甲状腺フォームで特に効果）
+    const karte = rawKarte
+      .split('\n').map(l => l.replace(/[ 　\t]+$/, '')).join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
     return res.status(200).json({ karte })
   } catch (e) {
     return res.status(500).json({ error: e.message })
