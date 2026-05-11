@@ -897,10 +897,13 @@ LINE登録ご案内→済　登録確認未・登録できない`
           ? `当院エコーにて${thyEchoItems.join('、')}の所見を認め橋本病を疑う`
           : `当院エコーにて${thyEchoItems.join('、')}の所見を認めバセドウ病を疑う`
       : ''
-    const thyReasonText = (tType === 'basedow-new' || tType === 'hashimoto' || tType === 'basedow-cont') ? (() => {
+    const thyReasonText = (() => {
       const r = d.reason || {}
       const parts = []
-      if (r.type === '紹介') {
+      if (r.thyroidConcern) {
+        const reason = r.thyroidConcernReason === 'その他' && r.thyroidConcernNote ? r.thyroidConcernNote : r.thyroidConcernReason
+        parts.push(reason ? `甲状腺疾患が気になって受診（${reason}）` : '甲状腺疾患が気になって受診')
+      } else if (r.type === '紹介') {
         const ref = [r.referralFrom, r.referralDept].filter(Boolean).join('・')
         if (ref) parts.push(`${ref}より紹介`)
         if (r.referralDetail) parts.push(r.referralDetail)
@@ -912,7 +915,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
       }
       if (r.summary) parts.push(r.summary)
       return parts.join('、')
-    })() : ''
+    })()
 
     prompt = `あなたはまつもと糖尿病クリニックの電子カルテ記載AIです。以下の患者情報をもとに、甲状腺外来の初診カルテ記載文を生成してください。
 
@@ -924,7 +927,8 @@ LINE登録ご案内→済　登録確認未・登録できない`
 - バセドウ初診の「甲状腺エコー：」行は後ろに何も追記せず「甲状腺エコー：」のみ出力する
 
 【患者情報】
-受診理由：${(tType === 'basedow-new' || tType === 'hashimoto' || tType === 'basedow-cont') ? (thyReasonText || d.reason?.summary || '（未記入）') : (d.reason?.summary || '（未記入）')}
+受診理由：${thyReasonText || d.reason?.summary || '（未記入）'}
+${d.reason?.thyroidConcern ? '※「甲状腺疾患が気になって受診」の患者です。受診理由サマリーは検査前の暫定的な経緯として記載してください。' : ''}
 ${tType === 'basedow-cont' ? `診断時期：${d.history?.diagnosisEra || '令和'}${d.history?.diagnosisYear || '（不明）'}年\n内服薬：${contMedsText || '（未選択）'}` : ''}
 エコー所見：${useCheckboxEcho ? (thyEchoLine || '（未選択）') : (d.echo?.thyroidEchoFindings || '（未記入）')}
 ${useCheckboxEcho && d.echo?.ecg ? `ECG：${d.echo.ecg}` : ''}
@@ -971,6 +975,7 @@ ${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
 【事前聴取時　申し送り事項】
 □通院のご案内をお渡し済
 ${shinsokuLines}
+${d.reason?.thyroidConcern ? '□「甲状腺疾患が気になる」で受診→甲状腺機能・抗体の結果により上段の診断を確定してください' : ''}
 （新患2枠取得済の場合）□新患2枠取得済み
 （医師希望指定ありの場合）□${thyDoctorLabel}
 （患者フラグが「○患者疑い」の場合）□○患者疑い（対応注意）

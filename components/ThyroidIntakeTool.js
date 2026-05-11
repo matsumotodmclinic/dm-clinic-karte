@@ -46,7 +46,7 @@ const btn = (active, color = TC, x = {}) => ({ padding: "8px 14px", borderRadius
 const sBox = (x = {}) => ({ background: "#f0fdf9", border: "1.5px solid #a7f3d0", borderRadius: 10, padding: "14px 16px", marginBottom: 14, ...x });
 
 const initialData = {
-  reason: { summary: "", type: "", referralFrom: "", referralDept: "", referralDetail: "", checkupType: "", transferFrom: "", transferDetail: "" },
+  reason: { summary: "", type: "", referralFrom: "", referralDept: "", referralDetail: "", checkupType: "", transferFrom: "", transferDetail: "", thyroidConcern: false, thyroidConcernReason: "", thyroidConcernNote: "" },
   echo: { thyroidEchoFindings: "", noduleSize: "", noduleCount: "", noduleType: "", thyroidEnlarged: false, bloodFlowRich: false, echoLevelLow: false, ecg: "" },
   symptom: { selected: [], otherText: "" },
   history: {
@@ -257,10 +257,13 @@ export default function ThyroidIntakeTool({ formType }) {
           ? `当院エコーにて${thyEchoItems.join("、")}の所見を認め橋本病を疑う`
           : `当院エコーにて${thyEchoItems.join("、")}の所見を認めバセドウ病を疑う`
       : "";
-    const thyReasonText = (formType === 'basedow-new' || formType === 'hashimoto' || formType === 'basedow-cont') ? (() => {
+    const thyReasonText = (() => {
       const r = data.reason;
       const parts = [];
-      if (r.type === "紹介") {
+      if (r.thyroidConcern) {
+        const reason = r.thyroidConcernReason === 'その他' && r.thyroidConcernNote ? r.thyroidConcernNote : r.thyroidConcernReason;
+        parts.push(reason ? `甲状腺疾患が気になって受診（${reason}）` : '甲状腺疾患が気になって受診');
+      } else if (r.type === "紹介") {
         const ref = [r.referralFrom, r.referralDept].filter(Boolean).join("・");
         if (ref) parts.push(`${ref}より紹介`);
         if (r.referralDetail) parts.push(r.referralDetail);
@@ -272,7 +275,7 @@ export default function ThyroidIntakeTool({ formType }) {
       }
       if (r.summary) parts.push(r.summary);
       return parts.join("、");
-    })() : "";
+    })();
 
     const prompt = `あなたはまつもと糖尿病クリニックの電子カルテ記載AIです。以下の患者情報をもとに、甲状腺外来の初診カルテ記載文を生成してください。
 
@@ -284,7 +287,8 @@ export default function ThyroidIntakeTool({ formType }) {
 - バセドウ初診の「甲状腺エコー：」行は後ろに何も追記せず「甲状腺エコー：」のみ出力する
 
 【患者情報】
-受診理由：${(formType === 'basedow-new' || formType === 'hashimoto' || formType === 'basedow-cont') ? (thyReasonText || data.reason.summary || "（未記入）") : (data.reason.summary || "（未記入）")}
+受診理由：${thyReasonText || data.reason.summary || "（未記入）"}
+${data.reason.thyroidConcern ? `※「甲状腺疾患が気になって受診」の患者です。受診理由サマリーは検査前の暫定的な経緯として記載してください。` : ""}
 ${formType === 'basedow-cont' ? `診断時期：${data.history.diagnosisEra}${data.history.diagnosisYear || "（不明）"}年\n内服薬：${contMedsText || "（未選択）"}` : ""}
 エコー所見：${useCheckboxEcho ? (thyEchoLine || "（未選択）") : (data.echo.thyroidEchoFindings || "（未記入）")}
 ${useCheckboxEcho && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
@@ -331,6 +335,7 @@ ${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
 【事前聴取時　申し送り事項】
 □通院のご案内をお渡し済
 ${shinsokuLines}
+${data.reason.thyroidConcern ? '□「甲状腺疾患が気になる」で受診→甲状腺機能・抗体の結果により上段の診断を確定してください' : ''}
 （新患2枠取得済の場合）□新患2枠取得済み
 （医師希望指定ありの場合）□${data.body.doctorGender || "指定なし"}
 （患者フラグが「○患者疑い」の場合）□○患者疑い（対応注意）
@@ -372,86 +377,95 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
   // ── Step 0: 受診理由・エコー所見 ──────────────────────────
   const renderStep0 = () => (
     <div>
-      {(formType === 'basedow-new' || formType === 'hashimoto' || formType === 'basedow-cont') ? (
-        <>
-          <label style={lbl()}>受診理由</label>
-          <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 14 }}>
-            {["紹介", "検診異常", "自主転院"].map(r => (
-              <button key={r} style={btn(data.reason.type === r)} onClick={() => up("reason", "type", r)}>{r}</button>
+      <label style={lbl()}>受診理由</label>
+      <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 14 }}>
+        {["紹介", "検診異常", "自主転院"].map(r => (
+          <button key={r} style={btn(data.reason.type === r)} onClick={() => setData(p => ({ ...p, reason: { ...p.reason, type: r, thyroidConcern: false } }))}>{r}</button>
+        ))}
+        <button style={btn(data.reason.thyroidConcern, '#8e44ad')} onClick={() => setData(p => ({ ...p, reason: { ...p.reason, thyroidConcern: !p.reason.thyroidConcern, type: !p.reason.thyroidConcern ? '' : p.reason.type } }))}>
+          {data.reason.thyroidConcern ? '✓ 甲状腺疾患が気になる' : '甲状腺疾患が気になる'}
+        </button>
+      </div>
+
+      {data.reason.thyroidConcern && (
+        <div style={{ ...sBox({ border: "1.5px solid #d6bcfa", background: "#faf5ff" }), marginBottom: 14 }}>
+          <label style={lbl({ color: '#8e44ad' })}>気になる理由</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginBottom: 8 }}>
+            {['家族に甲状腺疾患の方がいる', '健診で甲状腺異常を指摘された', '首の腫れが気になる', '動悸・倦怠感・むくみ等の症状が気になる', 'その他'].map(v => (
+              <button key={v} style={btn(data.reason.thyroidConcernReason === v, '#8e44ad')} onClick={() => up('reason', 'thyroidConcernReason', v)}>{v}</button>
             ))}
           </div>
-
-          {data.reason.type === "紹介" && (
-            <div style={sBox()}>
-              <label style={lbl()}>よく使う紹介元</label>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
-                {[
-                  { hosp: "上尾中央総合病院", dept: "内科" },
-                  { hosp: "自治医大さいたま医療センター", dept: "内分泌内科" },
-                  { hosp: "さいたま赤十字病院", dept: "内分泌内科" },
-                ].map(({ hosp, dept }) => {
-                  const selected = data.reason.referralFrom === hosp && data.reason.referralDept === dept;
-                  return (
-                    <button key={hosp + dept}
-                      style={{ ...btn(selected, "#0f9668"), fontSize: 12, padding: "7px 14px", border: selected ? "2px solid #0f9668" : "2px dashed #0f9668", background: selected ? "#0f9668" : "#f0fff8", color: selected ? "#fff" : "#0f9668" }}
-                      onClick={() => setData(p => ({ ...p, reason: { ...p.reason, referralFrom: selected ? "" : hosp, referralDept: selected ? "" : dept } }))}>
-                      {selected ? "✓ " : ""}{hosp}・{dept}
-                    </button>
-                  );
-                })}
-              </div>
-              <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-                <div style={{ flex: 2 }}>
-                  <label style={lbl()}>その他の病院名</label>
-                  <input style={inp()} placeholder="上記以外の場合" value={data.reason.referralFrom} onChange={e => up("reason", "referralFrom", e.target.value)} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={lbl()}>科名</label>
-                  <input style={inp()} placeholder="例：内科" value={data.reason.referralDept} onChange={e => up("reason", "referralDept", e.target.value)} />
-                </div>
-              </div>
-              <label style={lbl()}>紹介の理由</label>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                {["甲状腺疾患精査のため", "甲状腺腫大のため", "専門的管理のため", "安定している為", "内容不明"].map(v => (
-                  <button key={v} style={btn(data.reason.referralDetail === v)} onClick={() => up("reason", "referralDetail", v)}>{v}</button>
-                ))}
-              </div>
-            </div>
+          {data.reason.thyroidConcernReason === 'その他' && (
+            <input style={inp()} placeholder="詳しく教えてください" value={data.reason.thyroidConcernNote} onChange={e => up('reason', 'thyroidConcernNote', e.target.value)} />
           )}
-
-          {data.reason.type === "検診異常" && (
-            <div style={sBox()}>
-              <label style={lbl()}>検診の種類</label>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                {["会社健診", "市健診", "人間ドック"].map(v => (
-                  <button key={v} style={btn(data.reason.checkupType === v)} onClick={() => up("reason", "checkupType", v)}>{v}</button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {data.reason.type === "自主転院" && (
-            <div style={sBox()}>
-              <label style={lbl()}>転院元 医療機関名</label>
-              <input style={{ ...inp(), marginBottom: 12 }} placeholder="例：○○クリニック（任意）" value={data.reason.transferFrom} onChange={e => up("reason", "transferFrom", e.target.value)} />
-              <label style={lbl()}>転院の理由</label>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                {["コントロール改善しないため", "転居のため", "より専門的な治療を希望", "その他"].map(v => (
-                  <button key={v} style={btn(data.reason.transferDetail === v)} onClick={() => up("reason", "transferDetail", v)}>{v}</button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <label style={{ ...lbl(), marginTop: 8 }}>自由記入欄（任意）</label>
-          <textarea style={{ ...inp(), minHeight: 60, resize: "vertical", marginBottom: 14 }} placeholder="補足があれば記載" value={data.reason.summary} onChange={e => up("reason", "summary", e.target.value)} />
-        </>
-      ) : (
-        <>
-          <label style={lbl()}>受診理由・補足（任意）</label>
-          <textarea style={{ ...inp(), minHeight: 60, resize: "vertical", marginBottom: 14 }} placeholder="例：他院からの紹介、本日エコーで指摘" value={data.reason.summary} onChange={e => up("reason", "summary", e.target.value)} />
-        </>
+        </div>
       )}
+
+      {data.reason.type === "紹介" && (
+        <div style={sBox()}>
+          <label style={lbl()}>よく使う紹介元</label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
+            {[
+              { hosp: "上尾中央総合病院", dept: "内科" },
+              { hosp: "上尾中央総合病院", dept: "耳鼻科" },
+              { hosp: "自治医大さいたま医療センター", dept: "内分泌内科" },
+              { hosp: "さいたま赤十字病院", dept: "内分泌内科" },
+            ].map(({ hosp, dept }) => {
+              const selected = data.reason.referralFrom === hosp && data.reason.referralDept === dept;
+              return (
+                <button key={hosp + dept}
+                  style={{ ...btn(selected, "#0f9668"), fontSize: 12, padding: "7px 14px", border: selected ? "2px solid #0f9668" : "2px dashed #0f9668", background: selected ? "#0f9668" : "#f0fff8", color: selected ? "#fff" : "#0f9668" }}
+                  onClick={() => setData(p => ({ ...p, reason: { ...p.reason, referralFrom: selected ? "" : hosp, referralDept: selected ? "" : dept } }))}>
+                  {selected ? "✓ " : ""}{hosp}・{dept}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+            <div style={{ flex: 2 }}>
+              <label style={lbl()}>その他の病院名</label>
+              <input style={inp()} placeholder="上記以外の場合" value={data.reason.referralFrom} onChange={e => up("reason", "referralFrom", e.target.value)} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={lbl()}>科名</label>
+              <input style={inp()} placeholder="例：内科" value={data.reason.referralDept} onChange={e => up("reason", "referralDept", e.target.value)} />
+            </div>
+          </div>
+          <label style={lbl()}>紹介の理由</label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+            {["甲状腺疾患精査のため", "甲状腺腫大のため", "専門的管理のため", "安定している為", "転居のため", "内容不明"].map(v => (
+              <button key={v} style={btn(data.reason.referralDetail === v)} onClick={() => up("reason", "referralDetail", v)}>{v}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {data.reason.type === "検診異常" && (
+        <div style={sBox()}>
+          <label style={lbl()}>検診の種類</label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+            {["会社健診", "市健診", "人間ドック"].map(v => (
+              <button key={v} style={btn(data.reason.checkupType === v)} onClick={() => up("reason", "checkupType", v)}>{v}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {data.reason.type === "自主転院" && (
+        <div style={sBox()}>
+          <label style={lbl()}>転院元 医療機関名</label>
+          <input style={{ ...inp(), marginBottom: 12 }} placeholder="例：○○クリニック（任意）" value={data.reason.transferFrom} onChange={e => up("reason", "transferFrom", e.target.value)} />
+          <label style={lbl()}>転院の理由</label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+            {["コントロール改善しないため", "転居のため", "より専門的な治療を希望", "その他"].map(v => (
+              <button key={v} style={btn(data.reason.transferDetail === v)} onClick={() => up("reason", "transferDetail", v)}>{v}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <label style={{ ...lbl(), marginTop: 8 }}>自由記入欄（任意）</label>
+      <textarea style={{ ...inp(), minHeight: 60, resize: "vertical", marginBottom: 14 }} placeholder="補足があれば記載" value={data.reason.summary} onChange={e => up("reason", "summary", e.target.value)} />
 
       {formType === 'basedow-cont' && (
         <div style={sBox({ background: "#fff8e1", border: "1.5px solid #fbd38d" })}>
