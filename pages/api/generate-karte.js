@@ -851,7 +851,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
     let footerBloodTest = ''
     if (tType === 'basedow-new') footerBloodTest = '甲状腺3項目：　TRAb：　TPO抗体：　抗Tg抗体：'
     else if (tType === 'hashimoto') footerBloodTest = '甲状腺3項目＋甲状腺抗体3項目'
-    else if (tType === 'basedow-cont') footerBloodTest = '甲状腺3項目＋甲状腺抗体3項目'
+    else if (tType === 'basedow-cont') footerBloodTest = '甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：'
     else if (tType === 'nodule-normal') footerBloodTest = '甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：'
     else if (tType === 'adenoma') footerBloodTest = '甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：'
 

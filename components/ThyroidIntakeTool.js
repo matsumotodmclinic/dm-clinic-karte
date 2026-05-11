@@ -225,7 +225,7 @@ export default function ThyroidIntakeTool({ formType }) {
     let footerBloodTest = "";
     if (formType === 'basedow-new') footerBloodTest = "甲状腺3項目：　TRAb：　TPO抗体：　抗Tg抗体：";
     else if (formType === 'hashimoto') footerBloodTest = "甲状腺3項目＋甲状腺抗体3項目";
-    else if (formType === 'basedow-cont') footerBloodTest = "甲状腺3項目＋甲状腺抗体3項目";
+    else if (formType === 'basedow-cont') footerBloodTest = "甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：";
     else if (formType === 'nodule-normal') footerBloodTest = "甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：";
     else if (formType === 'adenoma') footerBloodTest = "甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：";
 
