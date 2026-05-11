@@ -46,7 +46,7 @@ const btn = (active, color = TC, x = {}) => ({ padding: "8px 14px", borderRadius
 const sBox = (x = {}) => ({ background: "#f0fdf9", border: "1.5px solid #a7f3d0", borderRadius: 10, padding: "14px 16px", marginBottom: 14, ...x });
 
 const initialData = {
-  reason: { summary: "", type: "", referralFrom: "", referralDept: "", referralDetail: "", checkupType: "", transferFrom: "", transferDetail: "", thyroidConcern: false, thyroidConcernReason: "", thyroidConcernNote: "" },
+  reason: { summary: "", type: "", referralFrom: "", referralDept: "", referralDetail: "", checkupType: "", transferFrom: "", transferDetail: "", thyroidConcern: false, thyroidConcernReason: [], thyroidConcernNote: "" },
   echo: {
     // 甲状腺ベース所見（全フォーム共通）
     thyroidSize: "",        // 腫大 / 萎縮 / 正常
@@ -226,7 +226,8 @@ export default function ThyroidIntakeTool({ formType }) {
     if (formType === 'basedow-new') footerBloodTest = "甲状腺3項目：　TRAb：　TPO抗体：　抗Tg抗体：";
     else if (formType === 'hashimoto') footerBloodTest = "甲状腺3項目＋甲状腺抗体3項目";
     else if (formType === 'basedow-cont') footerBloodTest = "甲状腺3項目＋甲状腺抗体3項目";
-    else if (formType === 'nodule-normal' || formType === 'adenoma') footerBloodTest = "甲状腺3項目＋抗Tg抗体＋抗TPO抗体";
+    else if (formType === 'nodule-normal') footerBloodTest = "甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：";
+    else if (formType === 'adenoma') footerBloodTest = "甲状腺3項目＋抗Tg抗体＋抗TPO抗体";
 
     const jobText = (() => {
       const jobs = Array.isArray(data.history.job) ? data.history.job : (data.history.job ? [data.history.job] : []);
@@ -276,7 +277,7 @@ export default function ThyroidIntakeTool({ formType }) {
 
     // フォーム別: メイン「当院エコーにて...」結語行
     const thyEchoConclusion = (() => {
-      if (formType === 'malignant')     return '当院エコーにて悪性を疑う所見を認め紹介推奨';
+      if (formType === 'malignant')     return '当院エコーにて悪性を疑う所見を認め当日紹介。';
       if (formType === 'adenoma')       return '当院エコーにて結節を認める（経過観察）';
       if (formType === 'nodule-normal') return thyBaseFindings.length > 0
         ? `当院エコーにて${thyBaseFindingsText}を認める`
@@ -320,8 +321,11 @@ export default function ThyroidIntakeTool({ formType }) {
       const r = data.reason;
       const parts = [];
       if (r.thyroidConcern) {
-        const reason = r.thyroidConcernReason === 'その他' && r.thyroidConcernNote ? r.thyroidConcernNote : r.thyroidConcernReason;
-        parts.push(reason ? `甲状腺疾患が気になって受診（${reason}）` : '甲状腺疾患が気になって受診');
+        const reasonsArr = Array.isArray(r.thyroidConcernReason) ? r.thyroidConcernReason : (r.thyroidConcernReason ? [r.thyroidConcernReason] : []);
+        const noOther = reasonsArr.filter(x => x !== 'その他');
+        const otherText = reasonsArr.includes('その他') && r.thyroidConcernNote ? r.thyroidConcernNote : '';
+        const reasonText = [...noOther, otherText].filter(Boolean).join('・');
+        parts.push(reasonText ? `甲状腺疾患が気になって受診（${reasonText}）` : '甲状腺疾患が気になって受診');
       } else if (r.type === "紹介") {
         const ref = [r.referralFrom, r.referralDept].filter(Boolean).join("・");
         if (ref) parts.push(`${ref}より紹介`);
@@ -387,19 +391,19 @@ ${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
 【健診】
 【仕事】職業・活動量` : ""}
 ---------------------------------------------
-甲状腺エコー：${formType === 'basedow-new' ? "" : (() => {
+${(formType === 'malignant' || formType === 'nodule-normal') ? '空欄：検査技師が後ほど貼り付けます。' : `甲状腺エコー：${formType === 'basedow-new' ? "" : (() => {
   const segs = [];
   if (thyBaseFindingsText) segs.push(thyBaseFindingsText);
   if (noduleEchoLine) segs.push(noduleEchoLine);
   return segs.length ? segs.join("　") : "本日施行";
-})()}
+})()}`}
 ---------------------------------------------
-身長:${data.body.height || "○"}cm　初診時:${data.body.weightNow || "○"}kg${bmi ? `（BMI ${bmi}）` : ""}
----------------------------------------------
+${formType === 'malignant' ? '' : `身長:${data.body.height || "○"}cm　初診時:${data.body.weightNow || "○"}kg${bmi ? `（BMI ${bmi}）` : ""}
+---------------------------------------------`}
 【事前聴取時　申し送り事項】
-□通院のご案内をお渡し済
+${formType === 'malignant' ? '' : '□通院のご案内をお渡し済'}
 ${shinsokuLines}
-${data.reason.thyroidConcern ? '□「甲状腺疾患が気になる」で受診→甲状腺機能・抗体の結果により上段の診断を確定してください' : ''}
+${data.reason.thyroidConcern && formType !== 'malignant' ? '□「甲状腺疾患が気になる」で受診→甲状腺機能・抗体の結果により上段の診断を確定してください' : ''}
 （新患2枠取得済の場合）□新患2枠取得済み
 （医師希望指定ありの場合）□${data.body.doctorGender || "指定なし"}
 （患者フラグが「○患者疑い」の場合）□○患者疑い（対応注意）
@@ -453,13 +457,21 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
 
       {data.reason.thyroidConcern && (
         <div style={{ ...sBox({ border: "1.5px solid #d6bcfa", background: "#faf5ff" }), marginBottom: 14 }}>
-          <label style={lbl({ color: '#8e44ad' })}>気になる理由</label>
+          <label style={lbl({ color: '#8e44ad' })}>気になる理由（複数選択可）</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginBottom: 8 }}>
-            {['家族に甲状腺疾患の方がいる', '健診で甲状腺異常を指摘された', '首の腫れが気になる', '動悸・倦怠感・むくみ等の症状が気になる', 'その他'].map(v => (
-              <button key={v} style={btn(data.reason.thyroidConcernReason === v, '#8e44ad')} onClick={() => up('reason', 'thyroidConcernReason', v)}>{v}</button>
-            ))}
+            {['家族に甲状腺疾患の方がいる', '健診で甲状腺異常を指摘された', '首の腫れが気になる', '動悸・倦怠感・むくみ等の症状が気になる', 'その他'].map(v => {
+              const arr = Array.isArray(data.reason.thyroidConcernReason) ? data.reason.thyroidConcernReason : [];
+              const sel = arr.includes(v);
+              return (
+                <button key={v} style={btn(sel, '#8e44ad')} onClick={() => setData(p => {
+                  const cur = Array.isArray(p.reason.thyroidConcernReason) ? p.reason.thyroidConcernReason : [];
+                  const next = cur.includes(v) ? cur.filter(x => x !== v) : [...cur, v];
+                  return { ...p, reason: { ...p.reason, thyroidConcernReason: next } };
+                })}>{sel ? '✓ ' : ''}{v}</button>
+              );
+            })}
           </div>
-          {data.reason.thyroidConcernReason === 'その他' && (
+          {(Array.isArray(data.reason.thyroidConcernReason) ? data.reason.thyroidConcernReason : []).includes('その他') && (
             <input style={inp()} placeholder="詳しく教えてください" value={data.reason.thyroidConcernNote} onChange={e => up('reason', 'thyroidConcernNote', e.target.value)} />
           )}
         </div>
@@ -861,7 +873,7 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
         <input style={{ ...inp(), marginBottom: 14 }} placeholder="その他の症状の詳細" value={data.symptom.otherText} onChange={e => setData(p => ({ ...p, symptom: { ...p.symptom, otherText: e.target.value } }))} />
       )}
 
-      {formType !== 'nodule-normal' && (
+      {formType !== 'nodule-normal' && formType !== 'malignant' && (
         <>
           <label style={lbl()}>患者様の年齢</label>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
@@ -879,16 +891,20 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
         <input style={{ ...inp(), marginBottom: 14 }} placeholder="内容" value={data.history.allergyDetail} onChange={e => up("history", "allergyDetail", e.target.value)} />
       )}
 
-      <label style={lbl({ marginTop: 8 })}>身長・体重</label>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
-        {[["height", "身長", "cm"], ["weightNow", "体重", "kg"]].map(([k, l, u]) => (
-          <div key={k} style={{ flex: "1 1 130px" }}>
-            <label style={lbl()}>{l}（{u}）</label>
-            <input style={inp()} type="number" placeholder={u} value={data.body[k]} onChange={e => up("body", k, e.target.value)} />
+      {formType !== 'malignant' && (
+        <>
+          <label style={lbl({ marginTop: 8 })}>身長・体重</label>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
+            {[["height", "身長", "cm"], ["weightNow", "体重", "kg"]].map(([k, l, u]) => (
+              <div key={k} style={{ flex: "1 1 130px" }}>
+                <label style={lbl()}>{l}（{u}）</label>
+                <input style={inp()} type="number" placeholder={u} value={data.body[k]} onChange={e => up("body", k, e.target.value)} />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      {bmi && <div style={{ marginBottom: 16, padding: "10px 16px", background: "#e6fff8", borderRadius: 8, fontSize: 14, fontWeight: 700, color: TC }}>BMI：{bmi}</div>}
+          {bmi && <div style={{ marginBottom: 16, padding: "10px 16px", background: "#e6fff8", borderRadius: 8, fontSize: 14, fontWeight: 700, color: TC }}>BMI：{bmi}</div>}
+        </>
+      )}
 
       <div style={sBox({ background: "#fff8f0", border: "1.5px dashed #fbd38d", marginTop: 14 })}>
         <div style={{ fontSize: 12, fontWeight: 800, color: "#c05621", marginBottom: 8 }}>🔒 スタッフ入力欄</div>

@@ -852,7 +852,8 @@ LINE登録ご案内→済　登録確認未・登録できない`
     if (tType === 'basedow-new') footerBloodTest = '甲状腺3項目：　TRAb：　TPO抗体：　抗Tg抗体：'
     else if (tType === 'hashimoto') footerBloodTest = '甲状腺3項目＋甲状腺抗体3項目'
     else if (tType === 'basedow-cont') footerBloodTest = '甲状腺3項目＋甲状腺抗体3項目'
-    else if (tType === 'nodule-normal' || tType === 'adenoma') footerBloodTest = '甲状腺3項目＋抗Tg抗体＋抗TPO抗体'
+    else if (tType === 'nodule-normal') footerBloodTest = '甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：'
+    else if (tType === 'adenoma') footerBloodTest = '甲状腺3項目＋抗Tg抗体＋抗TPO抗体'
 
     const thyDoctorLabel = d.body?.doctorGender === '院長（初回のみ）' ? '院長希望（初回のみ）' : (d.body?.doctorGender || '指定なし')
 
@@ -898,7 +899,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 
     // フォーム別: メイン「当院エコーにて...」結語行
     const thyEchoConclusion = (() => {
-      if (tType === 'malignant')     return '当院エコーにて悪性を疑う所見を認め紹介推奨'
+      if (tType === 'malignant')     return '当院エコーにて悪性を疑う所見を認め当日紹介。'
       if (tType === 'adenoma')       return '当院エコーにて結節を認める（経過観察）'
       if (tType === 'nodule-normal') return thyBaseFindings.length > 0
         ? `当院エコーにて${thyBaseFindingsText}を認める`
@@ -941,8 +942,11 @@ LINE登録ご案内→済　登録確認未・登録できない`
       const r = d.reason || {}
       const parts = []
       if (r.thyroidConcern) {
-        const reason = r.thyroidConcernReason === 'その他' && r.thyroidConcernNote ? r.thyroidConcernNote : r.thyroidConcernReason
-        parts.push(reason ? `甲状腺疾患が気になって受診（${reason}）` : '甲状腺疾患が気になって受診')
+        const reasonsArr = Array.isArray(r.thyroidConcernReason) ? r.thyroidConcernReason : (r.thyroidConcernReason ? [r.thyroidConcernReason] : [])
+        const noOther = reasonsArr.filter(x => x !== 'その他')
+        const otherText = reasonsArr.includes('その他') && r.thyroidConcernNote ? r.thyroidConcernNote : ''
+        const reasonText = [...noOther, otherText].filter(Boolean).join('・')
+        parts.push(reasonText ? `甲状腺疾患が気になって受診（${reasonText}）` : '甲状腺疾患が気になって受診')
       } else if (r.type === '紹介') {
         const ref = [r.referralFrom, r.referralDept].filter(Boolean).join('・')
         if (ref) parts.push(`${ref}より紹介`)
@@ -1008,19 +1012,19 @@ ${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
 【健診】${(d.history?.checkup || []).join('・') || '未記入'}
 【仕事】${thyJobText}` : ''}
 ---------------------------------------------
-甲状腺エコー：${tType === 'basedow-new' ? '' : (() => {
+${(tType === 'malignant' || tType === 'nodule-normal') ? '空欄：検査技師が後ほど貼り付けます。' : `甲状腺エコー：${tType === 'basedow-new' ? '' : (() => {
   const segs = []
   if (thyBaseFindingsText) segs.push(thyBaseFindingsText)
   if (noduleEchoLine) segs.push(noduleEchoLine)
   return segs.length ? segs.join('　') : '本日施行'
-})()}
+})()}`}
 ---------------------------------------------
-身長:${d.body?.height || '○'}cm　初診時:${d.body?.weightNow || '○'}kg${thyBmi ? `（BMI ${thyBmi}）` : ''}
----------------------------------------------
+${tType === 'malignant' ? '' : `身長:${d.body?.height || '○'}cm　初診時:${d.body?.weightNow || '○'}kg${thyBmi ? `（BMI ${thyBmi}）` : ''}
+---------------------------------------------`}
 【事前聴取時　申し送り事項】
-□通院のご案内をお渡し済
+${tType === 'malignant' ? '' : '□通院のご案内をお渡し済'}
 ${shinsokuLines}
-${d.reason?.thyroidConcern ? '□「甲状腺疾患が気になる」で受診→甲状腺機能・抗体の結果により上段の診断を確定してください' : ''}
+${d.reason?.thyroidConcern && tType !== 'malignant' ? '□「甲状腺疾患が気になる」で受診→甲状腺機能・抗体の結果により上段の診断を確定してください' : ''}
 （新患2枠取得済の場合）□新患2枠取得済み
 （医師希望指定ありの場合）□${thyDoctorLabel}
 （患者フラグが「○患者疑い」の場合）□○患者疑い（対応注意）
