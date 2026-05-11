@@ -406,7 +406,6 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
           <label style={lbl()}>よく使う紹介元</label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
             {[
-              { hosp: "上尾中央総合病院", dept: "内科" },
               { hosp: "上尾中央総合病院", dept: "耳鼻科" },
               { hosp: "自治医大さいたま医療センター", dept: "内分泌内科" },
               { hosp: "さいたま赤十字病院", dept: "内分泌内科" },
