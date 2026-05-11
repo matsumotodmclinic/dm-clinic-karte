@@ -389,7 +389,12 @@ ${(() => {
     formType === 'basedow-new' && data.echo.ecg ? `ECG：${data.echo.ecg}` : '',
   ].filter(Boolean).join('\n');
 
-  const fhBlock = !is2step ? '【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）\n【喫煙歴】（整形済みテキスト）\n【健診】\n【仕事】職業・活動量' : '';
+  const fhBlock = !is2step ? [
+    '【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）',
+    '【喫煙歴】（整形済みテキスト）',
+    '【健診】',
+    formType !== 'adenoma' ? '【仕事】職業・活動量' : '',
+  ].filter(Boolean).join('\n') : '';
 
   const dividerEchoLine = (formType === 'malignant' || formType === 'nodule-normal' || formType === 'adenoma')
     ? '空欄：検査技師が後ほど貼り付けます。'
@@ -405,7 +410,6 @@ ${(() => {
   const shinsokuItems = [
     formType === 'malignant' ? '' : '□通院のご案内をお渡し済',
     shinsokuLines,
-    data.reason.thyroidConcern && formType !== 'malignant' ? '□「甲状腺疾患が気になる」で受診→甲状腺機能・抗体の結果により上段の診断を確定してください' : '',
     '（新患2枠取得済の場合）□新患2枠取得済み',
     `（医師希望指定ありの場合）□${data.body.doctorGender || "指定なし"}`,
     '（患者フラグが「○患者疑い」の場合）□○患者疑い（対応注意）',
@@ -888,10 +892,14 @@ ${footerTrailing}`;
           )}
         </>
       )}
-      <label style={lbl()}>活動量</label>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 14 }}>
-        {["体を動かしていることが多い", "立っていることが多い", "座っていることが多い"].map(v => <button key={v} style={btn(data.history.activity === v)} onClick={() => up("history", "activity", v)}>{v}</button>)}
-      </div>
+      {formType !== 'adenoma' && (
+        <>
+          <label style={lbl()}>活動量</label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 14 }}>
+            {["体を動かしていることが多い", "立っていることが多い", "座っていることが多い"].map(v => <button key={v} style={btn(data.history.activity === v)} onClick={() => up("history", "activity", v)}>{v}</button>)}
+          </div>
+        </>
+      )}
 
       {formType === 'hashimoto' && (
         <div style={{ marginBottom: 14 }}>

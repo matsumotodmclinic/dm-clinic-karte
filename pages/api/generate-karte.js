@@ -1010,7 +1010,12 @@ ${(() => {
     tType === 'basedow-new' && d.echo?.ecg ? `ECG：${d.echo.ecg}` : '',
   ].filter(Boolean).join('\n')
 
-  const fhBlock = !is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）\n【喫煙歴】${thySmoke}\n【健診】${(d.history?.checkup || []).join('・') || '未記入'}\n【仕事】${thyJobText}` : ''
+  const fhBlock = !is2step ? [
+    '【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）',
+    `【喫煙歴】${thySmoke}`,
+    `【健診】${(d.history?.checkup || []).join('・') || '未記入'}`,
+    tType !== 'adenoma' ? `【仕事】${thyJobText}` : '',
+  ].filter(Boolean).join('\n') : ''
 
   const dividerEchoLine = (tType === 'malignant' || tType === 'nodule-normal' || tType === 'adenoma')
     ? '空欄：検査技師が後ほど貼り付けます。'
@@ -1026,7 +1031,6 @@ ${(() => {
   const shinsokuItems = [
     tType === 'malignant' ? '' : '□通院のご案内をお渡し済',
     shinsokuLines,
-    d.reason?.thyroidConcern && tType !== 'malignant' ? '□「甲状腺疾患が気になる」で受診→甲状腺機能・抗体の結果により上段の診断を確定してください' : '',
     '（新患2枠取得済の場合）□新患2枠取得済み',
     `（医師希望指定ありの場合）□${thyDoctorLabel}`,
     '（患者フラグが「○患者疑い」の場合）□○患者疑い（対応注意）',
