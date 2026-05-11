@@ -47,7 +47,7 @@ const sBox = (x = {}) => ({ background: "#f0fdf9", border: "1.5px solid #a7f3d0"
 
 const initialData = {
   reason: { summary: "", type: "", referralFrom: "", referralDept: "", referralDetail: "", checkupType: "", transferFrom: "", transferDetail: "", thyroidConcern: false, thyroidConcernReason: "", thyroidConcernNote: "" },
-  echo: { thyroidEchoFindings: "", noduleSize: "", noduleCount: "", noduleType: "", thyroidEnlarged: false, bloodFlowRich: false, echoLevelLow: false, ecg: "" },
+  echo: { thyroidEchoFindings: "", noduleSize: "", noduleCount: "", noduleType: "", noduleLocation: "", noduleSizeW: "", noduleSizeD: "", calcification: "", noduleBloodFlow: "", thyroidEnlarged: false, bloodFlowRich: false, echoLevelLow: false, ecg: "" },
   symptom: { selected: [], otherText: "" },
   history: {
     surgeryHistory: false, surgeryYear: "", surgeryMonth: "", surgeryType: "",
@@ -257,6 +257,38 @@ export default function ThyroidIntakeTool({ formType }) {
           ? `当院エコーにて${thyEchoItems.join("、")}の所見を認め橋本病を疑う`
           : `当院エコーにて${thyEchoItems.join("、")}の所見を認めバセドウ病を疑う`
       : "";
+
+    // 結節所見1行（adenoma/nodule-normal/malignant 用）
+    // 例: 「両葉に最大15×8㎜大の結節あり、石灰化あり、血流豊富」
+    const noduleEchoLine = (() => {
+      if (!isNodule) return "";
+      const parts = [];
+      const loc = data.echo.noduleLocation;
+      const w = data.echo.noduleSizeW;
+      const d = data.echo.noduleSizeD;
+      const noduleWord = data.echo.noduleCount === "多発" ? "多発結節" : "結節";
+      if (loc && (w || d)) {
+        parts.push(`${loc}に最大${w || "○"}×${d || "○"}㎜大の${noduleWord}あり`);
+      } else if (loc) {
+        parts.push(`${loc}に${noduleWord}あり`);
+      } else if (w || d) {
+        parts.push(`最大${w || "○"}×${d || "○"}㎜大の${noduleWord}あり`);
+      }
+      if (data.echo.calcification) parts.push(`石灰化${data.echo.calcification}`);
+      if (data.echo.noduleBloodFlow === "豊富") parts.push("血流豊富");
+      else if (data.echo.noduleBloodFlow === "乏しい") parts.push("血流に乏しい");
+      if (data.echo.noduleType) parts.push(data.echo.noduleType);
+      return parts.join("、");
+    })();
+
+    // 結節フォーム用の「当院エコーにて...」見出し行
+    const noduleHeaderLine = formType === 'malignant'
+      ? '当院エコーにて悪性を疑う所見を認め紹介推奨'
+      : formType === 'adenoma'
+        ? '当院エコーにて結節を認める（経過観察）'
+        : formType === 'nodule-normal'
+          ? '当院エコーにて明らかな異常所見なし'
+          : '';
     const thyReasonText = (() => {
       const r = data.reason;
       const parts = [];
@@ -292,7 +324,7 @@ ${data.reason.thyroidConcern ? `※「甲状腺疾患が気になって受診」
 ${formType === 'basedow-cont' ? `診断時期：${data.history.diagnosisEra}${data.history.diagnosisYear || "（不明）"}年\n内服薬：${contMedsText || "（未選択）"}` : ""}
 エコー所見：${useCheckboxEcho ? (thyEchoLine || "（未選択）") : (data.echo.thyroidEchoFindings || "（未記入）")}
 ${useCheckboxEcho && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
-${isNodule && data.echo.noduleSize ? `結節サイズ：${data.echo.noduleSize}` : ""}
+${isNodule && noduleEchoLine ? `結節所見（整形済み）：${noduleEchoLine}` : ""}
 ${isNodule && data.echo.noduleCount ? `結節数：${data.echo.noduleCount}` : ""}
 ${isNodule && data.echo.noduleType ? `性状：${data.echo.noduleType}` : ""}
 症状：${symptomsText || "なし"}
@@ -314,13 +346,15 @@ ${formType === 'hashimoto' && data.history.treatmentHistory ? `治療経緯：${
 診察への要望：${data.body.concern || "なし"}
 
 【出力フォーマット】
-${getCurrentMonth()}：（受診理由サマリー1〜2行）
+${getCurrentMonth()}：（受診理由サマリー1〜2行。症状チェックがある場合は末尾に「${symptomsText ? symptomsText + 'の訴えあり' : ''}」のように追記）
 ${diagnosisName}（サマリーの直後、空行なし）
 ${formType === 'basedow-cont' && contTimeline ? contTimeline : ""}
 ${formType === 'basedow-cont' ? `手術歴：${surgeryText}　アイソトープ歴：${data.history.isotopeHistory ? "あり" : "なし"}　副作用歴：${sideEffectText}　眼科：${data.history.eyeHistory ? ("あり" + (data.history.eyeClinic ? `（${data.history.eyeClinic}）` : "")) : "なし"}` : ""}
 ${useCheckboxEcho && symptomsText ? `症状：${symptomsText}を認める` : ""}
 ${useCheckboxEcho && thyEchoLine ? thyEchoLine : ""}
 ${useCheckboxEcho && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
+${isNodule && noduleHeaderLine ? noduleHeaderLine : ""}
+${isNodule && noduleEchoLine ? noduleEchoLine : ""}
 
 【アレルギー歴】（なしまたは内容を同じ行に）
 ${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
@@ -328,7 +362,7 @@ ${!is2step ? `【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）
 【健診】
 【仕事】職業・活動量` : ""}
 ---------------------------------------------
-甲状腺エコー：${formType === 'basedow-new' ? "" : (formType === 'basedow-cont' || formType === 'hashimoto') ? (thyEchoItems.length > 0 ? thyEchoItems.join("、") : "本日施行") : (data.echo.thyroidEchoFindings || "本日施行")}${isNodule && data.echo.noduleSize ? `　結節：${data.echo.noduleSize}` : ""}
+甲状腺エコー：${formType === 'basedow-new' ? "" : (formType === 'basedow-cont' || formType === 'hashimoto') ? (thyEchoItems.length > 0 ? thyEchoItems.join("、") : "本日施行") : (isNodule ? (noduleEchoLine || "本日施行") : (data.echo.thyroidEchoFindings || "本日施行"))}
 ---------------------------------------------
 身長:${data.body.height || "○"}cm　初診時:${data.body.weightNow || "○"}kg${bmi ? `（BMI ${bmi}）` : ""}
 ---------------------------------------------
@@ -604,12 +638,23 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
 
         {isNodule && (
           <>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+            <label style={lbl()}>結節の部位</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 10 }}>
+              {["両葉", "右葉", "左葉"].map(v => (
+                <button key={v} style={btn(data.echo.noduleLocation === v)} onClick={() => up("echo", "noduleLocation", v)}>{v}</button>
+              ))}
+            </div>
+
+            <label style={lbl()}>結節サイズ（最大径 W×D mm）</label>
+            <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
+              <input style={{ ...inp(), width: 80 }} type="number" placeholder="幅" value={data.echo.noduleSizeW} onChange={e => up("echo", "noduleSizeW", e.target.value)} />
+              <span style={{ fontSize: 13, color: "#666" }}>×</span>
+              <input style={{ ...inp(), width: 80 }} type="number" placeholder="奥行" value={data.echo.noduleSizeD} onChange={e => up("echo", "noduleSizeD", e.target.value)} />
+              <span style={{ fontSize: 13, color: "#666" }}>mm</span>
+            </div>
+
+            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10 }}>
               <div style={{ flex: 1, minWidth: 140 }}>
-                <label style={lbl()}>結節サイズ（最大径）</label>
-                <input style={inp()} placeholder="例：15mm" value={data.echo.noduleSize} onChange={e => up("echo", "noduleSize", e.target.value)} />
-              </div>
-              <div style={{ flex: 1, minWidth: 100 }}>
                 <label style={lbl()}>結節数</label>
                 <div style={{ display: "flex", gap: 3 }}>
                   {["単発", "多発"].map(v => (
@@ -617,10 +662,27 @@ ${formType !== 'malignant' ? `1月follow\n${buildWeekday()}\nLINE登録ご案内
                   ))}
                 </div>
               </div>
+              <div style={{ flex: 1, minWidth: 160 }}>
+                <label style={lbl()}>石灰化</label>
+                <div style={{ display: "flex", gap: 3 }}>
+                  {["あり", "なし"].map(v => (
+                    <button key={v} style={btn(data.echo.calcification === v)} onClick={() => up("echo", "calcification", v)}>{v}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <label style={lbl()}>血流</label>
+                <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
+                  {["豊富", "乏しい", "不明"].map(v => (
+                    <button key={v} style={btn(data.echo.noduleBloodFlow === v)} onClick={() => up("echo", "noduleBloodFlow", v)}>{v}</button>
+                  ))}
+                </div>
+              </div>
             </div>
-            <label style={lbl()}>性状</label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-              {["充実性", "嚢胞性", "混合性", "石灰化あり", "境界不明瞭"].map(v => (
+
+            <label style={lbl()}>性状（補足、任意）</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 10 }}>
+              {["充実性", "嚢胞性", "混合性", "境界不明瞭"].map(v => (
                 <button key={v} style={{ ...btn(data.echo.noduleType === v), padding: "6px 10px", fontSize: 12 }} onClick={() => up("echo", "noduleType", v)}>{v}</button>
               ))}
             </div>
