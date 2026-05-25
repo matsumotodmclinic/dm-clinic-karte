@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import SASDmDiffEditor from '../../components/SASDmDiffEditor';
+import { copyKarteToClipboard } from '../../lib/copyKarte';
 
 // 確認中を削除：新規→完了の2ステップ
 const STATUS_LABEL = { new: '新規', done: '完了' };
@@ -51,55 +52,7 @@ export default function DetailPage() {
     router.push('/list');
   };
 
-  const copyToClipboard = async (text) => {
-    const escapeHtml = (s) => s
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-
-    // ♯ or ＃ で始まる行は「（」直前までを <b> で囲む（病名のみ太字）
-    const buildHtml = (txt) => {
-      const lines = txt.split('\n').map(line => {
-        const m = line.match(/^([♯＃][^（(]*)(.*)$/);
-        if (m) {
-          return `<b>${escapeHtml(m[1])}</b>${escapeHtml(m[2])}`;
-        }
-        return escapeHtml(line) || '&nbsp;';
-      });
-      return `<div style="font-size:11px;font-family:'Noto Sans JP','Yu Gothic',sans-serif;white-space:pre-wrap;">${lines.join('<br>')}</div>`;
-    };
-
-    const fallbackCopy = () => {
-      const el = document.createElement('textarea');
-      el.value = text;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
-      alert('コピーしました');
-    };
-
-    try {
-      if (navigator.clipboard && window.ClipboardItem) {
-        const html = buildHtml(text);
-        const item = new ClipboardItem({
-          'text/html': new Blob([html], { type: 'text/html' }),
-          'text/plain': new Blob([text], { type: 'text/plain' }),
-        });
-        await navigator.clipboard.write([item]);
-        alert('コピーしました');
-        return;
-      }
-    } catch (e) {
-      // fall through
-    }
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(fallbackCopy);
-    } else {
-      fallbackCopy();
-    }
-  };
+  const copyToClipboard = (text) => copyKarteToClipboard(text);
 
   const handleSaveKarte = async () => {
     try {

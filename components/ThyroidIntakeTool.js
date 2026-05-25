@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/router";
+import { copyKarteToClipboard } from "../lib/copyKarte";
 
 const TC = "#0d7d6a";
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
@@ -155,20 +156,7 @@ export default function ThyroidIntakeTool({ formType }) {
     return NODULE_SYMPTOMS;
   };
 
-  const copyToClipboard = (text) => {
-    const copy = () => {
-      const el = document.createElement('textarea');
-      el.value = text;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
-      alert('コピーしました');
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(copy);
-    } else { copy(); }
-  };
+  const copyToClipboard = (text) => copyKarteToClipboard(text);
 
   const handleSaveRetry = async () => {
     setSaveError(false);
@@ -1105,7 +1093,7 @@ ${footerTrailing}`;
             </div>
             {showKarte && (
               <div style={{ marginBottom: 8 }}>
-                <textarea value={result} onChange={e => setResult(e.target.value)} style={{ width: "100%", minHeight: 320, background: "#f0fdf9", border: "1px solid #a7f3d0", borderRadius: 10, padding: "16px 18px", fontSize: 13, lineHeight: 2, color: "#1a2a4a", fontFamily: "monospace", resize: "vertical", boxSizing: "border-box" }} />
+                <textarea value={result} onChange={e => setResult(e.target.value)} style={{ width: "100%", minHeight: 320, background: "#f0fdf9", border: "1px solid #a7f3d0", borderRadius: 10, padding: "16px 18px", fontSize: 11, lineHeight: 2, color: "#1a2a4a", fontFamily: "monospace", resize: "vertical", boxSizing: "border-box" }} />
                 <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
                   <button onClick={saveEditedKarte} disabled={saving} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: saving ? "#7ab8a8" : TC, color: "#fff", fontWeight: 800, fontSize: 13, cursor: saving ? "wait" : "pointer" }}>{saving ? "💾 保存中..." : "💾 編集内容を保存"}</button>
                   {saveMsg && <span style={{ fontSize: 13, fontWeight: 700, color: saveMsg.startsWith("✓") ? "#0f9668" : "#c53030" }}>{saveMsg}</span>}

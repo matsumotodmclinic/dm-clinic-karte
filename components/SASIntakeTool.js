@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
+import { copyKarteToClipboard } from "../lib/copyKarte";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
 const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ", "金属"];
@@ -232,20 +233,7 @@ export default function SASIntakeTool() {
     return items.join("・");
   };
 
-  const copyToClipboard = (text) => {
-    const copy = () => {
-      const el = document.createElement('textarea');
-      el.value = text;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
-      alert('コピーしました');
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(copy);
-    } else { copy(); }
-  };
+  const copyToClipboard = (text) => copyKarteToClipboard(text);
 
   const handleSaveRetry = async () => {
     setSaveError(false);
@@ -793,7 +781,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
             {showKarte && (
               <div style={{marginBottom:8}}>
-                <textarea value={result} onChange={e=>setResult(e.target.value)} style={{width:"100%",minHeight:320,background:"#f7f5ff",border:"1px solid #d6d0f8",borderRadius:10,padding:"16px 18px",fontSize:13,lineHeight:2,color:"#1a2a4a",fontFamily:"monospace",resize:"vertical",boxSizing:"border-box"}}/>
+                <textarea value={result} onChange={e=>setResult(e.target.value)} style={{width:"100%",minHeight:320,background:"#f7f5ff",border:"1px solid #d6d0f8",borderRadius:10,padding:"16px 18px",fontSize:11,lineHeight:2,color:"#1a2a4a",fontFamily:"monospace",resize:"vertical",boxSizing:"border-box"}}/>
                 <div style={{display:"flex",gap:8,marginTop:8,alignItems:"center"}}>
                   <button onClick={saveEditedKarte} disabled={saving} style={{padding:"10px 18px",borderRadius:8,border:"none",background:saving?"#a89cdc":"#5a4fa8",color:"#fff",fontWeight:800,fontSize:13,cursor:saving?"wait":"pointer"}}>{saving?"💾 保存中...":"💾 編集内容を保存"}</button>
                   {saveMsg && <span style={{fontSize:13,fontWeight:700,color:saveMsg.startsWith("✓")?"#0f9668":"#c53030"}}>{saveMsg}</span>}
