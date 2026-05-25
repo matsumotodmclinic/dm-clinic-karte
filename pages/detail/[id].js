@@ -51,8 +51,25 @@ export default function DetailPage() {
     router.push('/list');
   };
 
-  const copyToClipboard = (text) => {
-    const copy = () => {
+  const copyToClipboard = async (text) => {
+    const escapeHtml = (s) => s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    // ♯ or ＃ で始まる行は「（」直前までを <b> で囲む（病名のみ太字）
+    const buildHtml = (txt) => {
+      const lines = txt.split('\n').map(line => {
+        const m = line.match(/^([♯＃][^（(]*)(.*)$/);
+        if (m) {
+          return `<b>${escapeHtml(m[1])}</b>${escapeHtml(m[2])}`;
+        }
+        return escapeHtml(line) || '&nbsp;';
+      });
+      return `<div style="font-size:11px;font-family:'Noto Sans JP','Yu Gothic',sans-serif;white-space:pre-wrap;">${lines.join('<br>')}</div>`;
+    };
+
+    const fallbackCopy = () => {
       const el = document.createElement('textarea');
       el.value = text;
       document.body.appendChild(el);
@@ -61,9 +78,27 @@ export default function DetailPage() {
       document.body.removeChild(el);
       alert('コピーしました');
     };
+
+    try {
+      if (navigator.clipboard && window.ClipboardItem) {
+        const html = buildHtml(text);
+        const item = new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([text], { type: 'text/plain' }),
+        });
+        await navigator.clipboard.write([item]);
+        alert('コピーしました');
+        return;
+      }
+    } catch (e) {
+      // fall through
+    }
+
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(copy);
-    } else { copy(); }
+      navigator.clipboard.writeText(text).then(() => alert('コピーしました')).catch(fallbackCopy);
+    } else {
+      fallbackCopy();
+    }
   };
 
   const handleSaveKarte = async () => {
@@ -231,7 +266,7 @@ export default function DetailPage() {
           {karte ? (
             <>
               <textarea value={karte} onChange={e => setKarte(e.target.value)}
-                style={{ width:'100%', minHeight:320, background:'#f5f9f7', border:'1px solid #c0e8d8', borderRadius:10, padding:'16px', fontSize:13, lineHeight:2, color:'#1a3a2a', fontFamily:'monospace', marginBottom:12, resize:'vertical', boxSizing:'border-box' }} />
+                style={{ width:'100%', minHeight:320, background:'#f5f9f7', border:'1px solid #c0e8d8', borderRadius:10, padding:'16px', fontSize:11, lineHeight:2, color:'#1a3a2a', fontFamily:'monospace', marginBottom:12, resize:'vertical', boxSizing:'border-box' }} />
               <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
                 <button onClick={() => copyToClipboard(karte)}
                   style={{ flex:'1 1 140px', padding:'12px', borderRadius:8, border:'none', background:'linear-gradient(135deg,#0f9668,#34d399)', color:'#fff', fontWeight:800, fontSize:14, cursor:'pointer' }}>
