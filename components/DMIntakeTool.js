@@ -1163,6 +1163,8 @@ LINE登録ご案内→済　登録確認未・登録できない
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <button onClick={() => router.push("/")} style={{ padding: "6px 10px", borderRadius: 8, border: "1.5px solid #d0dff5", background: "#fff", color: "#5580a8", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>← トップ</button>
+          {/* 📖 完全ガイド (スタッフ用、 2026-05-31 追加): 別タブで開くので患者の問診入力を中断しない */}
+          <a href="/help/dm" target="_blank" rel="noopener noreferrer" style={{ padding: "6px 10px", borderRadius: 8, border: "1.5px solid #d0dff5", background: "#fff", color: "#5580a8", fontWeight: 700, fontSize: 11, cursor: "pointer", textDecoration: "none" }} title="完全ガイドを別タブで開く (スタッフ用)">📖 完全ガイド</a>
           <div style={{ width: 42, height: 42, borderRadius: 12, background: "linear-gradient(135deg,#1a5fa8,#3b82f6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>🏥</div>
           <div>
             <div style={{ fontSize: 11, color: "#6b9fd4", fontWeight: 700, letterSpacing: "0.08em" }}>まつもと糖尿病クリニック</div>
