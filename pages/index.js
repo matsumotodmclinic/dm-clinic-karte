@@ -89,20 +89,40 @@ export default function TopPage() {
         </div>
       </div>
 
-      {/* 問診一覧・ログアウトボタン */}
-      <div style={{ maxWidth: 640, margin: '0 auto 20px', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button
-          onClick={() => router.push('/list')}
-          style={{ padding: '10px 20px', borderRadius: 10, border: '1.5px solid #d0dff5', background: '#fff', color: '#1a5fa8', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
-        >
-          📋 問診一覧
-        </button>
-        <button
-          onClick={handleLogout}
-          style={{ padding: '10px 20px', borderRadius: 10, border: '1.5px solid #feb2b2', background: '#fff', color: '#c53030', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
-        >
-          ログアウト
-        </button>
+      {/* スタッフ向けボタン (左: 参照資料 / 右: 運用)、 2026-05-31 院長指示で完全ガイド+院内ハンドブックを追加 */}
+      <div style={{ maxWidth: 640, margin: '0 auto 20px', display: 'flex', gap: 8, justifyContent: 'space-between', flexWrap: 'wrap' }}>
+        {/* 左: スタッフ参照資料 (患者対応中の困りごと解決用) */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => router.push('/help')}
+            style={{ padding: '10px 18px', borderRadius: 10, border: '1.5px solid #c8e0f5', background: '#f0f7ff', color: '#1a5fa8', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+            title="問診ツールの操作マニュアル (DM/T1D/SAS 等、 フォーム別)"
+          >
+            📖 完全ガイド
+          </button>
+          <button
+            onClick={() => router.push('/handbook')}
+            style={{ padding: '10px 18px', borderRadius: 10, border: '1.5px solid #c8e6c9', background: '#f1f8e9', color: '#2e7d32', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+            title="糖尿病の知識・スタッフ対応事典 (低血糖時の対応など)"
+          >
+            📚 院内ハンドブック
+          </button>
+        </div>
+        {/* 右: 運用ボタン */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => router.push('/list')}
+            style={{ padding: '10px 20px', borderRadius: 10, border: '1.5px solid #d0dff5', background: '#fff', color: '#1a5fa8', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+          >
+            📋 問診一覧
+          </button>
+          <button
+            onClick={handleLogout}
+            style={{ padding: '10px 20px', borderRadius: 10, border: '1.5px solid #feb2b2', background: '#fff', color: '#c53030', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+          >
+            ログアウト
+          </button>
+        </div>
       </div>
 
       {/* カテゴリ選択 or フォーム一覧 */}
