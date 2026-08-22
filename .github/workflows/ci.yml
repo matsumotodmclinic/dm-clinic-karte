@@ -1,0 +1,89 @@
+name: CI
+
+# push(main) と 全 PR で「プロンプト同期チェック + ゴールデンテスト + 本番ビルド」を検証する。
+#
+# なぜこの3点か（2026-08-22、勤怠アプリ karteplus-monorepo の CI を参考に導入）:
+#   ① プロンプト同期チェック
+#      このアプリはカルテ生成プロンプトを 経路A(components/*IntakeTool.js) と
+#      経路B(lib/buildKartePrompt.js) の2箇所に持つ。片方だけ直すと
+#      「初回生成と再生成でカルテの書式が違う」事故になる（CLAUDE.md の最重要注意点）。
+#   ② ゴールデンテスト
+#      2026-08-22 の「通院先『その他』の病院名が (その他) に化ける」バグは
+#      型チェックでもビルドでも落ちない。プロンプトの中身を直接検査して捕まえる。
+#   ③ next build
+#      構文崩れ・不正な route export など、ビルドでしか落ちない破損の検知。
+#      壊れたまま push すると Vercel デプロイが失敗し本番が古いまま固まる。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# 同一 ref で新しい push が来たら進行中の古い run をキャンセル
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: prompt-sync + golden tests + build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # 依存なしで走る検査を先に回す（速い & 失敗理由が読みやすい）
+      - name: プロンプト同期チェック（経路A ↔ 経路B）
+        run: npm run check:prompt-sync
+
+      - name: ゴールデンテスト（プロンプト内容）
+        run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          # --- すべてダミーのプレースホルダ。本物の値は Vercel 側に設定済み ---
+          # lib/supabase.js が module scope で createClient() を呼ぶため、
+          # 未設定だと supabase-js が build を落とす。実接続はしない。
+          SUPABASE_URL: https://placeholder.supabase.co
+          SUPABASE_SERVICE_KEY: ci-placeholder-service-key
+          ANTHROPIC_API_KEY: sk-ant-ci-placeholder
+          APP_GATE_PASSWORD: ci-placeholder-gate
+          SECRET_COOKIE_PASSWORD: ci-placeholder-cookie-password-0123456789abcd
+          KINKAN_VERIFY_URL: https://placeholder.example.com/api/auth/verify-staff
+          KINKAN_AUDIT_URL: https://placeholder.example.com/api/audit
+          NEXT_PUBLIC_KINKAN_LIST_URL: https://placeholder.example.com/list
+
+  # main の CI 失敗時に GitHub issue を自動作成 → owner にメール通知（「壊れたら気づく」）。
+  # secret 不要（GITHUB_TOKEN 自動付与）。main 失敗は稀なので issue は乱立しない。
+  notify-failure:
+    name: notify on main failure
+    needs: verify
+    if: failure() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Create issue on CI failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = context.sha.slice(0, 7)
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 CI failed on main (${sha})`,
+              body: `main への push で **プロンプト同期チェック / ゴールデンテスト / ビルド** のいずれかが失敗しました。\n\n- commit: \`${context.sha}\`\n- 実行ログ: ${runUrl}\n\nビルド失敗の場合は Vercel デプロイも失敗し、本番が古いまま固まります。\nプロンプト同期チェックの失敗は「経路A/経路B の片方だけ直した」サインです。\nログを確認して修正 → 再 push してください。`,
+              labels: ['ci-failure'],
+            })

@@ -1,0 +1,4 @@
+# ゴールデンテストのスナップショットは LF 固定。
+# autocrlf でチェックアウト時に CRLF 化されると、生成プロンプト(LF)との比較で
+# 全件不一致になるため。テスト側でも正規化しているが、二重の安全網。
+scripts/golden/__snapshots__/*.txt text eol=lf

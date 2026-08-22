@@ -4,7 +4,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node --test scripts/golden/prompt.test.mjs",
+    "test:update": "node scripts/golden/update-snapshots.mjs",
+    "check:prompt-sync": "node scripts/check-prompt-sync.mjs",
+    "check": "npm run check:prompt-sync && npm test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

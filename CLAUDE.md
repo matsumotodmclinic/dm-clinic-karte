@@ -126,6 +126,46 @@ DMのみ「病気について」step を解体し以下に分散:
 ### 経路B: 詳細画面で再生成
 `detail/[id].js` → `/api/generate-karte`（サーバー側でプロンプト組立）→ Claude API → `/api/questionnaire` PATCH で上書き
 
+## バグ防止機構（2026-08-22 導入）
+
+```bash
+npm run check          # プロンプト同期チェック + ゴールデンテスト（コミット前に必ず）
+npm run check:prompt-sync   # 経路A ↔ 経路B のプロンプト差分だけ
+npm test               # ゴールデンテスト（60件）だけ
+npm run test:update    # スナップショット更新（差分を目視確認してからコミット）
+```
+
+GitHub Actions（`.github/workflows/ci.yml`）が push / PR で上記 + `next build` を実行し、
+main で失敗したら GitHub issue を自動作成してメール通知する。
+
+### ① プロンプト同期チェッカー（`scripts/check-prompt-sync.mjs`）
+経路A（`components/*IntakeTool.js`）と経路B（`lib/buildKartePrompt.js`）のプロンプトから
+「人が書いた指示文」だけを抽出して比較する。`${...}` は変数名が経路ごとに違う（`data.` / `d.?.`）ので
+`⟨expr⟩` に潰してから比較 = 日本語の指示文の差分だけを見る。
+`STAFF_FLAGS` のような定数はインライン展開してから比較する。
+
+- 既知の差分は `scripts/prompt-sync-allow.json` に記録済み（導入時点で 8フォーム計137行の差分が既に存在した）
+- **新しい差分が出たら CI が落ちる** = 片側だけ直したことに気付ける
+- 意図的な差分は `npm run check:prompt-sync -- --update`（実体は `node scripts/check-prompt-sync.mjs --update`）で記録
+
+甲状腺6フォームは 1コンポーネント + 1分岐で `formType` prop 分岐のため未対応（TODO）。
+
+### ② ゴールデンテスト（`scripts/golden/`、`node --test`・依存パッケージなし）
+- `fixtures.mjs`: 疑似 form_data。**実患者データは絶対に置かない**。過去に取りこぼしたパターン
+  （通院先「その他」＋自由入力病院名、エコー「希望なし」等）を必ず含める
+- `prompt.test.mjs`: 3層
+  1. `lib/otherDiseases.js` / `lib/echo.js` の純粋関数ユニットテスト
+  2. プロンプト内容のアサーション（「鰐坂医院を含む」「子宮筋腫（その他）を含まない」等）
+  3. プロンプト全文スナップショット（`__snapshots__/*.txt`、意図しない変化を差分検知）
+- 和暦の現在月（R8.8 等）は `R{NOW}` に伏せてから比較する（実行日で変わるため）
+
+**検証済み**: 修正前のバグ実装に戻すと 20件が落ちる（= 2026-08-22 の2バグを実際に捕捉できる）。
+
+### 前提となったリファクタ
+経路B のプロンプト組み立てを `pages/api/generate-karte.js` から `lib/buildKartePrompt.js` に切り出した。
+API ハンドラの中にあるとテストから呼べなかったため。ハンドラは
+入力検証 → `buildKartePrompt()` → Anthropic 呼び出し → 整形 だけになった（76行）。
+
 ### ⚠️ プロンプト二重管理（最重要注意点）
 プロンプトは経路A（コンポーネント内、8ファイル）と経路B（generate-karte.js、8 form_type分）の**計9箇所に同一内容が存在**する。
 **プロンプト修正時は必ず9ファイル全て同期すること。** 片方だけだと初回生成と再生成で不整合が出る。
@@ -140,8 +180,11 @@ components/GDMIntakeTool.js      (妊娠糖尿病 client)
 components/RHIntakeTool.js       (反応性低血糖 client)
 components/SASIntakeTool.js      (睡眠時無呼吸症候群 client)
 components/EndocrineIntakeTool.js (内分泌 client)
-pages/api/generate-karte.js      (再生成用 server, 8 form_type 全部含む)
+lib/buildKartePrompt.js          (再生成用 server, 14 form_type 全部含む ※2026-08-22 に
+                                  pages/api/generate-karte.js から切り出し)
 ```
+
+修正後は必ず `npm run check` を実行すること。片側だけの修正なら同期チェッカーが落ちる。
 
 ### SAS フォームの dmDiff（採血後 DM 判明時の差分問診）
 SAS問診は当院の事前採血（全例）で HbA1c 高値→糖尿病確定するケースを想定。
