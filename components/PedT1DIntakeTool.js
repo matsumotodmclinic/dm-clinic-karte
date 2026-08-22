@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
+import { buildOtherDiseasesText } from "../lib/otherDiseases";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
 const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ", "金属"];
@@ -125,6 +126,7 @@ export default function PedT1DIntakeTool() {
 - アレルギー薬の記載以降は指定フォーマットのみを出力し、病名・診断名を追記しない
 
 【整形済みデータ】
+その他の病名・既往歴：${buildOtherDiseasesText(data.history.otherDiseases)}
 希望曜日：${buildWeekday()}
 医師希望：${data.body.doctorGender || "指定なし"}
 患者フラグ：${data.body.patientFlag || "通常"}
@@ -145,6 +147,7 @@ ${getCurrentMonth()}：（受診理由1〜2行${data.voiceMemo?.aiSummary ? '。
 ＃1型糖尿病（タイプ）（発症時期）
 ＃HT（HTありの場合のみ。当院で管理なら「＃HT」、他院管理なら「＃HT（他院管理）」）
 ＃HL（HLありの場合のみ。当院で管理なら「＃HL」、他院管理なら「＃HL（他院管理）」）
+（上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない。空行なし）
 ・GAD抗体：（初診時採血）
 ・CPR：（初診時採血）
 ・甲状腺検査：（確認済/初診時採血）

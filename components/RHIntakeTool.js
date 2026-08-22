@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
+import { buildOtherDiseasesText } from "../lib/otherDiseases";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
 const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ", "金属"];
@@ -223,6 +224,7 @@ export default function RHIntakeTool() {
 生活情報：${buildLiving()}
 子供の状況：${buildChildInfo()}
 職業：${buildJob()}
+その他の病名・既往歴：${buildOtherDiseasesText(data.history.otherDiseases)}
 希望曜日：${buildWeekday()}
 医師希望：${data.body.doctorGender || "指定なし"}
 患者フラグ：${data.body.patientFlag || "通常"}
@@ -238,6 +240,7 @@ ${getCurrentMonth()}：${data.voiceMemo?.aiSummary ? '（音声入力AI整形済
 ・症状：${(data.symptom.symptoms||[]).join("、")}${data.symptom.symptomsNote?"（"+data.symptom.symptomsNote+"）":""}
 ・思い当たる原因：${(data.symptom.cause||[]).join("、")}${data.symptom.causeNote?"（"+data.symptom.causeNote+"）":""}
 
+（上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない。♯疾患同士は空行なしで連続列挙し、最終行と【アレルギー歴】の間も空行なし）
 【アレルギー歴】
 【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)
 【飲酒歴】

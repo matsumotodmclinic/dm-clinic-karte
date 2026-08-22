@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
+import { buildOtherDiseasesText } from "../lib/otherDiseases";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
 const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ", "金属"];
@@ -218,7 +219,7 @@ export default function HTHLIntakeTool() {
 職業：${buildJob()}
 頚部エコー：${data.disease.echoNeck||"未選択"}
 腹部エコー：${data.disease.echoAbdomen||"未選択"}
-その他の病名・既往歴：${(data.disease.otherDiseases||[]).filter(d=>d.name).map(d=>d.name+(d.hospital?"（"+d.hospital+"）":"")).join("、")||"なし"}
+その他の病名・既往歴：${buildOtherDiseasesText(data.disease.otherDiseases)}
 希望曜日：${buildWeekday()}
 医師希望：${data.body.doctorGender || "指定なし"}
 患者フラグ：${data.body.patientFlag || "通常"}
@@ -237,7 +238,7 @@ ${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の�
 ＃IGT（該当時のみ、受診理由の直後、空行なし）
 ＃HT（該当時のみ、空行なし）
 ＃HL（該当時のみ、空行なし）
-（その他病名があれば「♯病名（通院先）」の形式で記載、空行なし）
+（上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない。空行なし）
 
 【アレルギー歴】
 【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)

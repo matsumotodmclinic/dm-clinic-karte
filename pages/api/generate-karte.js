@@ -1,4 +1,6 @@
-// 許可する form_type(ホワイトリスト、CLAUDE.md の 13 フォームと同期)
+import { buildOtherDiseasesText, pickOtherDiseases } from '../../lib/otherDiseases'
+
+// 許可する form_type(ホワイトリスト、CLAUDE.md の 14 フォームと同期)
 const ALLOWED_FORM_TYPES = new Set([
   'DM基本',
   '1型糖尿病',
@@ -147,6 +149,9 @@ export default async function handler(req, res) {
     return parts.join('、')
   }
 
+  // その他の病名・既往歴（全フォーム共通。通院先「その他」は hospitalOther を使う）
+  const otherDiseasesText = buildOtherDiseasesText(pickOtherDiseases(d))
+
   const doctorGender = d.body?.doctorGender || '指定なし'
   const doctorFlagLabel = doctorGender === '院長（初回のみ）' ? '院長希望（初回のみ）' : doctorGender
   const patientFlag  = d.body?.patientFlag || '通常'
@@ -229,6 +234,7 @@ export default async function handler(req, res) {
 発症時期テキスト：${dmOnsetText()}
 頚部エコー：${echoNeck}
 腹部エコー：${echoAbdomen}
+その他の病名・既往歴：${otherDiseasesText}
 希望曜日：${buildWeekday()}
 医師希望：${doctorGender}
 患者フラグ：${patientFlag}
@@ -256,6 +262,7 @@ ${d.reason?.dmConcern ? '＃糖尿病 or IGT or 正常耐糖能' : `＃糖尿病
 ♯膵臓癌（術後：治療種類・切除範囲・時期・治療病院→通院先・内服薬）（該当時のみ）
 ♯IHD：PCI後（時期・治療病院→通院先・抗血小板薬）（該当時のみ）
 ♯脳梗塞後（時期・治療病院→通院先・抗血小板薬）（該当時のみ）
+（上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない）
 （その他既往があれば記載）
 
 【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載）
@@ -314,6 +321,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 子供の状況：${buildChildInfo()}
 職業：${buildJobStr()}
 発症時期：${dmOnsetText()}
+その他の病名・既往歴：${otherDiseasesText}
 希望曜日：${buildWeekday()}
 医師希望：${doctorGender}
 患者フラグ：${patientFlag}
@@ -335,6 +343,7 @@ ${getCurrentMonth()}：（受診理由1〜2行${voiceMemoNote}）
 ＃HT（HTありの場合のみ、空行なし）
 ＃HL（HLありの場合のみ、空行なし）
 
+（上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない。空行なしで連続列挙）
 【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載）
 【FH】DM(-/+) HT(-/+) APO(-/+) IHD(-/+)（FH DMの場合は誰かも記載）
 【飲酒歴】（整形済みテキスト）
@@ -372,11 +381,6 @@ LINE登録ご案内→済　登録確認未・登録できない`
 
   // ────── 高血圧・脂質異常症 ──────
   } else if (form_type === '高血圧・脂質異常症') {
-    const otherDiseasesText = (d.disease?.otherDiseases || [])
-      .filter(x => x.name)
-      .map(x => x.name + (x.hospital ? `（${x.hospital}）` : ''))
-      .join('、') || 'なし'
-
     prompt = `あなたはまつもと糖尿病クリニックの電子カルテ記載AIです。以下の患者情報をもとに、高血圧・脂質異常症のカルテ記載文を生成してください。
 
 【ルール】
@@ -410,7 +414,7 @@ ${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の�
 ＃HT（該当時のみ、空行なし）
 ＃HL（該当時のみ、空行なし）
 ◎甲状腺3項目追加済（HL+甲状腺追加済の場合のみ）
-（その他病名があれば「♯病名（通院先）」の形式で記載、空行なし）
+（上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない。空行なし）
 
 【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載）
 【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)（FH DMの場合は誰かも記載）
@@ -463,17 +467,6 @@ LINE登録ご案内→済　登録確認未・登録できない`
       if (rows.length) return rows.join('、')
       return fhPair(d.history?.fhOtherWho, d.history?.fhOtherDisease) || (d.history?.fhOther || '').trim() || 'なし'
     })()
-
-    // 通院先は「その他」選択時 hospitalOther、病院選択時は 病院名+科
-    const otherDiseasesText = (d.disease?.otherDiseases || [])
-      .filter(x => x.name)
-      .map(x => {
-        const hosp = x.hospital === 'その他' ? (x.hospitalOther || '').trim() : (x.hospital || '')
-        if (!hosp) return x.name
-        if (hosp === '通院なし') return `${x.name}（通院なし）`
-        return `${x.name}（${[hosp, x.dept].filter(Boolean).join(' ')}）`
-      })
-      .join('、') || 'なし'
 
     // 療養計画書は 糖尿病・高血圧・脂質異常症 がある場合のみ必要
     const cp = d.disease?.carePlanDiseases || {}
@@ -571,6 +564,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 【整形済みデータ】
 生活情報：${buildLiving()}
 職業：${buildJobStr()}
+その他の病名・既往歴：${otherDiseasesText}
 希望曜日：${buildWeekday()}
 医師希望：${doctorGender}
 患者フラグ：${patientFlag}
@@ -589,6 +583,7 @@ ${getCurrentMonth()}：（受診理由1〜2行${voiceMemoNote}）
 ＃HL（該当時のみ）
 ◎甲状腺3項目追加済（該当時のみ）
 
+（上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない。♯疾患同士は空行なしで連続列挙し、最終行と【アレルギー歴】の間も空行なし）
 【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載）
 【FH】DM(-/+) HT(-/+) APO(-/+) IHD(-/+)
 【飲酒歴】なし（妊娠中）
@@ -635,6 +630,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 生活情報：${buildLiving()}
 子供の状況：${buildChildInfo()}
 職業：${buildJobStr()}
+その他の病名・既往歴：${otherDiseasesText}
 希望曜日：${buildWeekday()}
 医師希望：${doctorGender}
 患者フラグ：${patientFlag}
@@ -650,6 +646,7 @@ ${getCurrentMonth()}：${voiceMemoNote ? '（' + voiceMemoNote.replace(/^。/, '
 ・症状：${(d.symptom?.symptoms || []).join('、')}${d.symptom?.symptomsNote ? `（${d.symptom.symptomsNote}）` : ''}
 ・思い当たる原因：${(d.symptom?.cause || []).join('、')}${d.symptom?.causeNote ? `（${d.symptom.causeNote}）` : ''}
 
+（上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない。♯疾患同士は空行なしで連続列挙し、最終行と【アレルギー歴】の間も空行なし）
 【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載）
 【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)
 【飲酒歴】（整形済みテキスト）
@@ -695,6 +692,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 - アレルギー薬の記載以降は指定フォーマットのみを出力し、病名・診断名を追記しない
 
 【整形済みデータ】
+その他の病名・既往歴：${otherDiseasesText}
 希望曜日：${buildWeekday()}
 医師希望：${doctorGender}
 患者フラグ：${patientFlag}
@@ -708,6 +706,7 @@ ${getCurrentMonth()}：（受診理由1〜2行${voiceMemoNote}）
 ＃1型糖尿病（タイプ）（発症時期）
 ＃HT（HTありの場合のみ。当院管理なら「＃HT」、他院管理なら「＃HT（他院管理）」）
 ＃HL（HLありの場合のみ。当院管理なら「＃HL」、他院管理なら「＃HL（他院管理）」）
+（上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない。空行なし）
 ・GAD抗体：（初診時採血）
 ・CPR：（初診時採血）
 ・甲状腺検査：（確認済/初診時採血）
@@ -776,11 +775,6 @@ LINE登録ご案内→済　登録確認未・登録できない`
       : sasSelected
     const sasSymptomsText = sasItems.join('・')
 
-    const otherDiseasesText = (d.disease?.otherDiseases || [])
-      .filter(x => x.name)
-      .map(x => x.name + (x.hospital ? `（${x.hospital}${x.dept ? `・${x.dept}` : ''}）` : ''))
-      .join('、') || 'なし'
-
     // dmDiff: 採血で DM 判明後にスタッフが追記したセクション
     const dm = d.dmDiff || {}
     const hasDmDiff = dm.completed === true
@@ -848,7 +842,7 @@ ${getCurrentMonth()}：（受診理由サマリー1〜2行。SAS区分（CPAP継
 ${sasMainName}（受診理由の直後、空行なし）${hasDmDiff ? '\n＃糖尿病（採血で判明、発症時期はDM差分情報に従う）' : ''}
 ＃HT（該当時のみ、空行なし）
 ＃HL（該当時のみ、空行なし）
-（その他病名があれば「♯病名（通院先）」の形式、空行なし）
+（上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない。空行なし）
 
 ${sasSymptomsText ? '【SASの症状】（チェックされた症状を「・」で横一列に記載。「その他」がある場合は末尾に「その他: ○○」を追加）\n' : ''}${hasDmDiff && dm.dmSymptoms?.selected?.length ? '【糖尿病の症状】（チェックされた症状を「・」で横一列に記載）\n' : ''}【アレルギー歴】（なしまたは内容を同じ行に）
 【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)（FH DMの場合は誰かも記載）

@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
+import { buildOtherDiseasesText } from "../lib/otherDiseases";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
 const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ", "金属"];
@@ -139,14 +140,7 @@ export default function EndocrineIntakeTool() {
   };
 
   // その他の病名・既往歴 →「子宮筋腫（鰐坂医院）、慢性腎臓病（上尾中央総合病院 腎臓内科）」形式
-  const buildOtherDiseases = () => {
-    return (data.disease.otherDiseases||[]).filter(x=>x.name).map(x=>{
-      const hosp = x.hospital==="その他" ? (x.hospitalOther||"").trim() : (x.hospital||"");
-      if(!hosp) return x.name;
-      if(hosp==="通院なし") return `${x.name}（通院なし）`;
-      return `${x.name}（${[hosp,x.dept].filter(Boolean).join(" ")}）`;
-    }).join("、")||"なし";
-  };
+  const buildOtherDiseases = () => buildOtherDiseasesText(data.disease.otherDiseases);
 
   // 療養計画書は 糖尿病・高血圧・脂質異常症 がある場合のみ必要
   const buildCarePlanDiseases = () => {

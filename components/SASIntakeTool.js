@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
+import { buildOtherDiseasesText } from "../lib/otherDiseases";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
 const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ", "金属"];
@@ -264,10 +265,7 @@ export default function SASIntakeTool() {
     const purposesText = (data.reason.purposes||[]).join('、') + (data.reason.purposeOther ? `（その他: ${data.reason.purposeOther}）` : '');
     const knowSourceText = (data.reason.knowSource||[]).join('、') + (data.reason.knowSourceOther ? `（その他: ${data.reason.knowSourceOther}）` : '');
     const sasSymptomsText = buildSasSymptoms();
-    const otherDiseasesText = (data.disease.otherDiseases||[])
-      .filter(x=>x.name)
-      .map(x=>x.name+(x.hospital?`（${x.hospital}${x.dept?`・${x.dept}`:''}）`:''))
-      .join('、') || 'なし';
+    const otherDiseasesText = buildOtherDiseasesText(data.disease.otherDiseases);
 
     const prompt = `あなたはまつもと糖尿病クリニックの電子カルテ記載AIです。以下の患者情報をもとに、睡眠時無呼吸症候群（SAS）のカルテ記載文を生成してください。
 
@@ -308,7 +306,7 @@ ${getCurrentMonth()}：（受診理由サマリー1〜2行。SAS区分（CPAP継
 （SAS区分により上記ルールに従って＃SAS or ＃SAS疑い行を記載、空行なし）
 ＃HT（該当時のみ、空行なし）
 ＃HL（該当時のみ、空行なし）
-（その他病名があれば「♯病名（通院先）」の形式、空行なし）
+（上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない。空行なし）
 
 ${sasSymptomsText ? '【SASの症状】（チェックされた症状を「・」で横一列に記載。「その他」がある場合は末尾に「その他: ○○」を追加）\n' : ''}【アレルギー歴】（なしまたは内容を同じ行に）
 【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)（FH DMの場合は誰かも記載）

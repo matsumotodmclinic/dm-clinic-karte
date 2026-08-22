@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
+import { buildOtherDiseasesText } from "../lib/otherDiseases";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
 const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ", "金属"];
@@ -355,6 +356,7 @@ export default function DMIntakeTool() {
 発症時期テキスト：${dmOnsetText()}
 頚部エコー：${data.disease.echoNeck === "行っていない" ? "当院で施行予定" : data.disease.echoNeck || "未記入"}
 腹部エコー：${data.disease.echoAbdomen === "行っていない" ? "当院で施行予定" : data.disease.echoAbdomen || "未記入"}
+その他の病名・既往歴：${buildOtherDiseasesText(data.disease.otherDiseases)}
 希望曜日：${buildWeekday()}
 医師希望：${data.body.doctorGender || "指定なし"}
 患者フラグ：${data.body.patientFlag || "通常"}
@@ -388,6 +390,7 @@ ${data.reason.dmConcern ? '＃糖尿病 or IGT or 正常耐糖能' : `＃糖尿�
 ♯膵臓癌（術後：治療種類・切除範囲・時期・治療病院→通院先・内服薬）（該当時のみ）
 ♯IHD：PCI後（時期・治療病院→通院先・抗血小板薬）（該当時のみ）
 ♯脳梗塞後（時期・治療病院→通院先・抗血小板薬）（該当時のみ）
+（上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない）
 （その他既往があれば記載）
 
 【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載。例：【アレルギー歴】ペニシリン系）
