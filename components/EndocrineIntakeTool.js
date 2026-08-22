@@ -32,12 +32,16 @@ const ALCOHOL_TYPES = [
 const initialData = {
   reason: { type: "", referralFrom: "", referralDept: "", referralQuickSelect: false, referralDetail: "", transferFrom: "", transferDetail: "", checkupType: "", concern: false, concernType: "", summary: "" },
   // 内分泌はバリエーションが豊富で医師が直接問診するため、病名の選択欄は持たない
-  disease: { echoNeck: "", echoAbdomen: "", otherDisease: "", otherDiseases: [{name:"",hospital:"",hospitalOther:""}] },
+  disease: {
+    echoNeck: "", echoAbdomen: "", otherDisease: "", otherDiseases: [{name:"",hospital:"",hospitalOther:""}],
+    // 療養計画書の要否判定用（この3疾患のいずれかがあるときだけ「□初回療養計画書を作成済」を出す）
+    carePlanDiseases: { dm: false, ht: false, hl: false },
+  },
   history: {
     age: "", allergy: "なし", allergyDetail: "",
     fh: { dm: false, dmWho: [], ht: false, hl: false, apo: false, ihd: false },
-    // 家族歴の自由記入（内分泌疾患などボタンにない疾患を想定）。誰が／病気名 の2欄
-    fhOtherWho: "", fhOtherDisease: "",
+    // 家族歴の自由記入（内分泌疾患などボタンにない疾患を想定）。誰が／病気名 の2欄 × 複数組
+    fhOthers: [{ who: "", disease: "" }],
     alcoholNone: false, alcoholItems: [emptyAlcohol()],
     smoking: "なし", smokingAmount: "", smokingYears: "", smokingStartAge: "",
     smokingQuitEra: "令和", smokingQuitYear: "",
@@ -117,18 +121,43 @@ export default function EndocrineIntakeTool() {
   const upAl = (i,f,v) => setData(p=>{const a=[...p.history.alcoholItems];a[i]={...a[i],[f]:v};return{...p,history:{...p.history,alcoholItems:a}};});
   const addAl = () => setData(p=>({...p,history:{...p.history,alcoholItems:[...p.history.alcoholItems,emptyAlcohol()]}}));
   const delAl = (i) => setData(p=>({...p,history:{...p.history,alcoholItems:p.history.alcoholItems.filter((_,j)=>j!==i)}}));
+  const upFh = (i,f,v) => setData(p=>{const a=[...(p.history.fhOthers||[{who:"",disease:""}])];a[i]={...a[i],[f]:v};return{...p,history:{...p.history,fhOthers:a}};});
+  const addFh = () => setData(p=>({...p,history:{...p.history,fhOthers:[...(p.history.fhOthers||[]),{who:"",disease:""}]}}));
+  const delFh = (i) => setData(p=>({...p,history:{...p.history,fhOthers:(p.history.fhOthers||[]).filter((_,j)=>j!==i)}}));
 
   const age = parseInt(data.history.age)||0;
   const isOver60 = age >= 60;
   const isOver70 = age >= 70;
 
-  // 家族歴の自由記入（誰が／病気名）→「母：バセドウ病」形式。片方だけでも出力する
+  // 家族歴の自由記入（誰が／病気名、複数組）→「母：バセドウ病、姉：橋本病」形式。片方だけでも出力する
   const buildFhOther = () => {
-    const who = (data.history.fhOtherWho||"").trim();
-    const dis = (data.history.fhOtherDisease||"").trim();
-    if(who&&dis) return `${who}：${dis}`;
-    return who||dis||"";
+    return (data.history.fhOthers||[]).map(f=>{
+      const who=(f.who||"").trim(), dis=(f.disease||"").trim();
+      if(who&&dis) return `${who}：${dis}`;
+      return who||dis||"";
+    }).filter(Boolean).join("、");
   };
+
+  // その他の病名・既往歴 →「子宮筋腫（鰐坂医院）、慢性腎臓病（上尾中央総合病院 腎臓内科）」形式
+  const buildOtherDiseases = () => {
+    return (data.disease.otherDiseases||[]).filter(x=>x.name).map(x=>{
+      const hosp = x.hospital==="その他" ? (x.hospitalOther||"").trim() : (x.hospital||"");
+      if(!hosp) return x.name;
+      if(hosp==="通院なし") return `${x.name}（通院なし）`;
+      return `${x.name}（${[hosp,x.dept].filter(Boolean).join(" ")}）`;
+    }).join("、")||"なし";
+  };
+
+  // 療養計画書は 糖尿病・高血圧・脂質異常症 がある場合のみ必要
+  const buildCarePlanDiseases = () => {
+    const c = data.disease.carePlanDiseases||{};
+    const names = [c.dm&&"糖尿病", c.ht&&"高血圧", c.hl&&"脂質異常症"].filter(Boolean);
+    return names.length ? names.join("・") : "なし";
+  };
+  const needsCarePlan = (() => {
+    const c = data.disease.carePlanDiseases||{};
+    return !!(c.dm||c.ht||c.hl);
+  })();
 
   const buildAlcohol = () => {
     if(data.history.alcoholNone) return "なし";
@@ -216,7 +245,8 @@ export default function EndocrineIntakeTool() {
 【ルール】
 - 該当しない項目は省略する
 - フォーマット記号（＃【】□♯）を使用する
-- 主病名（＃）は医師が診察時に確定するため、問診では聴取していない。＃で始まる主病名の行は絶対に推測して出力しない
+- 自院管理の主病名（＃：全角シャープ）は医師が診察時に確定するため、問診では聴取していない。＃で始まる行は絶対に推測して出力しない
+- ただし「その他の病名・既往歴」は別扱い。入力があれば ♯（音楽記号のシャープ）で1疾患1行、必ず全て記載する。＃の抑制ルールを ♯ に適用してはならない
 - 空行ルール（厳守）: ①自院管理＃疾患は連続列挙し空行なし ②自院管理ブロックの後、他院管理疾患の前にのみ1行空ける ③他院管理疾患が複数あっても他院管理同士は連続列挙し空行なし ④他院管理疾患の最終行と【アレルギー歴】の間は空行なし（直接続ける） ⑤【事前聴取時 申し送り事項】の最終□行と【診察にあたっての要望】の間も空行なし（連続）
 - 60歳未満はワクチン歴を省略、70歳未満は子供の状況を省略
 - 喫煙歴は「○本×○年（○歳〜）」の形式
@@ -230,7 +260,8 @@ export default function EndocrineIntakeTool() {
 職業：${buildJob()}
 頚部エコー：${data.disease.echoNeck||"未選択"}
 腹部エコー：${data.disease.echoAbdomen||"未選択"}
-その他の病名・既往歴：${(data.disease.otherDiseases||[]).filter(d=>d.name).map(d=>d.name+(d.hospital?"（"+d.hospital+"）":"")).join("、")||"なし"}
+その他の病名・既往歴：${buildOtherDiseases()}
+生活習慣病（療養計画書の要否判定）：${buildCarePlanDiseases()}
 希望曜日：${buildWeekday()}
 医師希望：${data.body.doctorGender || "指定なし"}
 患者フラグ：${data.body.patientFlag || "通常"}
@@ -246,8 +277,8 @@ ${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴
 
 【出力フォーマット】
 ${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の場合は気になる理由も含めて記載。自由記入欄の内容も含める${data.voiceMemo?.aiSummary ? '。音声入力AI整形済みテキストを優先・統合して使用' : ''}）
-（主病名の＃行は出力しない。医師が診察時に記載する）
-（その他病名があれば「♯病名（通院先）」の形式で記載、空行なし）
+（＃で始まる自院管理の主病名行は出力しない。医師が診察時に記載する）
+（上記「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。空行なし）
 
 【アレルギー歴】
 【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)（家族歴の自由記入があれば、同じ行の末尾に全角スペース区切りでそのまま続けて記載。例「【FH】DM(+：母) HT(-) HL(-) APO(-) IHD(-)　母：バセドウ病」。自由記入がなければ何も足さない）
@@ -267,7 +298,7 @@ ${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の�
 （現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
 （既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
 □主病名：医師の診察時に確定・記載
-□初回療養計画書を作成済
+${needsCarePlan ? "□初回療養計画書を作成済" : "（生活習慣病のチェックがないため「□初回療養計画書を作成済」の行は出力しない）"}
 （新患2枠取得済の場合）□新患2枠取得済み
 ${(() => { const g = data.body.doctorGender; if (!g || g === "指定なし") return ""; const label = g === "女性医師希望" ? "女性医師" : g === "男性医師希望" ? "男性医師" : g; return `□医師希望：${label}`; })()}
 （患者フラグが「○患者疑い（話が長い方）」の場合）□○患者疑い（対応注意）
@@ -281,7 +312,6 @@ ${getCurrentMonth()}：
 
 
 （アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
-目標HbA1c　　　　%　目標体重　　　次回検討薬：
 基本採血なし
 1月follow
 ${buildWeekday()}
@@ -369,6 +399,17 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={sBox({background:"#f5f0ff",border:"1.5px dashed #c8c0ee",marginBottom:14})}>
             <div style={{fontSize:13,fontWeight:800,color:"#5a4fa8",marginBottom:4}}>💡 主病名の選択欄はありません</div>
             <div style={{fontSize:12,color:"#6b63a8",lineHeight:1.7}}>内分泌疾患はバリエーションが豊富なため、主病名（＃）は医師が診察時に直接問診して記載します。</div>
+          </div>
+
+          <div style={sBox({background:"#fffaf0",border:"1.5px solid #fbd38d",marginBottom:14})}>
+            <div style={{fontSize:13,fontWeight:800,color:"#c05621",marginBottom:4}}>📄 生活習慣病の有無（療養計画書の要否判定）</div>
+            <div style={{fontSize:12,color:"#a0672f",marginBottom:10,lineHeight:1.7}}>この3つのいずれかがある場合のみ、申し送りに「□初回療養計画書を作成済」が入ります。</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+              {[["dm","糖尿病"],["ht","高血圧"],["hl","脂質異常症"]].map(([k,l])=>{
+                const on = !!(d.disease.carePlanDiseases||{})[k];
+                return <button key={k} style={btn(on,"#c05621")} onClick={()=>upN("disease","carePlanDiseases",k,!on)}>{on?"✓ ":""}{l}</button>;
+              })}
+            </div>
           </div>
 
           <label style={lbl({marginTop:8})}>その他の病名・既往歴</label>
@@ -486,21 +527,27 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{paddingLeft:12,borderLeft:"3px solid #6b3fa8",marginBottom:14}}>
             <label style={lbl({color:"#6b3fa8",fontSize:11})}>その他の家族歴（自由記入・任意）</label>
             <div style={{fontSize:11,color:"#8a7ab8",marginBottom:6,lineHeight:1.6}}>上のボタンにない家族歴を記入（例：母／バセドウ病）</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
-              {["父","母","兄弟・姉妹","祖父","祖母","子"].map(v=>(
-                <button key={v} style={{...btn(d.history.fhOtherWho===v,"#6b3fa8"),padding:"5px 10px",fontSize:12}} onClick={()=>up("history","fhOtherWho",d.history.fhOtherWho===v?"":v)}>{v}</button>
-              ))}
-            </div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-              <div style={{flex:"1 1 130px"}}>
-                <label style={lbl({color:"#6b3fa8",fontSize:11})}>誰が</label>
-                <input style={inp()} placeholder="例：母" value={d.history.fhOtherWho||""} onChange={e=>up("history","fhOtherWho",e.target.value)}/>
+            {(d.history.fhOthers||[{who:"",disease:""}]).map((f,i)=>(
+              <div key={i} style={{marginBottom:10}}>
+                <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:5}}>
+                  {["父","母","兄弟・姉妹","祖父","祖母","子"].map(v=>(
+                    <button key={v} style={{...btn(f.who===v,"#6b3fa8"),padding:"5px 10px",fontSize:12}} onClick={()=>upFh(i,"who",f.who===v?"":v)}>{v}</button>
+                  ))}
+                </div>
+                <div style={{display:"flex",gap:8,alignItems:"flex-end",flexWrap:"wrap"}}>
+                  <div style={{flex:"1 1 120px"}}>
+                    {i===0&&<label style={lbl({color:"#6b3fa8",fontSize:11})}>誰が</label>}
+                    <input style={inp()} placeholder="例：母" value={f.who||""} onChange={e=>upFh(i,"who",e.target.value)}/>
+                  </div>
+                  <div style={{flex:"2 1 200px"}}>
+                    {i===0&&<label style={lbl({color:"#6b3fa8",fontSize:11})}>病気名</label>}
+                    <input style={inp()} placeholder="例：バセドウ病" value={f.disease||""} onChange={e=>upFh(i,"disease",e.target.value)}/>
+                  </div>
+                  {i>0&&<button onClick={()=>delFh(i)} style={{fontSize:12,color:"#e53e3e",background:"none",border:"none",cursor:"pointer",fontWeight:700,padding:"10px 4px"}}>✕</button>}
+                </div>
               </div>
-              <div style={{flex:"2 1 220px"}}>
-                <label style={lbl({color:"#6b3fa8",fontSize:11})}>病気名</label>
-                <input style={inp()} placeholder="例：バセドウ病" value={d.history.fhOtherDisease||""} onChange={e=>up("history","fhOtherDisease",e.target.value)}/>
-              </div>
-            </div>
+            ))}
+            <button style={{...btn(false,"#6b3fa8"),fontSize:12}} onClick={addFh}>＋ 家族歴を追加</button>
           </div>
           <label style={lbl()}>飲酒歴</label>
           <div style={{marginBottom:8}}>

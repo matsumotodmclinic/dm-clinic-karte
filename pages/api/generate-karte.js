@@ -451,32 +451,49 @@ LINE登録ご案内→済　登録確認未・登録できない`
   // 高血圧・脂質異常症 と同一構成。主病名（＃）の選択欄は持たない
   // （内分泌はバリエーションが豊富なため、医師が診察時に直接問診して記載する）
   } else if (form_type === '内分泌') {
-    // 家族歴の自由記入（誰が／病気名）→「母：バセドウ病」形式。片方だけでも出力する
-    // fhOther は 誰が／病気名 に分割する前の旧フィールド（既存レコードの再生成用フォールバック）
+    // 家族歴の自由記入（誰が／病気名、複数組）→「母：バセドウ病、姉：橋本病」形式。片方だけでも出力する
+    // fhOtherWho/fhOtherDisease/fhOther は複数組化する前の旧フィールド（既存レコードの再生成用フォールバック）
+    const fhPair = (who, dis) => {
+      const w = (who || '').trim(), s = (dis || '').trim()
+      if (w && s) return `${w}：${s}`
+      return w || s || ''
+    }
     const fhOtherText = (() => {
-      const who = (d.history?.fhOtherWho || '').trim()
-      const dis = (d.history?.fhOtherDisease || '').trim()
-      if (who && dis) return `${who}：${dis}`
-      return who || dis || (d.history?.fhOther || '').trim() || 'なし'
+      const rows = (d.history?.fhOthers || []).map(f => fhPair(f.who, f.disease)).filter(Boolean)
+      if (rows.length) return rows.join('、')
+      return fhPair(d.history?.fhOtherWho, d.history?.fhOtherDisease) || (d.history?.fhOther || '').trim() || 'なし'
     })()
 
+    // 通院先は「その他」選択時 hospitalOther、病院選択時は 病院名+科
     const otherDiseasesText = (d.disease?.otherDiseases || [])
       .filter(x => x.name)
-      .map(x => x.name + (x.hospital ? `（${x.hospital}）` : ''))
+      .map(x => {
+        const hosp = x.hospital === 'その他' ? (x.hospitalOther || '').trim() : (x.hospital || '')
+        if (!hosp) return x.name
+        if (hosp === '通院なし') return `${x.name}（通院なし）`
+        return `${x.name}（${[hosp, x.dept].filter(Boolean).join(' ')}）`
+      })
       .join('、') || 'なし'
+
+    // 療養計画書は 糖尿病・高血圧・脂質異常症 がある場合のみ必要
+    const cp = d.disease?.carePlanDiseases || {}
+    const carePlanText = [cp.dm && '糖尿病', cp.ht && '高血圧', cp.hl && '脂質異常症'].filter(Boolean).join('・') || 'なし'
+    const needsCarePlan = !!(cp.dm || cp.ht || cp.hl)
 
     prompt = `あなたはまつもと糖尿病クリニックの電子カルテ記載AIです。以下の患者情報をもとに、内分泌疾患のカルテ記載文を生成してください。
 
 【ルール】
 - 該当しない項目は省略する
 - フォーマット記号（＃【】□♯）を使用する
-- 主病名（＃）は医師が診察時に確定するため、問診では聴取していない。＃で始まる主病名の行は絶対に推測して出力しない
+- 自院管理の主病名（＃：全角シャープ）は医師が診察時に確定するため、問診では聴取していない。＃で始まる行は絶対に推測して出力しない
+- ただし「その他の病名・既往歴」は別扱い。入力があれば ♯（音楽記号のシャープ）で1疾患1行、必ず全て記載する。＃の抑制ルールを ♯ に適用してはならない
 - 空行ルール（厳守）: ①自院管理＃疾患は連続列挙し空行なし ②自院管理ブロックの後、他院管理疾患の前にのみ1行空ける ③他院管理疾患が複数あっても他院管理同士は連続列挙し空行なし ④他院管理疾患の最終行と【アレルギー歴】の間は空行なし（直接続ける） ⑤【事前聴取時 申し送り事項】の最終□行と【診察にあたっての要望】の間も空行なし（連続）
 - 60歳未満はワクチン歴を省略、70歳未満は子供の状況を省略
 - 喫煙歴は「○本×○年（○歳〜）」の形式
 
 【整形済みデータ】
 家族歴（自由記入）：${fhOtherText}
+生活習慣病（療養計画書の要否判定）：${carePlanText}
 飲酒歴：${buildAlcohol()}
 喫煙歴：${buildSmoking()}
 生活情報：${buildLiving()}
@@ -500,8 +517,8 @@ ${voiceMemoBlock}${voicePastHistoryBlock}${voiceMemoNeedsReviewBlock}${needsDoct
 
 【出力フォーマット】
 ${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の場合は気になる理由も含めて記載。自由記入欄の内容も含める${voiceMemoNote}）
-（主病名の＃行は出力しない。医師が診察時に記載する）
-（その他病名があれば「♯病名（通院先）」の形式で記載、空行なし）
+（＃で始まる自院管理の主病名行は出力しない。医師が診察時に記載する）
+（上記「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。空行なし）
 
 【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載）
 【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)（FH DMの場合は誰かも記載。家族歴の自由記入があれば、同じ行の末尾に全角スペース区切りでそのまま続けて記載。例「【FH】DM(+：母) HT(-) HL(-) APO(-) IHD(-)　母：バセドウ病」。自由記入がなければ何も足さない）
@@ -521,7 +538,7 @@ ${echoLine(d.disease?.echoNeck, d.disease?.echoAbdomen)}（必ず1行に横配�
 （現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
 （既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
 □主病名：医師の診察時に確定・記載
-□初回療養計画書を作成済
+${needsCarePlan ? '□初回療養計画書を作成済' : '（生活習慣病のチェックがないため「□初回療養計画書を作成済」の行は出力しない）'}
 ${STAFF_FLAGS}
 【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
 ---------------------------------------------
@@ -531,7 +548,6 @@ ${getCurrentMonth()}：
 
 
 （アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
-目標HbA1c　　　　%　目標体重　　　次回検討薬：
 基本採血なし
 1月follow
 ${buildWeekday()}
