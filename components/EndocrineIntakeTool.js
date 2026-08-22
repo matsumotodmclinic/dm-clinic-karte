@@ -36,6 +36,7 @@ const initialData = {
   history: {
     age: "", allergy: "なし", allergyDetail: "",
     fh: { dm: false, dmWho: [], ht: false, hl: false, apo: false, ihd: false },
+    fhOther: "",  // 家族歴の自由記入（内分泌疾患などボタンにない疾患を想定）
     alcoholNone: false, alcoholItems: [emptyAlcohol()],
     smoking: "なし", smokingAmount: "", smokingYears: "", smokingStartAge: "",
     smokingQuitEra: "令和", smokingQuitYear: "",
@@ -212,6 +213,7 @@ export default function EndocrineIntakeTool() {
 - 喫煙歴は「○本×○年（○歳〜）」の形式
 
 【整形済みデータ】
+家族歴（自由記入）：${data.history.fhOther||"なし"}
 飲酒歴：${buildAlcohol()}
 喫煙歴：${buildSmoking()}
 生活情報：${buildLiving()}
@@ -239,7 +241,7 @@ ${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の�
 （その他病名があれば「♯病名（通院先）」の形式で記載、空行なし）
 
 【アレルギー歴】
-【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)
+【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)（家族歴の自由記入があれば、同じ行の末尾に全角スペース区切りでそのまま続けて記載。例「【FH】DM(+：母) HT(-) HL(-) APO(-) IHD(-)　母：バセドウ病」。自由記入がなければ何も足さない）
 【飲酒歴】
 【喫煙歴】
 【健診】
@@ -472,6 +474,11 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
             </div>
           )}
+          <div style={{paddingLeft:12,borderLeft:"3px solid #6b3fa8",marginBottom:14}}>
+            <label style={lbl({color:"#6b3fa8",fontSize:11})}>その他の家族歴（自由記入・任意）</label>
+            <div style={{fontSize:11,color:"#8a7ab8",marginBottom:6,lineHeight:1.6}}>上のボタンにない家族歴を記入（例：母がバセドウ病、姉が橋本病、父が甲状腺癌）</div>
+            <input style={inp()} placeholder="例：母がバセドウ病（○○病院で内服中）" value={d.history.fhOther||""} onChange={e=>up("history","fhOther",e.target.value)}/>
+          </div>
           <label style={lbl()}>飲酒歴</label>
           <div style={{marginBottom:8}}>
             <button style={btn(d.history.alcoholNone,"#718096")} onClick={()=>up("history","alcoholNone",!d.history.alcoholNone)}>{d.history.alcoholNone?"✓ 飲まない":"飲まない"}</button>
