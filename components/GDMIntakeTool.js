@@ -3,6 +3,7 @@ import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { buildOtherDiseasesText } from "../lib/otherDiseases";
+import { formatEcho, buildEchoLine } from "../lib/echo";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
 const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ", "金属"];
@@ -174,7 +175,7 @@ ${getCurrentMonth()}：（受診理由1〜2行${data.voiceMemo?.aiSummary ? '。
 【生活情報】（整形済みテキスト）
 【仕事】職業・活動量
 ---------------------------------------------
-頚部エコー：${data.disease.echoNeck==="行っていない"?"当院で施行予定":data.disease.echoNeck||"当院で施行予定"}　腹部エコー：${data.disease.echoAbdomen==="行っていない"?"当院で施行予定":data.disease.echoAbdomen||"当院で施行予定"}（必ず1行に横配置）
+${buildEchoLine(data.disease.echoNeck, data.disease.echoAbdomen)}（必ず1行に横配置）
 ---------------------------------------------
 身長:○cm　初診時:○kg${bmiNow ? `（BMI ${bmiNow}）` : ""}　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
@@ -371,7 +372,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               <div style={{flex:1,minWidth:200}}>
                 <label style={lbl({color:"#2b6cb0"})}>頚部エコー</label>
                 <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
-                  {["他院で施行済","健診で施行済","行っていない"].map(v=>(
+                  {["他院で施行済","健診で施行済","行っていない","希望なし"].map(v=>(
                     <button key={v} style={{...btn(d.disease.echoNeck===v,"#2b6cb0"),padding:"6px 10px",fontSize:12}} onClick={()=>up("disease","echoNeck",v)}>{v}</button>
                   ))}
                 </div>
@@ -379,7 +380,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               <div style={{flex:1,minWidth:200}}>
                 <label style={lbl({color:"#2b6cb0"})}>腹部エコー</label>
                 <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
-                  {["他院で施行済","健診で施行済","行っていない"].map(v=>(
+                  {["他院で施行済","健診で施行済","行っていない","希望なし"].map(v=>(
                     <button key={v} style={{...btn(d.disease.echoAbdomen===v,"#2b6cb0"),padding:"6px 10px",fontSize:12}} onClick={()=>up("disease","echoAbdomen",v)}>{v}</button>
                   ))}
                 </div>

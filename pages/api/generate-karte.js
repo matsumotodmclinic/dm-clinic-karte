@@ -1,4 +1,5 @@
 import { buildOtherDiseasesText, pickOtherDiseases } from '../../lib/otherDiseases'
+import { formatEcho, buildEchoLine } from '../../lib/echo'
 
 // 許可する form_type(ホワイトリスト、CLAUDE.md の 14 フォームと同期)
 const ALLOWED_FORM_TYPES = new Set([
@@ -111,14 +112,7 @@ export default async function handler(req, res) {
     return `（${d.disease.dmOnsetEra}${d.disease.dmOnset}年）`
   }
 
-  const echoLine = (neck, abdomen) => {
-    const conv = v =>
-      v === '行っていない' ? '当院で施行予定'
-      : v === '他院で施行済' ? '他院施行済'
-      : v === '健診で施行済' ? '健診施行済'
-      : v || '当院で施行予定'
-    return `頚部エコー：${conv(neck)}　腹部エコー：${conv(abdomen)}`
-  }
+  // 変換ロジックは lib/echo.js に集約（経路A のコンポーネントと共通）
 
   const buildWeekday = () => {
     const days = d.body?.preferredDays || []
@@ -206,8 +200,8 @@ export default async function handler(req, res) {
 
   // ────── DM基本 ──────
   if (form_type === 'DM基本') {
-    const echoNeck = d.disease?.echoNeck === '行っていない' ? '当院で施行予定' : d.disease?.echoNeck || '未記入'
-    const echoAbdomen = d.disease?.echoAbdomen === '行っていない' ? '当院で施行予定' : d.disease?.echoAbdomen || '未記入'
+    const echoNeck = formatEcho(d.disease?.echoNeck, '未記入')
+    const echoAbdomen = formatEcho(d.disease?.echoAbdomen, '未記入')
 
     prompt = `あなたはまつもと糖尿病クリニックの電子カルテ記載AIです。
 以下の患者情報をもとに、クリニックのフォーマット通りにカルテ記載文を生成してください。
@@ -275,7 +269,7 @@ ${d.reason?.dmConcern ? '＃糖尿病 or IGT or 正常耐糖能' : `＃糖尿病
 【生活情報】（整形済みテキスト。70歳以上は子供の状況も含む）
 【仕事】職業・活動量
 ---------------------------------------------
-頚部エコー：${echoNeck}　腹部エコー：${echoAbdomen}（必ず1行に横配置）
+${buildEchoLine(d.disease?.echoNeck, d.disease?.echoAbdomen, { neckFallback: '未記入', abdomenFallback: '未記入' })}（必ず1行に横配置。この行はそのまま出力する）
 ---------------------------------------------
 身長:○cm　初診時:○kg${bmiSuffix}　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
@@ -425,7 +419,7 @@ ${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の�
 【生活情報】（整形済みテキスト。70歳以上は子供の状況も含む）
 【仕事】職業・活動量
 ---------------------------------------------
-${echoLine(d.disease?.echoNeck, d.disease?.echoAbdomen)}（必ず1行に横配置）
+${buildEchoLine(d.disease?.echoNeck, d.disease?.echoAbdomen, { abdomenFallback: '未選択' })}（必ず1行に横配置）
 ---------------------------------------------
 身長:○cm　初診時:○kg${bmiSuffix}　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
@@ -522,7 +516,7 @@ ${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の�
 【生活情報】（整形済みテキスト。70歳以上は子供の状況も含む）
 【仕事】職業・活動量
 ---------------------------------------------
-${echoLine(d.disease?.echoNeck, d.disease?.echoAbdomen)}（必ず1行に横配置）
+${buildEchoLine(d.disease?.echoNeck, d.disease?.echoAbdomen, { abdomenFallback: '未選択' })}（必ず1行に横配置）
 ---------------------------------------------
 身長:○cm　初診時:○kg${bmiSuffix}　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
@@ -592,7 +586,7 @@ ${getCurrentMonth()}：（受診理由1〜2行${voiceMemoNote}）
 【生活情報】（整形済みテキスト）
 【仕事】職業・活動量
 ---------------------------------------------
-${echoLine(d.disease?.echoNeck, d.disease?.echoAbdomen)}（必ず1行に横配置）
+${buildEchoLine(d.disease?.echoNeck, d.disease?.echoAbdomen)}（必ず1行に横配置）
 ---------------------------------------------
 身長:○cm　初診時:○kg${bmiSuffix}　妊娠前:○kg　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
@@ -853,7 +847,7 @@ ${sasSymptomsText ? '【SASの症状】（チェックされた症状を「・�
 【生活情報】（整形済みテキスト。70歳以上は子供の状況も含む）
 【仕事】職業・活動量
 ---------------------------------------------
-${echoLine(d.disease?.echoNeck, d.disease?.echoAbdomen)}（必ず1行に横配置）
+${buildEchoLine(d.disease?.echoNeck, d.disease?.echoAbdomen, { abdomenFallback: '未選択' })}（必ず1行に横配置）
 ---------------------------------------------
 身長:○cm　初診時:○kg${bmiSuffix}　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
