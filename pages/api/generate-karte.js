@@ -451,6 +451,15 @@ LINE登録ご案内→済　登録確認未・登録できない`
   // 高血圧・脂質異常症 と同一構成。主病名（＃）の選択欄は持たない
   // （内分泌はバリエーションが豊富なため、医師が診察時に直接問診して記載する）
   } else if (form_type === '内分泌') {
+    // 家族歴の自由記入（誰が／病気名）→「母：バセドウ病」形式。片方だけでも出力する
+    // fhOther は 誰が／病気名 に分割する前の旧フィールド（既存レコードの再生成用フォールバック）
+    const fhOtherText = (() => {
+      const who = (d.history?.fhOtherWho || '').trim()
+      const dis = (d.history?.fhOtherDisease || '').trim()
+      if (who && dis) return `${who}：${dis}`
+      return who || dis || (d.history?.fhOther || '').trim() || 'なし'
+    })()
+
     const otherDiseasesText = (d.disease?.otherDiseases || [])
       .filter(x => x.name)
       .map(x => x.name + (x.hospital ? `（${x.hospital}）` : ''))
@@ -467,7 +476,7 @@ LINE登録ご案内→済　登録確認未・登録できない`
 - 喫煙歴は「○本×○年（○歳〜）」の形式
 
 【整形済みデータ】
-家族歴（自由記入）：${d.history?.fhOther || 'なし'}
+家族歴（自由記入）：${fhOtherText}
 飲酒歴：${buildAlcohol()}
 喫煙歴：${buildSmoking()}
 生活情報：${buildLiving()}

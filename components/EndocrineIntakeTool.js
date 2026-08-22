@@ -36,7 +36,8 @@ const initialData = {
   history: {
     age: "", allergy: "なし", allergyDetail: "",
     fh: { dm: false, dmWho: [], ht: false, hl: false, apo: false, ihd: false },
-    fhOther: "",  // 家族歴の自由記入（内分泌疾患などボタンにない疾患を想定）
+    // 家族歴の自由記入（内分泌疾患などボタンにない疾患を想定）。誰が／病気名 の2欄
+    fhOtherWho: "", fhOtherDisease: "",
     alcoholNone: false, alcoholItems: [emptyAlcohol()],
     smoking: "なし", smokingAmount: "", smokingYears: "", smokingStartAge: "",
     smokingQuitEra: "令和", smokingQuitYear: "",
@@ -120,6 +121,14 @@ export default function EndocrineIntakeTool() {
   const age = parseInt(data.history.age)||0;
   const isOver60 = age >= 60;
   const isOver70 = age >= 70;
+
+  // 家族歴の自由記入（誰が／病気名）→「母：バセドウ病」形式。片方だけでも出力する
+  const buildFhOther = () => {
+    const who = (data.history.fhOtherWho||"").trim();
+    const dis = (data.history.fhOtherDisease||"").trim();
+    if(who&&dis) return `${who}：${dis}`;
+    return who||dis||"";
+  };
 
   const buildAlcohol = () => {
     if(data.history.alcoholNone) return "なし";
@@ -213,7 +222,7 @@ export default function EndocrineIntakeTool() {
 - 喫煙歴は「○本×○年（○歳〜）」の形式
 
 【整形済みデータ】
-家族歴（自由記入）：${data.history.fhOther||"なし"}
+家族歴（自由記入）：${buildFhOther()||"なし"}
 飲酒歴：${buildAlcohol()}
 喫煙歴：${buildSmoking()}
 生活情報：${buildLiving()}
@@ -249,7 +258,7 @@ ${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の�
 【生活情報】（70歳以上は子供の状況も含む）
 【仕事】職業・活動量
 ---------------------------------------------
-頚部エコー：${data.disease.echoNeck==="他院で施行済"?"他院施行済":data.disease.echoNeck==="健診で施行済"?"健診施行済":"当院で施行予定"}　腹部エコー：${data.disease.echoAbdomen==="他院で施行済"?"他院施行済":data.disease.echoAbdomen==="健診で施行済"?"健診施行済":data.disease.echoAbdomen||"未選択"}（必ず1行に横配置）
+頚部エコー：${data.disease.echoNeck==="他院で施行済"?"他院施行済":data.disease.echoNeck==="健診で施行済"?"健診施行済":data.disease.echoNeck==="希望なし"?"希望なし":"当院で施行予定"}　腹部エコー：${data.disease.echoAbdomen==="他院で施行済"?"他院施行済":data.disease.echoAbdomen==="健診で施行済"?"健診施行済":data.disease.echoAbdomen||"未選択"}（必ず1行に横配置）
 ---------------------------------------------
 身長:○cm　初診時:○kg${bmi ? `（BMI ${bmi}）` : ""}　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
@@ -406,7 +415,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               <div style={{flex:1,minWidth:200}}>
                 <label style={lbl({color:"#2b6cb0"})}>頚部エコー（必須・年1回）</label>
                 <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
-                  {["他院で施行済","健診で施行済"].map(v=>(
+                  {["他院で施行済","健診で施行済","希望なし"].map(v=>(
                     <button key={v} style={{...btn(d.disease.echoNeck===v,"#2b6cb0"),padding:"6px 10px",fontSize:12}} onClick={()=>up("disease","echoNeck",v)}>{v}</button>
                   ))}
                 </div>
@@ -476,8 +485,22 @@ LINE登録ご案内→済　登録確認未・登録できない
           )}
           <div style={{paddingLeft:12,borderLeft:"3px solid #6b3fa8",marginBottom:14}}>
             <label style={lbl({color:"#6b3fa8",fontSize:11})}>その他の家族歴（自由記入・任意）</label>
-            <div style={{fontSize:11,color:"#8a7ab8",marginBottom:6,lineHeight:1.6}}>上のボタンにない家族歴を記入（例：母がバセドウ病、姉が橋本病、父が甲状腺癌）</div>
-            <input style={inp()} placeholder="例：母がバセドウ病（○○病院で内服中）" value={d.history.fhOther||""} onChange={e=>up("history","fhOther",e.target.value)}/>
+            <div style={{fontSize:11,color:"#8a7ab8",marginBottom:6,lineHeight:1.6}}>上のボタンにない家族歴を記入（例：母／バセドウ病）</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
+              {["父","母","兄弟・姉妹","祖父","祖母","子"].map(v=>(
+                <button key={v} style={{...btn(d.history.fhOtherWho===v,"#6b3fa8"),padding:"5px 10px",fontSize:12}} onClick={()=>up("history","fhOtherWho",d.history.fhOtherWho===v?"":v)}>{v}</button>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              <div style={{flex:"1 1 130px"}}>
+                <label style={lbl({color:"#6b3fa8",fontSize:11})}>誰が</label>
+                <input style={inp()} placeholder="例：母" value={d.history.fhOtherWho||""} onChange={e=>up("history","fhOtherWho",e.target.value)}/>
+              </div>
+              <div style={{flex:"2 1 220px"}}>
+                <label style={lbl({color:"#6b3fa8",fontSize:11})}>病気名</label>
+                <input style={inp()} placeholder="例：バセドウ病" value={d.history.fhOtherDisease||""} onChange={e=>up("history","fhOtherDisease",e.target.value)}/>
+              </div>
+            </div>
           </div>
           <label style={lbl()}>飲酒歴</label>
           <div style={{marginBottom:8}}>
