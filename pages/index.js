@@ -38,13 +38,14 @@ const CATEGORIES = [
   {
     id: 'other',
     label: 'その他',
-    sublabel: '高血圧・脂質異常症 / 睡眠時無呼吸症候群',
+    sublabel: '高血圧・脂質異常症 / 内分泌 / 睡眠時無呼吸症候群',
     emoji: '🌙',
     color: '#5a4fa8',
     bg: 'linear-gradient(135deg, #eef2fb, #f5f4ff)',
     border: '#c8c0ee',
     formats: [
       { id: 'hthl', href: '/hthl', label: '高血圧・脂質異常症',   sublabel: 'HT / HL',        emoji: '💊', color: '#2d8653', bg: 'linear-gradient(135deg, #e8f8ee, #f0fff4)', border: '#9ae6b4' },
+      { id: 'endocrine', href: '/endocrine', label: '内分泌',       sublabel: '主病名は医師が問診', emoji: '🧬', color: '#0e7490', bg: 'linear-gradient(135deg, #e6f7fb, #f0fbff)', border: '#7dd3e8' },
       { id: 'sas',  href: '/sas',  label: '睡眠時無呼吸症候群', sublabel: 'SAS / CPAP継続', emoji: '🌙', color: '#5a4fa8', bg: 'linear-gradient(135deg, #eef2fb, #f5f4ff)', border: '#c8c0ee' },
     ],
   },

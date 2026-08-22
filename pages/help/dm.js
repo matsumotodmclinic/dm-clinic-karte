@@ -10,7 +10,7 @@
 //   7. /list (一覧、 30 秒自動更新、 検索、 新規→完了)
 //   8. /detail/[id] (詳細、 再生成、 削除、 ステータス変更)
 //   9. SAS フォームの DM 差分問診 (採血で DM 確定時)
-//   10. プロンプト二重管理の注意 (8 ファイル同期、 修正時の落とし穴)
+//   10. プロンプト二重管理の注意 (9 ファイル同期、 修正時の落とし穴)
 //   11. 個人情報の取扱い (PII の境界、 audit_logs ルール)
 //   12. シナリオ別 対応集 / トラブルシューティング
 //
@@ -42,7 +42,7 @@ const TOC = [
   { id: 'list',           icon: '📋', title: '/list 問診一覧 (30 秒自動更新・検索・完了化)' },
   { id: 'detail',         icon: '🔍', title: '/detail/[id] 詳細 (カルテ表示・再生成・削除)' },
   { id: 'sas-dmdiff',     icon: '💤', title: 'SAS フォームの DM 差分問診 (採血で DM 判明時)' },
-  { id: 'prompt-sync',    icon: '🔁', title: 'プロンプト二重管理 (8 ファイル同期の注意)' },
+  { id: 'prompt-sync',    icon: '🔁', title: 'プロンプト二重管理 (9 ファイル同期の注意)' },
   { id: 'pii',            icon: '🔒', title: '個人情報 (PII) の取扱い と audit_logs ルール' },
   { id: 'scenarios',      icon: '💡', title: 'シナリオ別 対応集' },
   { id: 'troubleshoot',   icon: '🩹', title: 'トラブルシューティング' },
@@ -553,14 +553,14 @@ export default function DmGuidePage() {
         </Section>
 
         {/* ========== プロンプト同期 ========== */}
-        <Section id="prompt-sync" icon="🔁" title="プロンプト二重管理 (8 ファイル同期の注意)" themeColor={THEME}>
+        <Section id="prompt-sync" icon="🔁" title="プロンプト二重管理 (9 ファイル同期の注意)" themeColor={THEME}>
           <Box color="danger">
-            <strong>⚠️ プロンプト修正時は 8 ファイル全てを同期してください</strong>。 片方だけ修正すると
+            <strong>⚠️ プロンプト修正時は 9 ファイル全てを同期してください</strong>。 片方だけ修正すると
             初回生成 (経路 A) と再生成 (経路 B) で<strong>カルテの出力が一致しなくなり</strong>、
             医師がカルテを見返した時に「あれ、 前回と書式が違う」 という事故が起きます。
           </Box>
 
-          <Subh>修正対象 8 ファイル</Subh>
+          <Subh>修正対象 9 ファイル</Subh>
           <Table headers={['経路', 'ファイル', '対象 form_type']} themeColor={THEME}>
             <Tr><Td>A</Td><Td><Code>components/DMIntakeTool.js</Code></Td><Td>DM 基本</Td></Tr>
             <Tr><Td>A</Td><Td><Code>components/T1DIntakeTool.js</Code></Td><Td>1 型糖尿病</Td></Tr>
@@ -569,7 +569,8 @@ export default function DmGuidePage() {
             <Tr><Td>A</Td><Td><Code>components/GDMIntakeTool.js</Code></Td><Td>妊娠糖尿病</Td></Tr>
             <Tr><Td>A</Td><Td><Code>components/RHIntakeTool.js</Code></Td><Td>反応性低血糖</Td></Tr>
             <Tr><Td>A</Td><Td><Code>components/SASIntakeTool.js</Code></Td><Td>睡眠時無呼吸症候群</Td></Tr>
-            <Tr highlight><Td>B</Td><Td><Code>pages/api/generate-karte.js</Code></Td><Td><strong>全 7 form_type を 1 ファイルに集約</strong></Td></Tr>
+            <Tr><Td>A</Td><Td><Code>components/EndocrineIntakeTool.js</Code></Td><Td>内分泌</Td></Tr>
+            <Tr highlight><Td>B</Td><Td><Code>pages/api/generate-karte.js</Code></Td><Td><strong>全 8 form_type を 1 ファイルに集約</strong></Td></Tr>
           </Table>
 
           <Subh>修正の手順 (推奨)</Subh>

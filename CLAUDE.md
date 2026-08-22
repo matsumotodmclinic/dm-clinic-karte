@@ -60,7 +60,7 @@
 │       └── questionnaire/detail.js # GET: 単一レコード取得
 ```
 
-## 13の問診フォーム（2026-05-09時点 step構成）
+## 14の問診フォーム（2026-08-22時点 step構成）
 
 ### 糖尿病関連（6フォーム）
 
@@ -91,11 +91,20 @@
 - 申し送りに「確定診断は医師が行いカルテ記載を完了する」自動付与
 - 腫大（異常なし）・腺腫（悪性疑い）は当日終診 or 紹介
 
-### その他（1フォーム）
+### その他（3フォーム）
 
 | form_type | コンポーネント | パス | ステップ |
 |---|---|---|---|
+| 高血圧・脂質異常症 | HTHLIntakeTool | /hthl | （上記 糖尿病関連の表を参照。カテゴリ表示上は「その他」に属する） |
 | 睡眠時無呼吸症候群 | SASIntakeTool | /sas | 受診理由→**SAS区分・症状**→既往・生活歴→体格・要望→**病歴・経緯の聴取** |
+| 内分泌 | EndocrineIntakeTool | /endocrine | 受診理由→病名・検査（**病名選択欄なし**）→既往・生活歴→体格・要望→**病歴・経緯の聴取** |
+
+内分泌フォーム（2026-08-22追加）は HTHL のコピーで、**主病名（＃）の選択欄を持たない**。
+内分泌はバリエーションが豊富なため、主病名は医師が診察時に直接問診して記載する運用。
+- カルテ生成でも ＃主病名行は出力させない（プロンプトに明記）
+- 申し送りに「□主病名：医師の診察時に確定・記載」を自動付与
+- HTHL 固有の「◎甲状腺3項目追加済」「□健診・前医採血でLDL-C140mg/dl以上のため〜」は削除
+- 「その他の病名・既往歴」欄・エコー欄はそのまま残している
 
 ### 「病歴・経緯の聴取」step（2026-04-26追加）
 全フォーム最終 step。VoiceMemoSection 2つを集約:
@@ -118,8 +127,8 @@ DMのみ「病気について」step を解体し以下に分散:
 `detail/[id].js` → `/api/generate-karte`（サーバー側でプロンプト組立）→ Claude API → `/api/questionnaire` PATCH で上書き
 
 ### ⚠️ プロンプト二重管理（最重要注意点）
-プロンプトは経路A（コンポーネント内、7ファイル）と経路B（generate-karte.js、7 form_type分）の**計8箇所に同一内容が存在**する。
-**プロンプト修正時は必ず8ファイル全て同期すること。** 片方だけだと初回生成と再生成で不整合が出る。
+プロンプトは経路A（コンポーネント内、8ファイル）と経路B（generate-karte.js、8 form_type分）の**計9箇所に同一内容が存在**する。
+**プロンプト修正時は必ず9ファイル全て同期すること。** 片方だけだと初回生成と再生成で不整合が出る。
 
 修正対象パターン:
 ```
@@ -130,7 +139,8 @@ components/HTHLIntakeTool.js     (高血圧・脂質異常症 client)
 components/GDMIntakeTool.js      (妊娠糖尿病 client)
 components/RHIntakeTool.js       (反応性低血糖 client)
 components/SASIntakeTool.js      (睡眠時無呼吸症候群 client)
-pages/api/generate-karte.js      (再生成用 server, 7 form_type 全部含む)
+components/EndocrineIntakeTool.js (内分泌 client)
+pages/api/generate-karte.js      (再生成用 server, 8 form_type 全部含む)
 ```
 
 ### SAS フォームの dmDiff（採血後 DM 判明時の差分問診）
@@ -367,6 +377,22 @@ dmDiff フォームで聞く項目（DM基本との差分のみ）:
 ## タスク履歴
 
 （ここに完了タスクを追記していく）
+
+### 2026-08-22 内分泌フォーム追加セッション
+
+#### 新規追加: 14番目のフォーム「内分泌」（トップの【その他】カテゴリ内）
+- `components/EndocrineIntakeTool.js` 新規（`HTHLIntakeTool.js` のコピーベース）
+- `pages/endocrine.js` re-export
+- `pages/index.js` の「その他」カテゴリに 内分泌カード追加（🧬 / #0e7490）
+- `pages/api/generate-karte.js` に `内分泌` 分岐追加 + ALLOWED_FORM_TYPES 13→14
+
+#### HTHL からの差分（これ以外は全て HTHL と同一）
+- 「病名・検査」step の **病名選択欄（IGT / HT / HL）を削除**。代わりに「主病名は医師が診察時に問診」の案内ボックスを表示
+- `initialData.disease` から `igt` / `ht` / `hl` / `thyroidAdded` を削除
+- プロンプト: `＃IGT / ＃HT / ＃HL` 行を削除し「主病名の＃行は推測して出力しない」ルールを明記
+- プロンプト: HTHL 固有の「◎甲状腺3項目追加済」「□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。」を削除
+- 申し送りに `□主病名：医師の診察時に確定・記載` を全例付与
+- 「気になる理由」の選択肢を「家族に高血圧・脂質異常症の方がいる」→「家族に内分泌疾患の方がいる」に変更
 
 ### 2026-05-09 SAS問診追加セッション
 
