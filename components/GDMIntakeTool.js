@@ -177,7 +177,7 @@ ${getCurrentMonth()}：（受診理由1〜2行${data.voiceMemo?.aiSummary ? '。
 ---------------------------------------------
 ${buildEchoLine(data.disease.echoNeck, data.disease.echoAbdomen)}（必ず1行に横配置）
 ---------------------------------------------
-身長:○cm　初診時:○kg${bmiNow ? `（BMI ${bmiNow}）` : ""}　20歳時:○kg　max体重○kg(○歳)
+身長:○cm　初診時:○kg${bmiNow ? `（BMI ${bmiNow}）` : ""}　妊娠前:○kg　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
 【事前聴取時　申し送り事項】
 □通院のご案内をお渡し済
