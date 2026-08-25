@@ -55,7 +55,7 @@ const initialData = {
   },
   disease: {
     dmOnsetEra: "令和", dmOnset: "", dmOnsetUnknown: false,
-    ht: false, hl: false, thyroidAdded: false, insulinUse: false,
+    ht: false, hl: false, insulinUse: false,
     gastricCancer:  { selected: false, resection: "", surgeryType: "", surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", visitFreq: "", meds: "" },
     pancreasCancer: { selected: false, surgeryType: "", resection: "", surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", visitFreq: "", meds: "" },
     ihd:            { selected: false, treatment: "", surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", visitFreq: "", meds: "" },
