@@ -21,6 +21,7 @@ import { dirname, join } from 'node:path'
 import { buildKartePrompt } from '../../lib/buildKartePrompt.js'
 import { buildOtherDiseasesText, pickOtherDiseases } from '../../lib/otherDiseases.js'
 import { formatEcho, buildEchoLine } from '../../lib/echo.js'
+import { buildDmDxNoteLine, buildPastValuesText, insertDmDxNote } from '../../lib/dmDxNote.js'
 import { FIXTURES, ENDOCRINE_WITH_CAREPLAN, THYROID_FIXTURE } from './fixtures.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -115,6 +116,78 @@ describe('lib/echo', () => {
 
   test('1行の組み立て（全角スペース区切り）', () => {
     assert.equal(buildEchoLine('希望なし', '他院で施行済'), '頚部エコー：希望なし　腹部エコー：他院施行済')
+  })
+})
+
+describe('lib/dmDxNote', () => {
+  const KARTE = [
+    '【事前聴取時　申し送り事項】',
+    '□通院のご案内をお渡し済',
+    '□血糖、HbA1cの結果により上段の診断を確定してください',
+    '【診察にあたっての要望】なし',
+    '---------------------------------------------',
+  ].join('\n')
+
+  test('過去の値は入力のあった項目だけを並べる', () => {
+    assert.equal(
+      buildPastValuesText({ fbs: '132', ppbs: '', hba1c: '6.6' }),
+      '空腹時血糖 132mg/dl・HbA1c 6.6%'
+    )
+    assert.equal(buildPastValuesText({}), '')
+    assert.equal(buildPastValuesText(undefined), '')
+  })
+
+  test('診断確定：今回のHbA1cと過去の値の組み合わせを根拠として書く', () => {
+    const line = buildDmDxNoteLine({ decision: 'diagnosed', hba1c: '6.4', past: { fbs: '132' } })
+    assert.ok(line.includes('今回HbA1c 6.4%'))
+    assert.ok(line.includes('過去の空腹時血糖 132mg/dl'))
+    assert.ok(line.includes('GAD・CPRを追加'))
+  })
+
+  test('見送り：GAD・CPRを削除 と書く（追加ではない）', () => {
+    const line = buildDmDxNoteLine({ decision: 'deferred', hba1c: '6.4' })
+    assert.ok(line.includes('見送り'))
+    assert.ok(line.includes('GAD・CPRを削除'))
+    assert.ok(!line.includes('GAD・CPRを追加'))
+  })
+
+  test('既往ありは過去の個別の値を書かない（診断済みなので根拠として不要）', () => {
+    const line = buildDmDxNoteLine({ decision: 'known', hba1c: '6.2', past: { fbs: '132' } })
+    assert.ok(line.includes('過去に糖尿病の診断歴'))
+    assert.ok(!line.includes('132'))
+  })
+
+  test('今回のHbA1c または 選択 が無ければ行を作らない', () => {
+    assert.equal(buildDmDxNoteLine({ decision: 'diagnosed', hba1c: '' }), '')
+    assert.equal(buildDmDxNoteLine({ decision: '', hba1c: '6.4' }), '')
+    assert.equal(buildDmDxNoteLine(), '')
+  })
+
+  test('【診察にあたっての要望】の直前に挿入する', () => {
+    const line = buildDmDxNoteLine({ decision: 'diagnosed', hba1c: '6.4' })
+    const out = insertDmDxNote(KARTE, line).split('\n')
+    assert.equal(out[3], line)
+    assert.equal(out[4], '【診察にあたっての要望】なし')
+  })
+
+  test('選び直しても重複しない（既存の同種行を置き換える）', () => {
+    const first  = buildDmDxNoteLine({ decision: 'diagnosed', hba1c: '6.4' })
+    const second = buildDmDxNoteLine({ decision: 'deferred',  hba1c: '6.4' })
+    const out = insertDmDxNote(insertDmDxNote(KARTE, first), second)
+    assert.equal(out.split('\n').filter(l => l.startsWith('□今回HbA1c')).length, 1)
+    assert.ok(out.includes(second))
+    assert.ok(!out.includes(first))
+  })
+
+  test('空文字を渡すと追記した行だけを取り消す', () => {
+    const line = buildDmDxNoteLine({ decision: 'diagnosed', hba1c: '6.4' })
+    assert.equal(insertDmDxNote(insertDmDxNote(KARTE, line), ''), KARTE)
+  })
+
+  test('【診察にあたっての要望】が無いカルテでは末尾に足す', () => {
+    const line = buildDmDxNoteLine({ decision: 'deferred', hba1c: '6.5' })
+    const out = insertDmDxNote('□通院のご案内をお渡し済', line).split('\n')
+    assert.equal(out[out.length - 1], line)
   })
 })
 

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import SASDmDiffEditor from '../../components/SASDmDiffEditor';
+import DmDxNoteEditor from '../../components/DmDxNoteEditor';
 import { copyKarteToClipboard } from '../../lib/copyKarte';
+import { insertDmDxNote } from '../../lib/dmDxNote';
 
 // 確認中を削除：新規→完了の2ステップ
 const STATUS_LABEL = { new: '新規', done: '完了' };
@@ -17,6 +19,7 @@ export default function DetailPage() {
   const [karte, setKarte]       = useState('');
   const [saveMsg, setSaveMsg]   = useState('');
   const [showDmDiffEditor, setShowDmDiffEditor] = useState(false);
+  const [showDmDxNote, setShowDmDxNote] = useState(false);
   const [savingDmDiff, setSavingDmDiff] = useState(false);
   const [dmDiffMsg, setDmDiffMsg] = useState('');
 
@@ -132,6 +135,7 @@ export default function DetailPage() {
   const statusLabel = STATUS_LABEL[record.status] || record.status;
   const isSAS = record.form_type === '睡眠時無呼吸症候群';
   const dmDiffCompleted = !!record.form_data?.dmDiff?.completed;
+  const isDM = record.form_type === 'DM基本';
 
   return (
     <div style={{ minHeight:'100vh', background:'#f7faff', fontFamily:"'Noto Sans JP',sans-serif", padding:'16px' }}>
@@ -209,6 +213,31 @@ export default function DetailPage() {
                   saving={savingDmDiff}
                 />
               </div>
+            )}
+          </div>
+        )}
+
+        {/* DM基本: 診断グレーゾーンの医師確認結果を申し送りに追記（採血後に使う） */}
+        {isDM && karte && (
+          <div style={{ background:'#fff', borderRadius:16, padding:'18px 20px', marginBottom:12, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', border:'1.5px dashed #bcd4f8' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10, marginBottom: showDmDxNote ? 14 : 0 }}>
+              <div>
+                <div style={{ fontSize:14, fontWeight:900, color:'#1a5fa8', marginBottom:4 }}>
+                  🩸 採血後：糖尿病診断の確認結果（GAD・CPRの算定根拠）
+                </div>
+                <div style={{ fontSize:12, color:'#5580a8', lineHeight:1.6 }}>
+                  HbA1c がグレーゾーン（6.3〜6.6前後）で医師に確認した場合、その結果を申し送りに追記します。
+                </div>
+              </div>
+              {!showDmDxNote && (
+                <button onClick={() => setShowDmDxNote(true)}
+                  style={{ padding:'10px 18px', borderRadius:8, border:'none', background:'linear-gradient(135deg,#1a5fa8,#3b82f6)', color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer' }}>
+                  ＋ 確認結果を入力
+                </button>
+              )}
+            </div>
+            {showDmDxNote && (
+              <DmDxNoteEditor onInsert={line => setKarte(prev => insertDmDxNote(prev, line))} />
             )}
           </div>
         )}
