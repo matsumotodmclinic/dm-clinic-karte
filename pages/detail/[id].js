@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import SASDmDiffEditor from '../../components/SASDmDiffEditor';
+import DmDiffEditor from '../../components/DmDiffEditor';
 import DmDxNoteEditor from '../../components/DmDxNoteEditor';
 import { copyKarteToClipboard } from '../../lib/copyKarte';
 import { insertDmDxNote } from '../../lib/dmDxNote';
@@ -133,9 +133,11 @@ export default function DetailPage() {
 
   const statusColor = STATUS_COLOR[record.status] || '#718096';
   const statusLabel = STATUS_LABEL[record.status] || record.status;
-  const isSAS = record.form_type === '睡眠時無呼吸症候群';
   const dmDiffCompleted = !!record.form_data?.dmDiff?.completed;
   const isDM = record.form_type === 'DM基本';
+  // 全例当院で事前採血を行うフォーム。HbA1c 高値で糖尿病が判明したら
+  // ここで差分だけ追加聴取し、再生成で ＃糖尿病 を含む統合カルテにする。
+  const canDmDiff = ['睡眠時無呼吸症候群', '高血圧・脂質異常症', '反応性低血糖'].includes(record.form_type);
 
   return (
     <div style={{ minHeight:'100vh', background:'#f7faff', fontFamily:"'Noto Sans JP',sans-serif", padding:'16px' }}>
@@ -178,8 +180,9 @@ export default function DetailPage() {
           )}
         </div>
 
-        {/* SAS: DM差分問診（採血で糖尿病判明時にスタッフが追加聴取） */}
-        {isSAS && (
+        {/* DM差分問診（事前採血で糖尿病判明時にスタッフが追加聴取）
+            SAS / 高血圧・脂質異常症 / 反応性低血糖 で表示 */}
+        {canDmDiff && (
           <div style={{ background:'#fff', borderRadius:16, padding:'18px 20px', marginBottom:12, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', border: dmDiffCompleted ? '2px solid #1a5fa8' : '1.5px dashed #bcd4f8' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10, marginBottom: showDmDiffEditor ? 12 : 0 }}>
               <div>
@@ -188,7 +191,7 @@ export default function DetailPage() {
                 </div>
                 <div style={{ fontSize:12, color:'#5580a8', lineHeight:1.6 }}>
                   {dmDiffCompleted
-                    ? '採血で糖尿病が判明した患者の追加聴取が完了しています。再生成すると SAS+DM 統合カルテになります。'
+                    ? '採血で糖尿病が判明した患者の追加聴取が完了しています。再生成すると ＃糖尿病 を含む統合カルテになります。'
                     : '当院の事前採血で HbA1c が高値で糖尿病と診断された場合、DM 初期評価に必要な追加項目をここで聴取してください。'}
                 </div>
               </div>
@@ -206,7 +209,7 @@ export default function DetailPage() {
             )}
             {showDmDiffEditor && (
               <div style={{ marginTop:14 }}>
-                <SASDmDiffEditor
+                <DmDiffEditor
                   value={record.form_data?.dmDiff}
                   onSave={handleSaveDmDiff}
                   onCancel={() => setShowDmDiffEditor(false)}

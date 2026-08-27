@@ -1,7 +1,11 @@
-// SAS問診の DM差分問診 入力 UI
+// DM差分問診 入力 UI
 // 詳細画面 (pages/detail/[id].js) からインラインで使う。
-// SAS患者で当院採血により糖尿病が判明した場合、スタッフが追加聴取して
-// form_data.dmDiff に保存する。保存後に「再生成」を押すと、SAS+DM 統合カルテが生成される。
+//
+// 睡眠時無呼吸症候群 / 高血圧・脂質異常症 / 反応性低血糖 は全例当院で事前採血を行う。
+// その HbA1c 高値で糖尿病が判明した場合、これらの問診票は糖尿病の初期評価に必要な
+// 項目を聞いていないため、ここで差分だけを追加聴取して form_data.dmDiff に保存する。
+// 保存後に「再生成」を押すと、元の主病名 ＋ ＃糖尿病 の統合カルテが生成される。
+// （プロンプト側は lib/dmDiff.js と lib/buildKartePrompt.js）
 
 import { useState } from 'react'
 
@@ -32,7 +36,7 @@ const empty = () => ({
   freeText: '',
 })
 
-export default function SASDmDiffEditor({ value, onSave, onCancel, saving }) {
+export default function DmDiffEditor({ value, onSave, onCancel, saving }) {
   const [d, setD] = useState({ ...empty(), ...(value || {}) })
   const u = (k, v) => setD(p => ({ ...p, [k]: v }))
   const uN = (k, sub, v) => setD(p => ({ ...p, [k]: { ...p[k], [sub]: v } }))
@@ -54,7 +58,7 @@ export default function SASDmDiffEditor({ value, onSave, onCancel, saving }) {
     <div style={{ background:'#fff', border:'2px solid #1a5fa8', borderRadius:12, padding:'18px 20px', marginBottom:14 }}>
       <div style={{ fontSize:14, fontWeight:900, color:'#1a5fa8', marginBottom:6 }}>📝 DM差分問診（採血で糖尿病判明後）</div>
       <div style={{ fontSize:12, color:'#5580a8', marginBottom:14, lineHeight:1.6 }}>
-        SAS問診で取得済みの項目以外で、糖尿病初期評価に必要な項目のみ追加聴取してください。保存後、「🔄 再生成」ボタンを押すと SAS+DM 統合カルテが生成されます。
+        元の問診で取得済みの項目以外で、糖尿病初期評価に必要な項目のみ追加聴取してください。保存後、「🔄 再生成」ボタンを押すと ＃糖尿病 を含む統合カルテが生成されます。
       </div>
 
       <label style={lbl()}>体重減少（過去数ヶ月）</label>

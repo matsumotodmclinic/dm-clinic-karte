@@ -179,6 +179,29 @@ export const FIXTURES = {
   },
 }
 
+// DM差分問診（採血で糖尿病が判明した後にスタッフが追加聴取した内容）。
+// 経路B（再生成）専用。SAS / 高血圧・脂質異常症 / 反応性低血糖 で共通。
+export const DM_DIFF = {
+  completed: true,
+  weightLoss: 'あり（3kg以上）',
+  dmSymptoms: { selected: ['のどが渇く', '足のしびれ', 'その他'], otherText: '夜間頻尿' },
+  pastHbA1c: 'R5の健診で6.2%を指摘',
+  diabetesOnsetEra: '令和', diabetesOnsetYear: '8', diabetesOnsetUnknown: false, diabetesOnsetNote: '今回判明',
+  insulinUse: false,
+  fhDm: true, fhDmWho: ['母'], fhHl: false,
+  eyeFundusCheck: '受けていない',
+  eyeNotebook: '持っていない',
+  eyeClinic: '',
+  retinopathy: '不明',
+  importantPast: { gastricCancer: false, pancreasCancer: false, ihd: true, stroke: false, detail: 'H30 PCI（上尾中央総合病院）' },
+  treatmentWish: '内服から始めたい',
+  freeText: '',
+}
+
+export const SAS_WITH_DM_DIFF  = { ...FIXTURES['睡眠時無呼吸症候群'], dmDiff: DM_DIFF }
+export const HTHL_WITH_DM_DIFF = { ...FIXTURES['高血圧・脂質異常症'], dmDiff: DM_DIFF }
+export const RH_WITH_DM_DIFF   = { ...FIXTURES['反応性低血糖'], dmDiff: DM_DIFF }
+
 // 内分泌の「生活習慣病あり」バリエーション（療養計画書が出ること）
 export const ENDOCRINE_WITH_CAREPLAN = {
   ...FIXTURES['内分泌'],

@@ -523,11 +523,11 @@ export default function DmGuidePage() {
         </Section>
 
         {/* ========== SAS DM 差分 ========== */}
-        <Section id="sas-dmdiff" icon="💤" title="SAS フォームの DM 差分問診 (採血で DM 判明時)" themeColor={THEME}>
+        <Section id="sas-dmdiff" icon="💤" title="DM 差分問診 (採血で DM 判明時)" themeColor={THEME}>
           <p>
-            SAS (睡眠時無呼吸症候群) 問診は <Code>/sas</Code> で別フォームですが、 当院の事前採血で
-            <strong>HbA1c 高値 → 糖尿病確定</strong> が判明した場合、 詳細画面で <Code>SASDmDiffEditor</Code> を
-            起動して DM 差分問診を追加入力 → 再生成すると <strong>SAS + DM 統合カルテ</strong> に切り替わります。
+            SAS (睡眠時無呼吸症候群) / 高血圧・脂質異常症 / 反応性低血糖 は全例当院で事前採血を行います。
+            その <strong>HbA1c 高値 → 糖尿病確定</strong> が判明した場合、 詳細画面で <Code>DmDiffEditor</Code> を
+            起動して DM 差分問診を追加入力 → 再生成すると <strong>＃糖尿病 を含む統合カルテ</strong> に切り替わります。
           </p>
 
           <Subh>運用フロー</Subh>

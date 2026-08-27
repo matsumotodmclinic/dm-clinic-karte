@@ -22,7 +22,10 @@ import { buildKartePrompt } from '../../lib/buildKartePrompt.js'
 import { buildOtherDiseasesText, pickOtherDiseases } from '../../lib/otherDiseases.js'
 import { formatEcho, buildEchoLine } from '../../lib/echo.js'
 import { buildDmDxNoteLine, buildPastValuesText, insertDmDxNote } from '../../lib/dmDxNote.js'
-import { FIXTURES, ENDOCRINE_WITH_CAREPLAN, THYROID_FIXTURE } from './fixtures.mjs'
+import {
+  FIXTURES, ENDOCRINE_WITH_CAREPLAN, THYROID_FIXTURE,
+  SAS_WITH_DM_DIFF, HTHL_WITH_DM_DIFF, RH_WITH_DM_DIFF,
+} from './fixtures.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SNAP_DIR = join(HERE, '__snapshots__')
@@ -288,6 +291,52 @@ describe('buildKartePrompt: 甲状腺6フォーム', () => {
   }
 })
 
+describe('buildKartePrompt: DM差分問診（採血で糖尿病判明）', () => {
+  const CASES = [
+    ['睡眠時無呼吸症候群', SAS_WITH_DM_DIFF],
+    ['高血圧・脂質異常症', HTHL_WITH_DM_DIFF],
+    ['反応性低血糖',       RH_WITH_DM_DIFF],
+  ]
+
+  for (const [formType, formData] of CASES) {
+    test(`${formType}: dmDiff ありで ＃糖尿病 と DM初期評価が入る`, () => {
+      const { prompt } = buildKartePrompt(formType, formData)
+      assert.ok(prompt.includes('【DM差分問診'), 'DM差分問診データブロックが無い')
+      assert.ok(prompt.includes('＃糖尿病'), '＃糖尿病 の指示が無い')
+      assert.ok(prompt.includes('□採血で DM判明 → DM初期評価追加実施済'))
+      assert.ok(prompt.includes('DM基本セット'), 'フッターが DM基本セット になっていない')
+      // 差分問診の中身が実際に渡っていること
+      assert.ok(prompt.includes('のどが渇く・足のしびれ'))
+      assert.ok(prompt.includes('その他: 夜間頻尿'))
+      assert.ok(prompt.includes('虚血性心疾患'))
+      // 眼底未受診・手帳なしなので連携手帳の申し送りが出ること
+      assert.ok(prompt.includes('□糖尿病-眼科連携手帳をお渡し'))
+      assert.ok(!prompt.includes('undefined'))
+      assert.ok(!prompt.includes('[object Object]'))
+    })
+
+    test(`${formType}: dmDiff なしなら DM差分問診は一切出ない`, () => {
+      const { prompt } = buildKartePrompt(formType, FIXTURES[formType])
+      assert.ok(!prompt.includes('【DM差分問診'))
+      assert.ok(!prompt.includes('□採血で DM判明'))
+    })
+  }
+
+  test('高血圧・脂質異常症: 糖尿病判明時は ＃IGT ではなく ＃糖尿病 とする', () => {
+    const { prompt } = buildKartePrompt('高血圧・脂質異常症', HTHL_WITH_DM_DIFF)
+    assert.ok(prompt.includes('＃IGT は記載せず ＃糖尿病 とする'))
+    assert.ok(!prompt.includes('＃IGT（該当時のみ、受診理由の直後、空行なし）'))
+  })
+
+  test('反応性低血糖: ＃糖尿病 は ♯反応性低血糖疑い より前', () => {
+    const { prompt } = buildKartePrompt('反応性低血糖', RH_WITH_DM_DIFF)
+    const iDm = prompt.indexOf('＃糖尿病（採血で判明')
+    const iRh = prompt.indexOf('♯反応性低血糖疑い\n・低血糖が生じるタイミング')
+    assert.ok(iDm > -1 && iRh > -1)
+    assert.ok(iDm < iRh, '＃糖尿病 が ♯反応性低血糖疑い より後ろにある')
+  })
+})
+
 describe('buildKartePrompt: 未対応 form_type', () => {
   test('throw する（500 ではなく 400 にマップされる）', () => {
     assert.throws(() => buildKartePrompt('存在しない問診', FIXTURES['DM基本']), /未対応のform_type/)
@@ -308,4 +357,15 @@ describe('プロンプト全文スナップショット', () => {
     const { prompt } = buildKartePrompt('内分泌', ENDOCRINE_WITH_CAREPLAN)
     matchSnapshot('内分泌_生活習慣病あり', prompt)
   })
+
+  for (const [name, formType, formData] of [
+    ['睡眠時無呼吸症候群_DM差分あり', '睡眠時無呼吸症候群', SAS_WITH_DM_DIFF],
+    ['高血圧・脂質異常症_DM差分あり', '高血圧・脂質異常症', HTHL_WITH_DM_DIFF],
+    ['反応性低血糖_DM差分あり',       '反応性低血糖',       RH_WITH_DM_DIFF],
+  ]) {
+    test(name, () => {
+      const { prompt } = buildKartePrompt(formType, formData)
+      matchSnapshot(name, prompt)
+    })
+  }
 })
