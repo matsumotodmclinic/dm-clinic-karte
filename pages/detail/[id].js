@@ -137,7 +137,7 @@ export default function DetailPage() {
   const isDM = record.form_type === 'DM基本';
   // 全例当院で事前採血を行うフォーム。HbA1c 高値で糖尿病が判明したら
   // ここで差分だけ追加聴取し、再生成で ＃糖尿病 を含む統合カルテにする。
-  const canDmDiff = ['睡眠時無呼吸症候群', '高血圧・脂質異常症', '反応性低血糖'].includes(record.form_type);
+  const canDmDiff = ['睡眠時無呼吸症候群', '高血圧・脂質異常症', '反応性低血糖', '内分泌'].includes(record.form_type);
 
   return (
     <div style={{ minHeight:'100vh', background:'#f7faff', fontFamily:"'Noto Sans JP',sans-serif", padding:'16px' }}>

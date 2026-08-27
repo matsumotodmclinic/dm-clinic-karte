@@ -24,7 +24,7 @@ import { formatEcho, buildEchoLine } from '../../lib/echo.js'
 import { buildDmDxNoteLine, buildPastValuesText, insertDmDxNote } from '../../lib/dmDxNote.js'
 import {
   FIXTURES, ENDOCRINE_WITH_CAREPLAN, THYROID_FIXTURE,
-  SAS_WITH_DM_DIFF, HTHL_WITH_DM_DIFF, RH_WITH_DM_DIFF,
+  SAS_WITH_DM_DIFF, HTHL_WITH_DM_DIFF, RH_WITH_DM_DIFF, ENDOCRINE_WITH_DM_DIFF,
 } from './fixtures.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -296,6 +296,7 @@ describe('buildKartePrompt: DM差分問診（採血で糖尿病判明）', () =>
     ['睡眠時無呼吸症候群', SAS_WITH_DM_DIFF],
     ['高血圧・脂質異常症', HTHL_WITH_DM_DIFF],
     ['反応性低血糖',       RH_WITH_DM_DIFF],
+    ['内分泌',             ENDOCRINE_WITH_DM_DIFF],
   ]
 
   for (const [formType, formData] of CASES) {
@@ -326,6 +327,21 @@ describe('buildKartePrompt: DM差分問診（採血で糖尿病判明）', () =>
     const { prompt } = buildKartePrompt('高血圧・脂質異常症', HTHL_WITH_DM_DIFF)
     assert.ok(prompt.includes('＃IGT は記載せず ＃糖尿病 とする'))
     assert.ok(!prompt.includes('＃IGT（該当時のみ、受診理由の直後、空行なし）'))
+  })
+
+  test('内分泌: ＃糖尿病 だけが例外。内分泌の主病名は出さず □主病名 の行も残る', () => {
+    const { prompt } = buildKartePrompt('内分泌', ENDOCRINE_WITH_DM_DIFF)
+    assert.ok(prompt.includes('「＃で始まる行は出力しない」ルールの唯一の例外'))
+    assert.ok(prompt.includes('内分泌の主病名は引き続き出力しない'))
+    assert.ok(prompt.includes('□主病名：医師の診察時に確定・記載'))
+  })
+
+  test('内分泌: DM判明時は療養計画書が必要になる（生活習慣病チェックが無くても）', () => {
+    // FIXTURES['内分泌'] は carePlanDiseases が全 false ＝ 通常は療養計画書なし
+    const { prompt: without } = buildKartePrompt('内分泌', FIXTURES['内分泌'])
+    assert.ok(without.includes('の行は出力しない'))
+    const { prompt: with_ } = buildKartePrompt('内分泌', ENDOCRINE_WITH_DM_DIFF)
+    assert.ok(with_.includes('□初回療養計画書を作成済'))
   })
 
   test('反応性低血糖: ＃糖尿病 は ♯反応性低血糖疑い より前', () => {
@@ -362,6 +378,7 @@ describe('プロンプト全文スナップショット', () => {
     ['睡眠時無呼吸症候群_DM差分あり', '睡眠時無呼吸症候群', SAS_WITH_DM_DIFF],
     ['高血圧・脂質異常症_DM差分あり', '高血圧・脂質異常症', HTHL_WITH_DM_DIFF],
     ['反応性低血糖_DM差分あり',       '反応性低血糖',       RH_WITH_DM_DIFF],
+    ['内分泌_DM差分あり',             '内分泌',             ENDOCRINE_WITH_DM_DIFF],
   ]) {
     test(name, () => {
       const { prompt } = buildKartePrompt(formType, formData)

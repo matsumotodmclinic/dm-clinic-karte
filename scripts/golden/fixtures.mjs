@@ -201,6 +201,8 @@ export const DM_DIFF = {
 export const SAS_WITH_DM_DIFF  = { ...FIXTURES['睡眠時無呼吸症候群'], dmDiff: DM_DIFF }
 export const HTHL_WITH_DM_DIFF = { ...FIXTURES['高血圧・脂質異常症'], dmDiff: DM_DIFF }
 export const RH_WITH_DM_DIFF   = { ...FIXTURES['反応性低血糖'], dmDiff: DM_DIFF }
+// 内分泌は主病名（＃）を出力しないフォーム。DM判明時だけ ＃糖尿病 が例外的に出る
+export const ENDOCRINE_WITH_DM_DIFF = { ...FIXTURES['内分泌'], dmDiff: DM_DIFF }
 
 // 内分泌の「生活習慣病あり」バリエーション（療養計画書が出ること）
 export const ENDOCRINE_WITH_CAREPLAN = {
