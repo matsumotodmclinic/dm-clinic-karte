@@ -33,9 +33,12 @@ const UPDATE = process.env.UPDATE_SNAPSHOTS === '1'
 
 // スナップショット比較用の正規化
 //  ・和暦の現在月（R8.8 等）は実行日で変わるので伏せる
+//    直前が英数字のものは除外する（フッターの「CPR0.5以下の方は…」の R0.5 を
+//    巻き込んで CPR{NOW} にしてしまい、0.5 の変更を検知できなくなっていた）
 //  ・改行は LF に揃える（git の autocrlf でチェックアウト時に CRLF 化されるため、
 //    揃えないと Windows で再クローンした直後に全件落ちる）
-const stabilize = s => s.replace(/\r\n/g, '\n').replace(/R\d+\.\d+/g, 'R{NOW}')
+const WAREKI_NOW = /(?<![A-Za-z0-9])R\d{1,2}\.\d{1,2}(?!\d)/g
+const stabilize = s => s.replace(/\r\n/g, '\n').replace(WAREKI_NOW, 'R{NOW}')
 
 function matchSnapshot(name, actual) {
   if (!existsSync(SNAP_DIR)) mkdirSync(SNAP_DIR, { recursive: true })
@@ -119,6 +122,26 @@ describe('lib/echo', () => {
 
   test('1行の組み立て（全角スペース区切り）', () => {
     assert.equal(buildEchoLine('希望なし', '他院で施行済'), '頚部エコー：希望なし　腹部エコー：他院施行済')
+  })
+})
+
+describe('スナップショット正規化（stabilize）', () => {
+  test('和暦の現在月だけを伏せる', () => {
+    assert.equal(stabilize('R8.8：HbA1c'), 'R{NOW}：HbA1c')
+    assert.equal(stabilize('令和 R12.11 分'), '令和 R{NOW} 分')
+  })
+
+  test('CPR0.5 の 0.5 は伏せない（変更を検知できなくなるため）', () => {
+    const line = 'CPR0.5以下の方は今後半年ごとCPR測定を入れてください。'
+    assert.equal(stabilize(line), line)
+    assert.ok(stabilize(line).includes('CPR0.5'))
+  })
+
+  test('同じ行に現在月と CPR0.5 が混在しても正しく分ける', () => {
+    assert.equal(
+      stabilize('R8.8：HbA1c　CPR0.5以下'),
+      'R{NOW}：HbA1c　CPR0.5以下'
+    )
   })
 })
 
