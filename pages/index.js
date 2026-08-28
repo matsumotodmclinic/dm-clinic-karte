@@ -1,55 +1,99 @@
+// トップ（フォーム選択ハブ）
+//
+// 2026-08-29 デザイン刷新: 勤怠アプリと作法を統一した。
+//   - 絵文字アイコン → 線画SVG (components/LineIcon.js)
+//   - グラデーション → ベタ塗り
+//   - フォームごとの色 → カテゴリごとの色トークン (lib/uiTokens.js)
+//     ＝ 色は「どのカテゴリか」という意味だけを担う。フォームごとに色を変えない
+//   - 角丸を 10px に統一
+// 文言は一切変更していない（ボタンの絵文字だけ除去。勤怠の
+// 「ラベルは文字列一致・絵文字は除く」ルールに合わせたもの）。
+
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import { UI } from '../lib/uiTokens';
+import LineIcon from '../components/LineIcon';
 
+// 色は意味を担う: 青=糖尿病関連(中核) / 緑=甲状腺関連 / 紺=その他
 const CATEGORIES = [
   {
     id: 'dm',
     label: '糖尿病関連',
     sublabel: '2型DM / 1型DM / 妊娠糖尿病 / 小児1型 / 反応性低血糖',
-    emoji: '🩺',
-    color: '#1a5fa8',
-    bg: 'linear-gradient(135deg, #e8f0fe, #f0f7ff)',
-    border: '#bcd4f8',
+    icon: 'stethoscope',
+    tone: UI.primary,
     formats: [
-      { id: 'dm',      href: '/dm',      label: 'DM基本',       sublabel: '2型糖尿病',            emoji: '🩺',  color: '#1a5fa8', bg: 'linear-gradient(135deg, #e8f0fe, #f0f7ff)', border: '#bcd4f8' },
-      { id: 't1d',     href: '/t1d',     label: '1型糖尿病',     sublabel: '成人',                emoji: '💉',  color: '#c53030', bg: 'linear-gradient(135deg, #fff5f5, #fef2f2)', border: '#feb2b2' },
-      { id: 'gdm',     href: '/gdm',     label: '妊娠糖尿病',    sublabel: 'GDM / 糖尿病合併妊娠', emoji: '🤰', color: '#c05c8a', bg: 'linear-gradient(135deg, #fff0f7, #fff5fb)', border: '#f0b8d4' },
-      { id: 'ped-t1d', href: '/ped-t1d', label: '小児1型糖尿病', sublabel: '小児・思春期',          emoji: '👶', color: '#3182ce', bg: 'linear-gradient(135deg, #e8f4ff, #f0f7ff)', border: '#90cdf4' },
-      { id: 'rh',      href: '/rh',      label: '反応性低血糖',  sublabel: 'RH',                   emoji: '⚡', color: '#b45309', bg: 'linear-gradient(135deg, #fffbf0, #fff8f0)', border: '#f6ad55' },
+      { id: 'dm',      href: '/dm',      label: 'DM基本',       sublabel: '2型糖尿病',            icon: 'stethoscope' },
+      { id: 't1d',     href: '/t1d',     label: '1型糖尿病',     sublabel: '成人',                icon: 'syringe' },
+      { id: 'gdm',     href: '/gdm',     label: '妊娠糖尿病',    sublabel: 'GDM / 糖尿病合併妊娠', icon: 'pregnancy' },
+      { id: 'ped-t1d', href: '/ped-t1d', label: '小児1型糖尿病', sublabel: '小児・思春期',          icon: 'parent-child' },
+      { id: 'rh',      href: '/rh',      label: '反応性低血糖',  sublabel: 'RH',                   icon: 'glucose-drop' },
     ],
   },
   {
     id: 'thyroid',
     label: '甲状腺関連',
     sublabel: 'バセドウ病（初診・継続）/ 橋本病 / 甲状腺腫大 / 腺腫（経過・悪性疑い）',
-    emoji: '🦋',
-    color: '#0d7d6a',
-    bg: 'linear-gradient(135deg, #e6fff8, #f0fdf9)',
-    border: '#81e6d9',
+    icon: 'thyroid',
+    tone: UI.success,
     formats: [
-      { id: 'basedow-new',   href: '/thyroid?type=basedow-new',   label: 'バセドウ病（初診）',     sublabel: 'エコー上バセドウパターン・初診',  emoji: '🦋', color: '#0d7d6a', bg: 'linear-gradient(135deg, #e6fff8, #f0fdf9)', border: '#81e6d9' },
-      { id: 'basedow-cont',  href: '/thyroid?type=basedow-cont',  label: 'バセドウ病（継続）',     sublabel: '他院からの転院・継続治療',        emoji: '🦋', color: '#276749', bg: 'linear-gradient(135deg, #e6f7ee, #f0fdf5)', border: '#9ae6b4' },
-      { id: 'hashimoto',     href: '/thyroid?type=hashimoto',     label: '橋本病',                 sublabel: '甲状腺機能低下症疑い',            emoji: '🦋', color: '#2b6cb0', bg: 'linear-gradient(135deg, #e8f4ff, #f0f7ff)', border: '#90cdf4' },
-      { id: 'nodule-normal', href: '/thyroid?type=nodule-normal', label: '甲状腺腫大（異常なし）', sublabel: 'エコー上明らかな異常なし',         emoji: '🦋', color: '#5a4fa8', bg: 'linear-gradient(135deg, #f7faff, #f0f4ff)', border: '#c8c0ee' },
-      { id: 'adenoma',       href: '/thyroid?type=adenoma',       label: '甲状腺腺腫（経過観察）', sublabel: '結節あり・悪性低リスク',           emoji: '🦋', color: '#b45309', bg: 'linear-gradient(135deg, #fff8f0, #fffaf5)', border: '#f6ad55' },
-      { id: 'malignant',     href: '/thyroid?type=malignant',     label: '甲状腺腺腫（悪性疑い）', sublabel: '結節あり・悪性リスクあり',         emoji: '🦋', color: '#c53030', bg: 'linear-gradient(135deg, #fff5f5, #fef2f2)', border: '#feb2b2' },
+      { id: 'basedow-new',   href: '/thyroid?type=basedow-new',   label: 'バセドウ病（初診）',     sublabel: 'エコー上バセドウパターン・初診', icon: 'thyroid' },
+      { id: 'basedow-cont',  href: '/thyroid?type=basedow-cont',  label: 'バセドウ病（継続）',     sublabel: '他院からの転院・継続治療',       icon: 'thyroid' },
+      { id: 'hashimoto',     href: '/thyroid?type=hashimoto',     label: '橋本病',                 sublabel: '甲状腺機能低下症疑い',           icon: 'thyroid' },
+      { id: 'nodule-normal', href: '/thyroid?type=nodule-normal', label: '甲状腺腫大（異常なし）', sublabel: 'エコー上明らかな異常なし',        icon: 'thyroid' },
+      { id: 'adenoma',       href: '/thyroid?type=adenoma',       label: '甲状腺腺腫（経過観察）', sublabel: '結節あり・悪性低リスク',          icon: 'thyroid' },
+      { id: 'malignant',     href: '/thyroid?type=malignant',     label: '甲状腺腺腫（悪性疑い）', sublabel: '結節あり・悪性リスクあり',        icon: 'thyroid' },
     ],
   },
   {
     id: 'other',
     label: 'その他',
     sublabel: '高血圧・脂質異常症 / 内分泌 / 睡眠時無呼吸症候群',
-    emoji: '🌙',
-    color: '#5a4fa8',
-    bg: 'linear-gradient(135deg, #eef2fb, #f5f4ff)',
-    border: '#c8c0ee',
+    icon: 'moon',
+    tone: UI.fixed,
     formats: [
-      { id: 'hthl', href: '/hthl', label: '高血圧・脂質異常症',   sublabel: 'HT / HL',        emoji: '💊', color: '#2d8653', bg: 'linear-gradient(135deg, #e8f8ee, #f0fff4)', border: '#9ae6b4' },
-      { id: 'endocrine', href: '/endocrine', label: '内分泌',       sublabel: '主病名は医師が問診', emoji: '🧬', color: '#0e7490', bg: 'linear-gradient(135deg, #e6f7fb, #f0fbff)', border: '#7dd3e8' },
-      { id: 'sas',  href: '/sas',  label: '睡眠時無呼吸症候群', sublabel: 'SAS / CPAP継続', emoji: '🌙', color: '#5a4fa8', bg: 'linear-gradient(135deg, #eef2fb, #f5f4ff)', border: '#c8c0ee' },
+      { id: 'hthl',      href: '/hthl',      label: '高血圧・脂質異常症', sublabel: 'HT / HL',           icon: 'heart-pulse' },
+      { id: 'endocrine', href: '/endocrine', label: '内分泌',             sublabel: '主病名は医師が問診', icon: 'molecule' },
+      { id: 'sas',       href: '/sas',       label: '睡眠時無呼吸症候群', sublabel: 'SAS / CPAP継続',     icon: 'moon' },
     ],
   },
 ];
+
+const FONT = "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif";
+
+// アイコンチップ（淡色の丸 + 単色ストローク）
+function IconChip({ name, tone, size = 44 }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%',
+      background: tone.bg, color: tone.fg,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      flexShrink: 0,
+    }}>
+      <LineIcon name={name} size={size * 0.5} />
+    </div>
+  );
+}
+
+// ヘッダーの操作ボタン
+function ToolButton({ icon, label, onClick, tone, title }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 7,
+        padding: '9px 15px', borderRadius: 8,
+        border: `1px solid ${UI.border}`, background: UI.surface,
+        color: tone.fg, fontWeight: 700, fontSize: 13.5,
+        cursor: 'pointer', fontFamily: FONT,
+      }}
+    >
+      <LineIcon name={icon} size={17} />
+      {label}
+    </button>
+  );
+}
 
 export default function TopPage() {
   const router = useRouter();
@@ -63,136 +107,102 @@ export default function TopPage() {
 
   const cat = selectedCategory ? CATEGORIES.find(c => c.id === selectedCategory) : null;
 
+  // カード共通スタイル（カテゴリ / フォームで大きさだけ変える）
+  const card = (tone) => ({
+    display: 'flex', alignItems: 'center', gap: 15,
+    background: UI.surface,
+    border: `1px solid ${UI.border}`,
+    borderLeft: `3px solid ${tone.fg}`,
+    borderRadius: 10,
+    cursor: 'pointer', textAlign: 'left', width: '100%',
+    fontFamily: FONT,
+    transition: 'background 0.12s, border-color 0.12s',
+  });
+
+  const hoverOn  = (e, tone) => { e.currentTarget.style.background = tone.bg; };
+  const hoverOff = (e) => { e.currentTarget.style.background = UI.surface; };
+
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(160deg, #f0f4ff 0%, #f7faff 50%, #f0f7f4 100%)',
-      fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif",
-      padding: '32px 16px 48px',
+      background: UI.surfaceAlt,
+      fontFamily: FONT,
+      padding: '28px 16px 44px',
     }}>
       {/* ヘッダー */}
-      <div style={{ maxWidth: 640, margin: '0 auto 24px', textAlign: 'center' }}>
-        <div style={{
-          width: 64, height: 64, borderRadius: 18,
-          background: 'linear-gradient(135deg, #1a5fa8, #3b82f6)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 32, margin: '0 auto 16px',
-          boxShadow: '0 4px 20px rgba(26,95,168,0.2)',
-        }}>🏥</div>
-        <div style={{ fontSize: 13, color: '#6b9fd4', fontWeight: 700, letterSpacing: '0.1em', marginBottom: 6 }}>
+      <div style={{ maxWidth: 640, margin: '0 auto 20px' }}>
+        <div style={{ fontSize: 12, color: UI.textFaint, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 4 }}>
           まつもと糖尿病クリニック
         </div>
-        <div style={{ fontSize: 26, fontWeight: 900, color: '#1a2a4a', marginBottom: 8 }}>
+        <div style={{ fontSize: 24, fontWeight: 700, color: UI.text, letterSpacing: '0.01em' }}>
           初診事前問診
         </div>
-        <div style={{ fontSize: 14, color: '#7a9abf', lineHeight: 1.7 }}>
+        <div style={{ fontSize: 13, color: UI.textMuted, marginTop: 6 }}>
           {cat ? `${cat.label}のフォームを選択してください` : '該当するカテゴリを選択してください'}
         </div>
       </div>
 
-      {/* スタッフ向けボタン (左: 参照資料 / 右: 運用)、 2026-05-31 院長指示で完全ガイド+院内ハンドブックを追加 */}
-      <div style={{ maxWidth: 640, margin: '0 auto 20px', display: 'flex', gap: 8, justifyContent: 'space-between', flexWrap: 'wrap' }}>
-        {/* 左: スタッフ参照資料 (患者対応中の困りごと解決用) */}
+      {/* スタッフ向けボタン (左: 参照資料 / 右: 運用) */}
+      <div style={{ maxWidth: 640, margin: '0 auto 18px', display: 'flex', gap: 8, justifyContent: 'space-between', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button
-            onClick={() => router.push('/help')}
-            style={{ padding: '10px 18px', borderRadius: 10, border: '1.5px solid #c8e0f5', background: '#f0f7ff', color: '#1a5fa8', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+          <ToolButton icon="book" label="完全ガイド" tone={UI.primary}
             title="問診ツールの操作マニュアル (DM/T1D/SAS 等、 フォーム別)"
-          >
-            📖 完全ガイド
-          </button>
-          <button
-            onClick={() => router.push('/handbook')}
-            style={{ padding: '10px 18px', borderRadius: 10, border: '1.5px solid #c8e6c9', background: '#f1f8e9', color: '#2e7d32', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+            onClick={() => router.push('/help')} />
+          <ToolButton icon="book-medical" label="院内ハンドブック" tone={UI.success}
             title="糖尿病の知識・スタッフ対応事典 (低血糖時の対応など)"
-          >
-            📚 院内ハンドブック
-          </button>
+            onClick={() => router.push('/handbook')} />
         </div>
-        {/* 右: 運用ボタン */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button
-            onClick={() => router.push('/list')}
-            style={{ padding: '10px 20px', borderRadius: 10, border: '1.5px solid #d0dff5', background: '#fff', color: '#1a5fa8', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
-          >
-            📋 問診一覧
-          </button>
-          <button
-            onClick={handleLogout}
-            style={{ padding: '10px 20px', borderRadius: 10, border: '1.5px solid #feb2b2', background: '#fff', color: '#c53030', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
-          >
-            ログアウト
-          </button>
+          <ToolButton icon="clipboard" label="問診一覧" tone={UI.primary}
+            onClick={() => router.push('/list')} />
+          <ToolButton icon="logout" label="ログアウト" tone={UI.neutral}
+            onClick={handleLogout} />
         </div>
       </div>
 
       {/* カテゴリ選択 or フォーム一覧 */}
-      <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {!cat ? (
-          /* カテゴリ選択画面 */
           CATEGORIES.map((c) => (
             <button
               key={c.id}
               onClick={() => setSelectedCategory(c.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 18,
-                background: c.bg,
-                border: `2px solid ${c.border}`,
-                borderRadius: 18,
-                padding: '22px 24px',
-                cursor: 'pointer',
-                textAlign: 'left',
-                width: '100%',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.07)',
-                transition: 'transform 0.15s, box-shadow 0.15s',
-              }}
-              onMouseOver={e => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
-              }}
-              onMouseOut={e => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.07)';
-              }}
+              style={{ ...card(c.tone), padding: '18px 20px' }}
+              onMouseOver={e => hoverOn(e, c.tone)}
+              onMouseOut={hoverOff}
             >
-              <div style={{
-                width: 58, height: 58, borderRadius: 16,
-                background: '#fff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 28, flexShrink: 0,
-                boxShadow: `0 2px 10px ${c.color}25`,
-              }}>
-                {c.emoji}
-              </div>
+              <IconChip name={c.icon} tone={c.tone} size={46} />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 18, fontWeight: 900, color: c.color, marginBottom: 5 }}>
+                <div style={{ fontSize: 17, fontWeight: 700, color: UI.text, marginBottom: 4 }}>
                   {c.label}
                 </div>
-                <div style={{ fontSize: 12, color: '#8899aa', fontWeight: 500, lineHeight: 1.5 }}>
+                <div style={{ fontSize: 12, color: UI.textMuted, lineHeight: 1.6 }}>
                   {c.sublabel}
                 </div>
               </div>
-              <div style={{ fontSize: 22, color: c.color, opacity: 0.5, flexShrink: 0 }}>›</div>
+              <span style={{ color: UI.textDisabled, display: 'flex', flexShrink: 0 }}>
+                <LineIcon name="chevron" size={18} />
+              </span>
             </button>
           ))
         ) : (
-          /* フォーム一覧画面 */
           <>
             <button
               onClick={() => setSelectedCategory(null)}
               style={{
-                alignSelf: 'flex-start', padding: '7px 14px', borderRadius: 8,
-                border: `1.5px solid ${cat.border}`, background: '#fff',
-                color: cat.color, fontWeight: 700, fontSize: 12, cursor: 'pointer', marginBottom: 4,
+                alignSelf: 'flex-start', padding: '7px 13px', borderRadius: 8,
+                border: `1px solid ${UI.border}`, background: UI.surface,
+                color: UI.textMuted, fontWeight: 700, fontSize: 12,
+                cursor: 'pointer', marginBottom: 2, fontFamily: FONT,
               }}
             >
               ← カテゴリに戻る
             </button>
 
             {/* カテゴリヘッダー */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 4 }}>
-              <div style={{ width: 4, height: 22, borderRadius: 2, background: cat.color }} />
-              <div style={{ fontSize: 16, fontWeight: 800, color: cat.color, letterSpacing: '0.05em' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, paddingLeft: 2, marginBottom: 2 }}>
+              <div style={{ width: 3, height: 18, borderRadius: 2, background: cat.tone.fg }} />
+              <div style={{ fontSize: 15, fontWeight: 700, color: cat.tone.fg, letterSpacing: '0.04em' }}>
                 {cat.label}
               </div>
             </div>
@@ -201,45 +211,22 @@ export default function TopPage() {
               <button
                 key={f.id}
                 onClick={() => router.push(f.href)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 16,
-                  background: f.bg,
-                  border: `2px solid ${f.border}`,
-                  borderRadius: 16,
-                  padding: '16px 20px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  width: '100%',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                  transition: 'transform 0.15s, box-shadow 0.15s',
-                }}
-                onMouseOver={e => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)';
-                }}
-                onMouseOut={e => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
-                }}
+                style={{ ...card(cat.tone), padding: '14px 18px' }}
+                onMouseOver={e => hoverOn(e, cat.tone)}
+                onMouseOut={hoverOff}
               >
-                <div style={{
-                  width: 50, height: 50, borderRadius: 14,
-                  background: '#fff',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 24, flexShrink: 0,
-                  boxShadow: `0 2px 8px ${f.color}30`,
-                }}>
-                  {f.emoji}
-                </div>
+                <IconChip name={f.icon} tone={cat.tone} size={40} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: f.color, marginBottom: 3 }}>
+                  <div style={{ fontSize: 15.5, fontWeight: 700, color: UI.text, marginBottom: 2 }}>
                     {f.label}
                   </div>
-                  <div style={{ fontSize: 12, color: '#8899aa', fontWeight: 500 }}>
+                  <div style={{ fontSize: 12, color: UI.textMuted }}>
                     {f.sublabel}
                   </div>
                 </div>
-                <div style={{ fontSize: 20, color: f.color, opacity: 0.5, flexShrink: 0 }}>›</div>
+                <span style={{ color: UI.textDisabled, display: 'flex', flexShrink: 0 }}>
+                  <LineIcon name="chevron" size={17} />
+                </span>
               </button>
             ))}
           </>
@@ -247,7 +234,7 @@ export default function TopPage() {
       </div>
 
       {/* フッター */}
-      <div style={{ textAlign: 'center', fontSize: 11, color: '#a0b8d0', marginTop: 32 }}>
+      <div style={{ textAlign: 'center', fontSize: 11, color: UI.textDisabled, marginTop: 28 }}>
         個人情報は院内のみで使用されます
       </div>
     </div>
