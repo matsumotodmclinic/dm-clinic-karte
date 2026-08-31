@@ -1,6 +1,10 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
+import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
+
+// スタイルは lib/formStyles.js に集約（テーマ色は移行前と同一）
+const { inp, lbl, btn, sBox } = makeFormStyles(FORM_THEMES.teal);
 
 const TC = "#0d7d6a";
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
@@ -41,10 +45,6 @@ function getStepTitles(formType) {
     : [{ id: "reason", title: "受診理由・エコー所見" }, { id: "history", title: "症状・既往歴" }, { id: "body", title: "生活情報・体格" }];
 }
 
-const inp = (x = {}) => ({ padding: "9px 12px", border: "1.5px solid #a7f3d0", borderRadius: 8, fontSize: 14, color: "#1a2a3a", background: "#f0fdf9", outline: "none", boxSizing: "border-box", fontFamily: "inherit", width: "100%", ...x });
-const lbl = (x = {}) => ({ display: "block", fontSize: 12, fontWeight: 700, color: TC, marginBottom: 5, letterSpacing: "0.03em", ...x });
-const btn = (active, color = TC, x = {}) => ({ padding: "8px 14px", borderRadius: 8, border: active ? `2px solid ${color}` : "2px solid #a7f3d0", background: active ? color : "#f0fdf9", color: active ? "#fff" : "#2d8a78", fontWeight: 700, fontSize: 13, cursor: "pointer", margin: "3px 4px 3px 0", ...x });
-const sBox = (x = {}) => ({ background: "#f0fdf9", border: "1.5px solid #a7f3d0", borderRadius: 10, padding: "14px 16px", marginBottom: 14, ...x });
 
 const initialData = {
   reason: { summary: "", type: "", referralFrom: "", referralDept: "", referralDetail: "", checkupType: "", transferFrom: "", transferDetail: "", thyroidConcern: false, thyroidConcernReason: [], thyroidConcernNote: "" },

@@ -4,6 +4,10 @@ import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { buildOtherDiseasesText } from "../lib/otherDiseases";
 import { formatEcho, buildEchoLine } from "../lib/echo";
+import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
+
+// スタイルは lib/formStyles.js に集約（テーマ色は移行前と同一）
+const { inp, lbl, btn, sBox } = makeFormStyles(FORM_THEMES.blue);
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
 const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ", "金属"];
@@ -49,10 +53,6 @@ const initialData = {
   voicePastHistory: { transcript: "", aiSummary: "", needsDoctorReview: false },
 };
 
-const inp = (x={}) => ({ padding:"9px 12px", border:"1.5px solid #d0dff5", borderRadius:8, fontSize:14, color:"#1a2a3a", background:"#f7faff", outline:"none", boxSizing:"border-box", fontFamily:"inherit", width:"100%", ...x });
-const lbl = (x={}) => ({ display:"block", fontSize:12, fontWeight:700, color:"#1a5fa8", marginBottom:5, letterSpacing:"0.03em", ...x });
-const btn = (active, color="#1a5fa8", x={}) => ({ padding:"8px 14px", borderRadius:8, border:active?`2px solid ${color}`:"2px solid #d0dff5", background:active?color:"#f7faff", color:active?"#fff":"#5580a8", fontWeight:700, fontSize:13, cursor:"pointer", margin:"3px 4px 3px 0", ...x });
-const sBox = (x={}) => ({ background:"#f7faff", border:"1.5px solid #e0ecff", borderRadius:10, padding:"14px 16px", marginBottom:14, ...x });
 
 function EraYear({ era, year, onEraChange, onYearChange, disabled }) {
   return (
