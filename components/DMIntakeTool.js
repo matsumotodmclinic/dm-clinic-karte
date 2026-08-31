@@ -5,6 +5,7 @@ import { copyKarteToClipboard } from "../lib/copyKarte";
 import { buildOtherDiseasesText } from "../lib/otherDiseases";
 import { formatEcho, buildEchoLine } from "../lib/echo";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
+import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
 const { inp, lbl, btn, sBox } = makeFormStyles(FORM_THEMES.dm);
@@ -175,17 +176,17 @@ function AlcoholRow({ item, index, onChange, onRemove, showRemove }) {
         {showRemove && <button onClick={onRemove} style={{ fontSize: 12, color: "#e53e3e", background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>✕ 削除</button>}
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 8 }}>
-        {ALCOHOL_TYPES.map(t => <button key={t.key} style={btn(item.type === t.key, "#2b6cb0")} onClick={() => onChange(index, "type", t.key)}>{t.label}</button>)}
+        {ALCOHOL_TYPES.map(t => <button key={t.key} style={btn(item.type === t.key, UI.primary.fg)} onClick={() => onChange(index, "type", t.key)}>{t.label}</button>)}
       </div>
       {typeInfo && (
         <>
           <label style={lbl({ color: "#2b6cb0" })}>量（{typeInfo.unit || "目安"}）</label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 8 }}>
-            {typeInfo.amounts.map(a => <button key={a} style={btn(item.amount === a, "#2b6cb0")} onClick={() => onChange(index, "amount", a)}>{a}</button>)}
+            {typeInfo.amounts.map(a => <button key={a} style={btn(item.amount === a, UI.primary.fg)} onClick={() => onChange(index, "amount", a)}>{a}</button>)}
           </div>
           <label style={lbl({ color: "#2b6cb0" })}>頻度</label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-            {["毎日", "週5〜6日", "週3〜4日", "週1〜2日", "機会飲酒"].map(f => <button key={f} style={btn(item.freq === f, "#2b6cb0")} onClick={() => onChange(index, "freq", f)}>{f}</button>)}
+            {["毎日", "週5〜6日", "週3〜4日", "週1〜2日", "機会飲酒"].map(f => <button key={f} style={btn(item.freq === f, UI.primary.fg)} onClick={() => onChange(index, "freq", f)}>{f}</button>)}
           </div>
         </>
       )}
@@ -539,7 +540,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                   ].map(({ hosp, dept }) => {
                     const selected = d.reason.referralFrom === hosp && d.reason.referralDept === dept;
                     return (
-                      <button key={hosp+dept} style={{ ...btn(selected, "#0f9668"), fontSize: 12, padding: "7px 14px", border: selected ? "2px solid #0f9668" : "2px dashed #0f9668", background: selected ? "#0f9668" : "#f0fff8", color: selected ? "#fff" : "#0f9668" }}
+                      <button key={hosp+dept} style={{ ...btn(selected, UI.success.fg), fontSize: 12, padding: "7px 14px", border: selected ? "2px solid #0f9668" : "2px dashed #0f9668", background: selected ? "#0f9668" : "#f0fff8", color: selected ? "#fff" : "#0f9668" }}
                         onClick={() => setData(p => selected
                           ? ({ ...p, reason: { ...p.reason, referralFrom: "", referralDept: "", referralQuickSelect: false } })
                           : ({ ...p, reason: { ...p.reason, referralFrom: hosp, referralDept: dept, referralQuickSelect: true } })
@@ -557,7 +558,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                   {["加藤泌尿器科"].map(hosp => {
                     const selected = d.reason.referralFrom === hosp;
                     return (
-                      <button key={hosp} style={{ ...btn(selected, "#0f9668"), fontSize: 12, padding: "7px 14px", border: selected ? "2px solid #0f9668" : "2px dashed #0f9668", background: selected ? "#0f9668" : "#f0fff8", color: selected ? "#fff" : "#0f9668" }}
+                      <button key={hosp} style={{ ...btn(selected, UI.success.fg), fontSize: 12, padding: "7px 14px", border: selected ? "2px solid #0f9668" : "2px dashed #0f9668", background: selected ? "#0f9668" : "#f0fff8", color: selected ? "#fff" : "#0f9668" }}
                         onClick={() => setData(p => selected
                           ? ({ ...p, reason: { ...p.reason, referralFrom: "", referralDept: "", referralQuickSelect: false } })
                           : ({ ...p, reason: { ...p.reason, referralFrom: hosp, referralDept: "", referralQuickSelect: true } })
@@ -631,7 +632,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                 <label style={lbl({ color: "#8e44ad" })}>治療方法</label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                   {["PCI（カテーテル治療）", "バイパス手術", "薬物療法のみ", "不明"].map(v => (
-                    <button key={v} style={btn(d.disease.ihd.treatment === v, "#8e44ad")} onClick={() => upN("disease", "ihd", "treatment", v)}>{v}</button>
+                    <button key={v} style={btn(d.disease.ihd.treatment === v, UI.fixed.fg)} onClick={() => upN("disease", "ihd", "treatment", v)}>{v}</button>
                   ))}
                 </div>
               </div>
@@ -651,7 +652,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                   <label style={lbl({ color: "#8e44ad" })}>通院頻度</label>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 6 }}>
                     {["1ヶ月に1回","2ヶ月に1回","3ヶ月に1回","半年に1回","1年に1回"].map(v=>(
-                      <button key={v} style={{...btn(d.disease.ihd.visitFreq===v,"#8e44ad"),padding:"6px 10px",fontSize:12}} onClick={()=>upN("disease","ihd","visitFreq",v)}>{v}</button>
+                      <button key={v} style={{...btn(d.disease.ihd.visitFreq===v,UI.fixed.fg),padding:"6px 10px",fontSize:12}} onClick={()=>upN("disease","ihd","visitFreq",v)}>{v}</button>
                     ))}
                   </div>
                   <input style={{...inp(),fontSize:12}} placeholder="その他（例：○ヶ月に1回）"
@@ -665,7 +666,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                   {["アスピリン", "クロピドグレル", "エフィエント"].map(v => {
                     const selected = (d.disease.ihd.meds || "").includes(v);
                     return (
-                      <button key={v} style={btn(selected, "#8e44ad")} onClick={() => {
+                      <button key={v} style={btn(selected, UI.fixed.fg)} onClick={() => {
                         const cur = d.disease.ihd.meds || "";
                         if (selected) {
                           const next = cur.split(/[・、,]/).map(s => s.trim()).filter(s => s && s !== v).join("・");
@@ -703,7 +704,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                   <label style={lbl({ color: "#8e44ad" })}>通院頻度</label>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 6 }}>
                     {["1ヶ月に1回","2ヶ月に1回","3ヶ月に1回","半年に1回","1年に1回"].map(v=>(
-                      <button key={v} style={{...btn(d.disease.stroke.visitFreq===v,"#8e44ad"),padding:"6px 10px",fontSize:12}} onClick={()=>upN("disease","stroke","visitFreq",v)}>{v}</button>
+                      <button key={v} style={{...btn(d.disease.stroke.visitFreq===v,UI.fixed.fg),padding:"6px 10px",fontSize:12}} onClick={()=>upN("disease","stroke","visitFreq",v)}>{v}</button>
                     ))}
                   </div>
                   <input style={{...inp(),fontSize:12}} placeholder="その他（例：○ヶ月に1回）"
@@ -717,7 +718,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                   {["アスピリン", "クロピドグレル"].map(v => {
                     const selected = (d.disease.stroke.meds || "").includes(v);
                     return (
-                      <button key={v} style={btn(selected, "#8e44ad")} onClick={() => {
+                      <button key={v} style={btn(selected, UI.fixed.fg)} onClick={() => {
                         const cur = d.disease.stroke.meds || "";
                         if (selected) {
                           const next = cur.split(/[・、,]/).map(s => s.trim()).filter(s => s && s !== v).join("・");
@@ -770,7 +771,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               {i > 0 && <button onClick={() => setData(p => { const a = p.disease.otherDiseases.filter((_, j) => j !== i); return { ...p, disease: { ...p.disease, otherDiseases: a } }; })} style={{ fontSize: 12, color: "#e53e3e", background: "none", border: "none", cursor: "pointer", fontWeight: 700, paddingTop: 10 }}>✕</button>}
             </div>
           ))}
-          <button style={{ ...btn(false, "#718096"), fontSize: 13, marginBottom: 14 }} onClick={() => setData(p => ({ ...p, disease: { ...p.disease, otherDiseases: [...p.disease.otherDiseases, emptyOtherDisease()] } }))}>＋ その他の病名を追加</button>
+          <button style={{ ...btn(false, UI.neutral.fg), fontSize: 13, marginBottom: 14 }} onClick={() => setData(p => ({ ...p, disease: { ...p.disease, otherDiseases: [...p.disease.otherDiseases, emptyOtherDisease()] } }))}>＋ その他の病名を追加</button>
 
           <VoiceMemoSection
             formData={data}
@@ -820,7 +821,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             {DM_SYMPTOMS.map(sym => {
               const selected = (d.disease.dmSymptoms?.selected || []).includes(sym);
               return (
-                <button key={sym} style={btn(selected, "#0f9668")} onClick={() => setData(p => {
+                <button key={sym} style={btn(selected, UI.success.fg)} onClick={() => setData(p => {
                   const cur = p.disease.dmSymptoms?.selected || [];
                   const next = cur.includes(sym) ? cur.filter(s => s !== sym) : [...cur, sym];
                   return { ...p, disease: { ...p.disease, dmSymptoms: { ...p.disease.dmSymptoms, selected: next } } };
@@ -856,7 +857,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                 {ALLERGY_QUICK.map(v => {
                   const selected = (d.history.allergyDetail || "").includes(v);
                   return (
-                    <button key={v} style={btn(selected, "#c53030")} onClick={() => {
+                    <button key={v} style={btn(selected, UI.danger.fg)} onClick={() => {
                       const cur = d.history.allergyDetail || "";
                       if (selected) {
                         const next = cur.split(/[・、,]/).map(s => s.trim()).filter(s => s && s !== v).join("・");
@@ -874,14 +875,14 @@ LINE登録ご案内→済　登録確認未・登録できない
 
           <label style={lbl({ marginTop: 10 })}>家族歴（FH）</label>
           <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 8 }}>
-            {[["dm","糖尿病(DM)"],["ht","高血圧(HT)"],["apo","脳卒中(APO)"],["ihd","虚血性心疾患(IHD)"]].map(([k,l]) => <button key={k} style={btn(d.history.fh[k],"#6b3fa8")} onClick={() => upN("history","fh",k,!d.history.fh[k])}>{l}</button>)}
+            {[["dm","糖尿病(DM)"],["ht","高血圧(HT)"],["apo","脳卒中(APO)"],["ihd","虚血性心疾患(IHD)"]].map(([k,l]) => <button key={k} style={btn(d.history.fh[k],UI.fixed.fg)} onClick={() => upN("history","fh",k,!d.history.fh[k])}>{l}</button>)}
           </div>
           {d.history.fh.dm && (
             <div style={{ paddingLeft: 12, borderLeft: "3px solid #6b3fa8", marginBottom: 14 }}>
               <label style={lbl({ color: "#6b3fa8", fontSize: 11 })}>糖尿病：誰が（複数選択可）</label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                 {["父","母","祖父（父方）","祖母（父方）","祖父（母方）","祖母（母方）","兄弟・姉妹"].map(v => (
-                  <button key={v} style={{...btn(d.history.fh.dmWho.includes(v),"#6b3fa8"), padding:"5px 10px", fontSize:12}}
+                  <button key={v} style={{...btn(d.history.fh.dmWho.includes(v),UI.fixed.fg), padding:"5px 10px", fontSize:12}}
                     onClick={() => setData(p => { const a = p.history.fh.dmWho; return { ...p, history: { ...p.history, fh: { ...p.history.fh, dmWho: a.includes(v) ? a.filter(x=>x!==v) : [...a,v] } } }; })}>
                     {v}
                   </button>
@@ -892,14 +893,14 @@ LINE登録ご案内→済　登録確認未・登録できない
 
           <label style={lbl()}>飲酒歴</label>
           <div style={{ marginBottom: 8 }}>
-            <button style={btn(d.history.alcoholNone, "#718096")} onClick={() => up("history", "alcoholNone", !d.history.alcoholNone)}>
+            <button style={btn(d.history.alcoholNone, UI.neutral.fg)} onClick={() => up("history", "alcoholNone", !d.history.alcoholNone)}>
               {d.history.alcoholNone ? "✓ 飲まない" : "飲まない"}
             </button>
           </div>
           {!d.history.alcoholNone && (
             <div>
               {d.history.alcoholItems.map((item, i) => <AlcoholRow key={i} item={item} index={i} onChange={upAl} onRemove={() => delAl(i)} showRemove={d.history.alcoholItems.length > 1} />)}
-              <button style={{ ...btn(false, "#2b6cb0"), fontSize: 13, width: "100%", textAlign: "center", marginTop: 4 }} onClick={addAl}>＋ お酒を追加</button>
+              <button style={{ ...btn(false, UI.primary.fg), fontSize: 13, width: "100%", textAlign: "center", marginTop: 4 }} onClick={addAl}>＋ お酒を追加</button>
               {buildAlcohol() && (
                 <div style={{ marginTop: 10, padding: "8px 14px", background: "#ebf8ff", border: "1px solid #bee3f8", borderRadius: 8, fontSize: 13, color: "#2b6cb0", fontWeight: 700 }}>
                   📝 カルテ記載例：{buildAlcohol()}
@@ -986,13 +987,13 @@ LINE登録ご案内→済　登録確認未・登録できない
               <div style={{ flex: 1, minWidth: 180 }}>
                 <label style={lbl({ color: "#2b6cb0" })}>プレベナー20</label>
                 <div style={{ display: "flex", gap: 4 }}>
-                  {["希望あり","なし"].map(v => <button key={v} style={btn(d.history.vaccine65Prevena === v,"#2b6cb0")} onClick={() => up("history","vaccine65Prevena",v)}>{v}</button>)}
+                  {["希望あり","なし"].map(v => <button key={v} style={btn(d.history.vaccine65Prevena === v,UI.primary.fg)} onClick={() => up("history","vaccine65Prevena",v)}>{v}</button>)}
                 </div>
               </div>
               <div style={{ flex: 1, minWidth: 180 }}>
                 <label style={lbl({ color: "#2b6cb0" })}>帯状疱疹ワクチン</label>
                 <div style={{ display: "flex", gap: 4 }}>
-                  {["希望あり","なし"].map(v => <button key={v} style={btn(d.history.vaccine65Herpes === v,"#2b6cb0")} onClick={() => up("history","vaccine65Herpes",v)}>{v}</button>)}
+                  {["希望あり","なし"].map(v => <button key={v} style={btn(d.history.vaccine65Herpes === v,UI.primary.fg)} onClick={() => up("history","vaccine65Herpes",v)}>{v}</button>)}
                 </div>
               </div>
             </div>
@@ -1009,7 +1010,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                 <label style={lbl({ color: "#2b6cb0" })}>頚部エコー</label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                   {["他院で施行済", "健診で施行済", "行っていない", "希望なし"].map(v => (
-                    <button key={v} style={{ ...btn(d.disease.echoNeck === v, "#2b6cb0"), padding: "6px 10px", fontSize: 12 }} onClick={() => up("disease", "echoNeck", v)}>{v}</button>
+                    <button key={v} style={{ ...btn(d.disease.echoNeck === v, UI.primary.fg), padding: "6px 10px", fontSize: 12 }} onClick={() => up("disease", "echoNeck", v)}>{v}</button>
                   ))}
                 </div>
               </div>
@@ -1017,7 +1018,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                 <label style={lbl({ color: "#2b6cb0" })}>腹部エコー</label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                   {["他院で施行済", "健診で施行済", "行っていない", "希望なし"].map(v => (
-                    <button key={v} style={{ ...btn(d.disease.echoAbdomen === v, "#2b6cb0"), padding: "6px 10px", fontSize: 12 }} onClick={() => up("disease", "echoAbdomen", v)}>{v}</button>
+                    <button key={v} style={{ ...btn(d.disease.echoAbdomen === v, UI.primary.fg), padding: "6px 10px", fontSize: 12 }} onClick={() => up("disease", "echoAbdomen", v)}>{v}</button>
                   ))}
                 </div>
               </div>
@@ -1052,7 +1053,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                   <label style={lbl({ color: "#c05621", fontSize: 11 })}>お子さんの居住地</label>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 8 }}>
                     {CHILD_LOCATIONS.map(v => (
-                      <button key={v} style={btn(d.lifestyle.childLocation === v, "#c05621")} onClick={() => up("lifestyle", "childLocation", v)}>{v}</button>
+                      <button key={v} style={btn(d.lifestyle.childLocation === v, UI.warning.fg)} onClick={() => up("lifestyle", "childLocation", v)}>{v}</button>
                     ))}
                   </div>
                   {d.lifestyle.childLocation && d.lifestyle.childLocation !== "子供なし" && (
@@ -1122,7 +1123,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <label style={lbl()}>医師の希望</label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 14 }}>
             {["指定なし", "女性医師希望", "男性医師希望", "院長（初回のみ）"].map(v => (
-              <button key={v} style={btn(d.body.doctorGender === v, "#1a5fa8")} onClick={() => up("body", "doctorGender", v)}>{v}</button>
+              <button key={v} style={btn(d.body.doctorGender === v, UI.primary.fg)} onClick={() => up("body", "doctorGender", v)}>{v}</button>
             ))}
           </div>
 
@@ -1134,7 +1135,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             <label style={lbl({ color: "#c05621", fontSize: 11 })}>患者フラグ</label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 10 }}>
               {["通常", "○患者疑い（話が長い方）", "●患者疑い（出禁対象）"].map(v => (
-                <button key={v} style={btn(d.body.patientFlag === v, "#c05621", { fontSize: 12 })} onClick={() => up("body", "patientFlag", v)}>{v}</button>
+                <button key={v} style={btn(d.body.patientFlag === v, UI.warning.fg, { fontSize: 12 })} onClick={() => up("body", "patientFlag", v)}>{v}</button>
               ))}
             </div>
             <label style={{ fontSize: 13, color: "#c05621", display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>

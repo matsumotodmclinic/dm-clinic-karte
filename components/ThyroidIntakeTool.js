@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
+import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
 const { inp, lbl, btn, sBox } = makeFormStyles(FORM_THEMES.thyroid);
@@ -508,7 +509,7 @@ ${footerTrailing}`;
               const selected = data.reason.referralFrom === hosp && data.reason.referralDept === dept;
               return (
                 <button key={hosp + dept}
-                  style={{ ...btn(selected, "#0f9668"), fontSize: 12, padding: "7px 14px", border: selected ? "2px solid #0f9668" : "2px dashed #0f9668", background: selected ? "#0f9668" : "#f0fff8", color: selected ? "#fff" : "#0f9668" }}
+                  style={{ ...btn(selected, UI.success.fg), fontSize: 12, padding: "7px 14px", border: selected ? "2px solid #0f9668" : "2px dashed #0f9668", background: selected ? "#0f9668" : "#f0fff8", color: selected ? "#fff" : "#0f9668" }}
                   onClick={() => setData(p => ({ ...p, reason: { ...p.reason, referralFrom: selected ? "" : hosp, referralDept: selected ? "" : dept } }))}>
                   {selected ? "✓ " : ""}{hosp}・{dept}
                 </button>
@@ -586,7 +587,7 @@ ${footerTrailing}`;
               {["メルカゾール", "ヨウ化カリウム", "プロパジール"].map(med => {
                 const sel = (data.history.medications || []).includes(med);
                 return (
-                  <button key={med} style={btn(sel, "#a67000")}
+                  <button key={med} style={btn(sel, UI.warning.fg)}
                     onClick={() => up("history", "medications", sel
                       ? (data.history.medications || []).filter(m => m !== med)
                       : [...(data.history.medications || []), med])}>
@@ -601,8 +602,8 @@ ${footerTrailing}`;
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#a67000", marginBottom: 6 }}>手術歴</div>
             <div style={{ display: "flex", gap: 4, marginBottom: 6 }}>
-              <button style={btn(data.history.surgeryHistory === true, "#a67000", { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "surgeryHistory", true)}>あり</button>
-              <button style={btn(data.history.surgeryHistory === false, "#a67000", { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "surgeryHistory", false)}>なし</button>
+              <button style={btn(data.history.surgeryHistory === true, UI.warning.fg, { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "surgeryHistory", true)}>あり</button>
+              <button style={btn(data.history.surgeryHistory === false, UI.warning.fg, { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "surgeryHistory", false)}>なし</button>
             </div>
             {data.history.surgeryHistory && (
               <div style={{ paddingLeft: 4, marginTop: 4 }}>
@@ -614,7 +615,7 @@ ${footerTrailing}`;
                 </div>
                 <div style={{ display: "flex", gap: 3 }}>
                   {["全摘", "部分切除"].map(v => (
-                    <button key={v} style={{ ...btn(data.history.surgeryType === v, "#a67000"), padding: "5px 14px", fontSize: 12 }}
+                    <button key={v} style={{ ...btn(data.history.surgeryType === v, UI.warning.fg), padding: "5px 14px", fontSize: 12 }}
                       onClick={() => up("history", "surgeryType", v)}>{v}</button>
                   ))}
                 </div>
@@ -626,8 +627,8 @@ ${footerTrailing}`;
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#a67000", marginBottom: 6 }}>放射性ヨウ素（アイソトープ）内用療法</div>
             <div style={{ display: "flex", gap: 4 }}>
-              <button style={btn(data.history.isotopeHistory === true, "#a67000", { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "isotopeHistory", true)}>あり</button>
-              <button style={btn(data.history.isotopeHistory === false, "#a67000", { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "isotopeHistory", false)}>なし</button>
+              <button style={btn(data.history.isotopeHistory === true, UI.warning.fg, { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "isotopeHistory", true)}>あり</button>
+              <button style={btn(data.history.isotopeHistory === false, UI.warning.fg, { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "isotopeHistory", false)}>なし</button>
             </div>
           </div>
 
@@ -638,8 +639,8 @@ ${footerTrailing}`;
               {[["sideEffectMmz", "メルカゾール"], ["sideEffectPtz", "プロパジール"]].map(([field, drug]) => (
                 <div key={field} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: "#7a6000", width: 92, flexShrink: 0 }}>{drug}</span>
-                  <button style={btn(data.history[field] === true, "#a67000", { padding: "4px 16px", fontSize: 12 })} onClick={() => up("history", field, true)}>あり</button>
-                  <button style={btn(data.history[field] === false, "#a67000", { padding: "4px 16px", fontSize: 12 })} onClick={() => up("history", field, false)}>なし</button>
+                  <button style={btn(data.history[field] === true, UI.warning.fg, { padding: "4px 16px", fontSize: 12 })} onClick={() => up("history", field, true)}>あり</button>
+                  <button style={btn(data.history[field] === false, UI.warning.fg, { padding: "4px 16px", fontSize: 12 })} onClick={() => up("history", field, false)}>なし</button>
                 </div>
               ))}
             </div>
@@ -649,8 +650,8 @@ ${footerTrailing}`;
           <div>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#a67000", marginBottom: 6 }}>眼科通院歴</div>
             <div style={{ display: "flex", gap: 4, marginBottom: 6 }}>
-              <button style={btn(data.history.eyeHistory === true, "#a67000", { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "eyeHistory", true)}>あり</button>
-              <button style={btn(data.history.eyeHistory === false, "#a67000", { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "eyeHistory", false)}>なし</button>
+              <button style={btn(data.history.eyeHistory === true, UI.warning.fg, { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "eyeHistory", true)}>あり</button>
+              <button style={btn(data.history.eyeHistory === false, UI.warning.fg, { padding: "5px 20px", fontSize: 12 })} onClick={() => up("history", "eyeHistory", false)}>なし</button>
             </div>
             {data.history.eyeHistory && <input style={{ ...inp(), marginTop: 4 }} placeholder="眼科名（任意）" value={data.history.eyeClinic} onChange={e => up("history", "eyeClinic", e.target.value)} />}
           </div>
@@ -716,7 +717,7 @@ ${footerTrailing}`;
             <label style={lbl({ color: "#c53030" })}>結節の部位</label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 10 }}>
               {["両葉", "右葉", "左葉"].map(v => (
-                <button key={v} style={btn(data.echo.noduleLocation === v, "#c53030")} onClick={() => up("echo", "noduleLocation", data.echo.noduleLocation === v ? "" : v)}>{v}</button>
+                <button key={v} style={btn(data.echo.noduleLocation === v, UI.danger.fg)} onClick={() => up("echo", "noduleLocation", data.echo.noduleLocation === v ? "" : v)}>{v}</button>
               ))}
             </div>
 
@@ -733,7 +734,7 @@ ${footerTrailing}`;
                 <label style={lbl({ color: "#c53030" })}>結節数</label>
                 <div style={{ display: "flex", gap: 3 }}>
                   {["単発", "多発"].map(v => (
-                    <button key={v} style={btn(data.echo.noduleCount === v, "#c53030")} onClick={() => up("echo", "noduleCount", data.echo.noduleCount === v ? "" : v)}>{v}</button>
+                    <button key={v} style={btn(data.echo.noduleCount === v, UI.danger.fg)} onClick={() => up("echo", "noduleCount", data.echo.noduleCount === v ? "" : v)}>{v}</button>
                   ))}
                 </div>
               </div>
@@ -741,7 +742,7 @@ ${footerTrailing}`;
                 <label style={lbl({ color: "#c53030" })}>石灰化</label>
                 <div style={{ display: "flex", gap: 3 }}>
                   {["あり", "なし"].map(v => (
-                    <button key={v} style={btn(data.echo.calcification === v, "#c53030")} onClick={() => up("echo", "calcification", data.echo.calcification === v ? "" : v)}>{v}</button>
+                    <button key={v} style={btn(data.echo.calcification === v, UI.danger.fg)} onClick={() => up("echo", "calcification", data.echo.calcification === v ? "" : v)}>{v}</button>
                   ))}
                 </div>
               </div>
@@ -749,7 +750,7 @@ ${footerTrailing}`;
                 <label style={lbl({ color: "#c53030" })}>血流</label>
                 <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
                   {["豊富", "乏しい", "不明"].map(v => (
-                    <button key={v} style={btn(data.echo.noduleBloodFlow === v, "#c53030")} onClick={() => up("echo", "noduleBloodFlow", data.echo.noduleBloodFlow === v ? "" : v)}>{v}</button>
+                    <button key={v} style={btn(data.echo.noduleBloodFlow === v, UI.danger.fg)} onClick={() => up("echo", "noduleBloodFlow", data.echo.noduleBloodFlow === v ? "" : v)}>{v}</button>
                   ))}
                 </div>
               </div>
@@ -758,7 +759,7 @@ ${footerTrailing}`;
             <label style={lbl({ color: "#c53030" })}>性状</label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 10 }}>
               {["充実性", "嚢胞性", "混合性", "境界不明瞭"].map(v => (
-                <button key={v} style={{ ...btn(data.echo.noduleType === v, "#c53030"), padding: "6px 10px", fontSize: 12 }} onClick={() => up("echo", "noduleType", data.echo.noduleType === v ? "" : v)}>{v}</button>
+                <button key={v} style={{ ...btn(data.echo.noduleType === v, UI.danger.fg), padding: "6px 10px", fontSize: 12 }} onClick={() => up("echo", "noduleType", data.echo.noduleType === v ? "" : v)}>{v}</button>
               ))}
             </div>
 
@@ -802,7 +803,7 @@ ${footerTrailing}`;
             {ALLERGY_QUICK.map(v => {
               const sel = (data.history.allergyDetail || "").includes(v);
               return (
-                <button key={v} style={btn(sel, "#c53030")} onClick={() => {
+                <button key={v} style={btn(sel, UI.danger.fg)} onClick={() => {
                   const cur = data.history.allergyDetail || "";
                   if (sel) { up("history", "allergyDetail", cur.split(/[・、,]/).map(s => s.trim()).filter(s => s && s !== v).join("・")); }
                   else { up("history", "allergyDetail", cur ? `${cur}・${v}` : v); }
@@ -950,7 +951,7 @@ ${footerTrailing}`;
         <label style={lbl({ color: "#c05621", fontSize: 11 })}>患者フラグ</label>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
           {["通常", "○患者疑い（話が長い方）", "●患者疑い（出禁対象）"].map(v => (
-            <button key={v} style={btn(data.body.patientFlag === v, "#c05621", { fontSize: 12 })} onClick={() => up("body", "patientFlag", v)}>{v}</button>
+            <button key={v} style={btn(data.body.patientFlag === v, UI.warning.fg, { fontSize: 12 })} onClick={() => up("body", "patientFlag", v)}>{v}</button>
           ))}
         </div>
       </div>
@@ -989,7 +990,7 @@ ${footerTrailing}`;
         <div style={{ fontSize: 12, fontWeight: 800, color: "#c05621", marginBottom: 8 }}>🔒 スタッフ入力欄</div>
         <label style={lbl({ color: "#c05621", fontSize: 11 })}>患者フラグ</label>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 10 }}>
-          {["通常", "○患者疑い（話が長い方）", "●患者疑い（出禁対象）"].map(v => (<button key={v} style={btn(data.body.patientFlag === v, "#c05621", { fontSize: 12 })} onClick={() => up("body", "patientFlag", v)}>{v}</button>))}
+          {["通常", "○患者疑い（話が長い方）", "●患者疑い（出禁対象）"].map(v => (<button key={v} style={btn(data.body.patientFlag === v, UI.warning.fg, { fontSize: 12 })} onClick={() => up("body", "patientFlag", v)}>{v}</button>))}
         </div>
         <label style={{ fontSize: 13, color: "#c05621", display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
           <input type="checkbox" checked={!!data.body.doubleSlot} onChange={e => up("body", "doubleSlot", e.target.checked)} /> 新患2枠取得済み

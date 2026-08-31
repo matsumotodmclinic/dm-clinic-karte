@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { buildOtherDiseasesText } from "../lib/otherDiseases";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
+import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
 const { inp, lbl, btn, sBox } = makeFormStyles(FORM_THEMES.dm);
@@ -250,7 +251,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               ].map(({label,hosp,dept})=>{
                 const selected = d.reason.referralFrom===hosp&&d.reason.referralDept===dept;
                 return (
-                  <button key={label} style={{...btn(selected,"#0f9668"),fontSize:13,padding:"9px 16px",border:selected?"2px solid #0f9668":"2px dashed #0f9668",background:selected?"#0f9668":"#f0fff8",color:selected?"#fff":"#0f9668"}}
+                  <button key={label} style={{...btn(selected,UI.success.fg),fontSize:13,padding:"9px 16px",border:selected?"2px solid #0f9668":"2px dashed #0f9668",background:selected?"#0f9668":"#f0fff8",color:selected?"#fff":"#0f9668"}}
                     onClick={()=>setData(p=>selected
                       ? ({...p,reason:{...p.reason,referralFrom:"",referralDept:"",referralQuickSelect:false}})
                       : ({...p,reason:{...p.reason,referralFrom:hosp,referralDept:dept,referralQuickSelect:true}})
@@ -273,7 +274,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             <label style={lbl()}>転院元 医療機関名</label>
             <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}}>
               {["自治医大さいたま医療センター","埼玉県立小児医療センター"].map(h=>(
-                <button key={h} style={btn(d.reason.transferFrom===h,"#1a5fa8")} onClick={()=>up("reason","transferFrom",h)}>{h}</button>
+                <button key={h} style={btn(d.reason.transferFrom===h,UI.primary.fg)} onClick={()=>up("reason","transferFrom",h)}>{h}</button>
               ))}
             </div>
             <input style={{...inp(),marginBottom:12}} placeholder="その他の場合は入力" value={["自治医大さいたま医療センター","埼玉県立小児医療センター"].includes(d.reason.transferFrom)?"":d.reason.transferFrom} onChange={e=>up("reason","transferFrom",e.target.value)}/>
@@ -321,7 +322,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             {DM_SYMPTOMS.map(sym=>{
               const selected=(d.disease.dmSymptoms?.selected||[]).includes(sym);
               return (
-                <button key={sym} style={btn(selected,"#0f9668")} onClick={()=>setData(p=>{
+                <button key={sym} style={btn(selected,UI.success.fg)} onClick={()=>setData(p=>{
                   const cur=p.disease.dmSymptoms?.selected||[];
                   const next=cur.includes(sym)?cur.filter(s=>s!==sym):[...cur,sym];
                   return {...p,disease:{...p.disease,dmSymptoms:{...p.disease.dmSymptoms,selected:next}}};
@@ -339,7 +340,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <label style={lbl()}>バクスミー（グルカゴン）の希望</label>
           <div style={{display:"flex",gap:3,marginBottom:16}}>
             {["希望あり","希望なし"].map(v=>(
-              <button key={v} style={btn(d.disease.bakusmi===v,"#e07000")} onClick={()=>up("disease","bakusmi",v)}>{v}</button>
+              <button key={v} style={btn(d.disease.bakusmi===v,UI.warning.fg)} onClick={()=>up("disease","bakusmi",v)}>{v}</button>
             ))}
           </div>
           <label style={lbl()}>合併する疾患</label>
@@ -370,20 +371,20 @@ LINE登録ご案内→済　登録確認未・登録できない
           <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>サポートする家族（複数選択可）</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
             {["母","父","祖母","祖父","兄弟・姉妹"].map(v=>(
-              <button key={v} style={btn(d.support.familySubList.includes(v),"#2d8653")} onClick={()=>setData(p=>{const a=p.support.familySubList;return{...p,support:{...p.support,familySubList:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};})}>{v}</button>
+              <button key={v} style={btn(d.support.familySubList.includes(v),UI.success.fg)} onClick={()=>setData(p=>{const a=p.support.familySubList;return{...p,support:{...p.support,familySubList:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};})}>{v}</button>
             ))}
           </div>
           <input style={{...inp(),marginBottom:14}} placeholder="補足（例：祖父母が近居でサポート）" value={d.support.familyNote} onChange={e=>up("support","familyNote",e.target.value)}/>
           <label style={lbl()}>②学校の協力体制（複数選択可）</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
             {["担任が対応","養護教諭が対応","担任・養護教諭が連携","保健室で血糖測定可","給食対応あり","緊急時対応マニュアルあり"].map(v=>(
-              <button key={v} style={btn(d.support.schoolStaff.includes(v),"#2b6cb0")} onClick={()=>setData(p=>{const a=p.support.schoolStaff;return{...p,support:{...p.support,schoolStaff:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};})}>{v}</button>
+              <button key={v} style={btn(d.support.schoolStaff.includes(v),UI.primary.fg)} onClick={()=>setData(p=>{const a=p.support.schoolStaff;return{...p,support:{...p.support,schoolStaff:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};})}>{v}</button>
             ))}
           </div>
           <label style={lbl()}>③学校でサポートしてくれる人（複数選択可）</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
             {["担任","養護教諭","副担任","部活顧問","その他"].map(v=>(
-              <button key={v} style={btn(d.support.schoolSupportPerson.includes(v),"#2b6cb0")} onClick={()=>setData(p=>{const a=p.support.schoolSupportPerson;return{...p,support:{...p.support,schoolSupportPerson:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};})}>{v}</button>
+              <button key={v} style={btn(d.support.schoolSupportPerson.includes(v),UI.primary.fg)} onClick={()=>setData(p=>{const a=p.support.schoolSupportPerson;return{...p,support:{...p.support,schoolSupportPerson:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};})}>{v}</button>
             ))}
           </div>
           <input style={{...inp(),marginBottom:14}} placeholder="補足" value={d.support.schoolSupportNote} onChange={e=>up("support","schoolSupportNote",e.target.value)}/>
@@ -393,7 +394,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               <label style={lbl({fontSize:11,color:"#2b6cb0",marginBottom:4})}>本人（お子さん）がクラスメートに話しているか</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
                 {["クラス全体に話している","一部の友人のみ","話していない"].map(v=>(
-                  <button key={v} style={btn(d.support.disclosedChild===v,"#2b6cb0")} onClick={()=>up("support","disclosedChild",v)}>{v}</button>
+                  <button key={v} style={btn(d.support.disclosedChild===v,UI.primary.fg)} onClick={()=>up("support","disclosedChild",v)}>{v}</button>
                 ))}
               </div>
             </div>
@@ -401,7 +402,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               <label style={lbl({fontSize:11,color:"#2b6cb0",marginBottom:4})}>先生への開示範囲</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
                 {["担任のみ","担任＋養護教諭","学年全体の先生","全職員","話していない"].map(v=>(
-                  <button key={v} style={btn(d.support.disclosedTeacher===v,"#2b6cb0")} onClick={()=>up("support","disclosedTeacher",v)}>{v}</button>
+                  <button key={v} style={btn(d.support.disclosedTeacher===v,UI.primary.fg)} onClick={()=>up("support","disclosedTeacher",v)}>{v}</button>
                 ))}
               </div>
             </div>
@@ -416,7 +417,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <label style={lbl({fontSize:11,color:"#888",marginBottom:4})}>部活・習い事（複数選択可）</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>
             {["なし","運動系部活","文化系部活","スポーツ教室","音楽・芸術","学習塾","その他"].map(v=>(
-              <button key={v} style={btn(d.support.childActivities.includes(v),"#553c9a")} onClick={()=>setData(p=>{const a=p.support.childActivities;return{...p,support:{...p.support,childActivities:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};})}>{v}</button>
+              <button key={v} style={btn(d.support.childActivities.includes(v),UI.fixed.fg)} onClick={()=>setData(p=>{const a=p.support.childActivities;return{...p,support:{...p.support,childActivities:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};})}>{v}</button>
             ))}
           </div>
           <input style={{...inp(),marginBottom:14}} placeholder="補足（例：週3回サッカー教室、帰宅17時）" value={d.support.childActivityNote} onChange={e=>up("support","childActivityNote",e.target.value)}/>
@@ -471,7 +472,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               <label style={lbl({color:"#276749"})}>前医での窓口負担の有無</label>
               <div style={{display:"flex",gap:3,marginBottom:8}}>
                 {["窓口負担あり","窓口負担なし（公費）","不明"].map(v=>(
-                  <button key={v} style={btn(d.chronic.paymentConfirmed===v,"#0f9668")} onClick={()=>up("chronic","paymentConfirmed",v)}>{v}</button>
+                  <button key={v} style={btn(d.chronic.paymentConfirmed===v,UI.success.fg)} onClick={()=>up("chronic","paymentConfirmed",v)}>{v}</button>
                 ))}
               </div>
               <div style={{fontSize:12,color:"#276749"}}>※確認後、算定へ連絡してください</div>
@@ -501,7 +502,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               <label style={lbl({color:"#744210"})}>③出生時に住民登録をしたところ</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:6}}>
                 {["上尾市","さいたま市","桶川市","伊奈町","川越市","北本市","その他"].map(v=>(
-                  <button key={v} style={{...btn(d.chronic.birthCity===v,"#744210"),padding:"6px 10px",fontSize:12}} onClick={()=>up("chronic","birthCity",v)}>{v}</button>
+                  <button key={v} style={{...btn(d.chronic.birthCity===v,UI.warning.fg),padding:"6px 10px",fontSize:12}} onClick={()=>up("chronic","birthCity",v)}>{v}</button>
                 ))}
               </div>
               {d.chronic.birthCity==="その他"&&(
@@ -510,7 +511,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               <label style={lbl({color:"#744210"})}>手帳の取得内容</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:12}}>
                 {["身体障害者手帳","養育手帳","精神障害者保健福祉手帳"].map(v=>(
-                  <button key={v} style={btn(d.chronic.booklets.includes(v),"#744210")} onClick={()=>toggleArr("chronic","booklets",v)}>{v}</button>
+                  <button key={v} style={btn(d.chronic.booklets.includes(v),UI.warning.fg)} onClick={()=>toggleArr("chronic","booklets",v)}>{v}</button>
                 ))}
               </div>
             </div>
@@ -518,7 +519,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <label style={lbl({marginTop:8})}>書類関係</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
             {["学校生活管理指導表","糖尿病緊急対応連絡票","バクスミーに関する指示書"].map(v=>(
-              <button key={v} style={btn(d.chronic.documents.includes(v),"#553c9a")} onClick={()=>toggleArr("chronic","documents",v)}>{v}</button>
+              <button key={v} style={btn(d.chronic.documents.includes(v),UI.fixed.fg)} onClick={()=>toggleArr("chronic","documents",v)}>{v}</button>
             ))}
           </div>
         </div>
@@ -563,7 +564,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               {i>0&&<button onClick={()=>setData(p=>{const a=(p.history.otherDiseases||[]).filter((_,j)=>j!==i);return{...p,history:{...p.history,otherDiseases:a}};})} style={{fontSize:12,color:"#e53e3e",background:"none",border:"none",cursor:"pointer",fontWeight:700,paddingTop:10}}>✕</button>}
             </div>
           ))}
-          <button style={{...btn(false,"#718096"),fontSize:13,marginBottom:14}} onClick={()=>setData(p=>{const a=[...(p.history.otherDiseases||[]),{name:"",hospital:"",hospitalOther:""}];return{...p,history:{...p.history,otherDiseases:a}};})}>＋ その他の病名を追加</button>
+          <button style={{...btn(false,UI.neutral.fg),fontSize:13,marginBottom:14}} onClick={()=>setData(p=>{const a=[...(p.history.otherDiseases||[]),{name:"",hospital:"",hospitalOther:""}];return{...p,history:{...p.history,otherDiseases:a}};})}>＋ その他の病名を追加</button>
           <label style={lbl()}>アレルギー歴</label>
           <div style={{display:"flex",gap:8,marginBottom:8}}>
             {["なし","あり"].map(v=><button key={v} style={btn(d.history.allergy===v)} onClick={()=>up("history","allergy",v)}>{v}</button>)}
@@ -574,7 +575,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                 {ALLERGY_QUICK.map(v=>{
                   const selected = (d.history.allergyDetail||"").includes(v);
                   return (
-                    <button key={v} style={btn(selected,"#c53030")} onClick={()=>{
+                    <button key={v} style={btn(selected,UI.danger.fg)} onClick={()=>{
                       const cur = d.history.allergyDetail||"";
                       if(selected){ const next = cur.split(/[・、,]/).map(s=>s.trim()).filter(s=>s&&s!==v).join("・"); up("history","allergyDetail",next); }
                       else { up("history","allergyDetail",cur?`${cur}・${v}`:v); }
@@ -589,7 +590,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <label style={lbl({marginTop:8})}>家族歴（FH）</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:8}}>
             {[["dm","糖尿病(DM)"],["dm1","1型糖尿病"],["collagen","膠原病"],["ht","高血圧(HT)"],["apo","脳卒中(APO)"],["ihd","虚血性心疾患(IHD)"]].map(([k,l])=>(
-              <button key={k} style={btn(d.history.fh[k],"#6b3fa8")} onClick={()=>upN("history","fh",k,!d.history.fh[k])}>{l}</button>
+              <button key={k} style={btn(d.history.fh[k],UI.fixed.fg)} onClick={()=>upN("history","fh",k,!d.history.fh[k])}>{l}</button>
             ))}
           </div>
           {d.history.fh.dm&&(
@@ -597,7 +598,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               <label style={lbl({color:"#6b3fa8",fontSize:11})}>糖尿病：誰が（複数選択可）</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
                 {["父","母","祖父（父方）","祖母（父方）","祖父（母方）","祖母（母方）","兄弟・姉妹"].map(v=>(
-                  <button key={v} style={{...btn(d.history.fh.dmWho.includes(v),"#6b3fa8"),padding:"5px 10px",fontSize:12}}
+                  <button key={v} style={{...btn(d.history.fh.dmWho.includes(v),UI.fixed.fg),padding:"5px 10px",fontSize:12}}
                     onClick={()=>setData(p=>{const a=p.history.fh.dmWho;return{...p,history:{...p.history,fh:{...p.history.fh,dmWho:a.includes(v)?a.filter(x=>x!==v):[...a,v]}}};})}>
                     {v}
                   </button>
@@ -610,7 +611,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               <label style={lbl({color:"#c53030",fontSize:11})}>1型糖尿病：誰が（複数選択可）</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
                 {["父","母","祖父（父方）","祖母（父方）","祖父（母方）","祖母（母方）","兄弟・姉妹"].map(v=>(
-                  <button key={v} style={{...btn(d.history.fh.dm1Who.includes(v),"#c53030"),padding:"5px 10px",fontSize:12}}
+                  <button key={v} style={{...btn(d.history.fh.dm1Who.includes(v),UI.danger.fg),padding:"5px 10px",fontSize:12}}
                     onClick={()=>setData(p=>{const a=p.history.fh.dm1Who;return{...p,history:{...p.history,fh:{...p.history.fh,dm1Who:a.includes(v)?a.filter(x=>x!==v):[...a,v]}}};})}>
                     {v}
                   </button>
@@ -633,7 +634,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                   {i>0&&<button onClick={()=>setData(p=>{const a=(p.history.fh.collagenItems||[]).filter((_,j)=>j!==i);return{...p,history:{...p.history,fh:{...p.history.fh,collagenItems:a}}};})} style={{fontSize:12,color:"#e53e3e",background:"none",border:"none",cursor:"pointer",fontWeight:700,whiteSpace:"nowrap"}}>✕</button>}
                 </div>
               ))}
-              <button style={{...btn(false,"#c05621"),fontSize:12,marginTop:4}} onClick={()=>setData(p=>{const a=[...(p.history.fh.collagenItems||[]),{who:"",disease:""}];return{...p,history:{...p.history,fh:{...p.history.fh,collagenItems:a}}};})} >＋ 追加</button>
+              <button style={{...btn(false,UI.warning.fg),fontSize:12,marginTop:4}} onClick={()=>setData(p=>{const a=[...(p.history.fh.collagenItems||[]),{who:"",disease:""}];return{...p,history:{...p.history,fh:{...p.history.fh,collagenItems:a}}};})} >＋ 追加</button>
             </div>
           )}
 
@@ -715,7 +716,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <label style={lbl()}>医師の希望</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:14}}>
             {["指定なし","女性医師希望","男性医師希望","院長（初回のみ）"].map(v=>(
-              <button key={v} style={btn(d.body.doctorGender===v,"#3182ce")} onClick={()=>up("body","doctorGender",v)}>{v}</button>
+              <button key={v} style={btn(d.body.doctorGender===v,UI.primary.fg)} onClick={()=>up("body","doctorGender",v)}>{v}</button>
             ))}
           </div>
           <label style={lbl()}>診察への要望・聞きたいこと</label>
@@ -725,7 +726,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             <label style={lbl({color:"#c05621",fontSize:11})}>患者フラグ</label>
             <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:10}}>
               {["通常","○患者疑い（話が長い方）","●患者疑い（出禁対象）"].map(v=>(
-                <button key={v} style={btn(d.body.patientFlag===v,"#c05621",{fontSize:12})} onClick={()=>up("body","patientFlag",v)}>{v}</button>
+                <button key={v} style={btn(d.body.patientFlag===v,UI.warning.fg,{fontSize:12})} onClick={()=>up("body","patientFlag",v)}>{v}</button>
               ))}
             </div>
             <label style={{fontSize:13,color:"#c05621",display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}>

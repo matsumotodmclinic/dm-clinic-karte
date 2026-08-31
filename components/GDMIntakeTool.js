@@ -243,7 +243,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               {[["ナラヤマレディースクリニック","産婦人科"],["葵ウィメンズクリニック","産婦人科"]].map(([hosp,dept])=>{
                 const selected = d.reason.referralFrom===hosp;
                 return (
-                <button key={hosp} style={{...btn(selected,"#0f9668"),fontSize:13,padding:"9px 16px",border:selected?"2px solid #0f9668":"2px dashed #0f9668",background:selected?"#0f9668":"#f0fff8",color:selected?"#fff":"#0f9668"}}
+                <button key={hosp} style={{...btn(selected,UI.success.fg),fontSize:13,padding:"9px 16px",border:selected?"2px solid #0f9668":"2px dashed #0f9668",background:selected?"#0f9668":"#f0fff8",color:selected?"#fff":"#0f9668"}}
                   onClick={()=>setData(p=>selected
                     ? ({...p,reason:{...p.reason,referralFrom:"",referralDept:"",referralQuickSelect:false}})
                     : ({...p,reason:{...p.reason,referralFrom:hosp,referralDept:dept,referralQuickSelect:true}})
@@ -358,7 +358,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                   </div>
                 </div>
               ))}
-              <button style={{...btn(false,"#c05c8a"),fontSize:13,marginTop:4}} onClick={()=>setData(p=>({...p,disease:{...p.disease,pastGDMChild:[...p.disease.pastGDMChild,{era:'令和',year:'',had:''}]}}))}>＋ 追加</button>
+              <button style={{...btn(false,UI.primary.fg),fontSize:13,marginTop:4}} onClick={()=>setData(p=>({...p,disease:{...p.disease,pastGDMChild:[...p.disease.pastGDMChild,{era:'令和',year:'',had:''}]}}))}>＋ 追加</button>
             </div>
           )}
           <label style={lbl({marginTop:8})}>合併する疾患</label>
@@ -376,7 +376,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                 <label style={lbl({color:"#2b6cb0"})}>頚部エコー</label>
                 <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
                   {["他院で施行済","健診で施行済","行っていない","希望なし"].map(v=>(
-                    <button key={v} style={{...btn(d.disease.echoNeck===v,"#2b6cb0"),padding:"6px 10px",fontSize:12}} onClick={()=>up("disease","echoNeck",v)}>{v}</button>
+                    <button key={v} style={{...btn(d.disease.echoNeck===v,UI.primary.fg),padding:"6px 10px",fontSize:12}} onClick={()=>up("disease","echoNeck",v)}>{v}</button>
                   ))}
                 </div>
               </div>
@@ -384,7 +384,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                 <label style={lbl({color:"#2b6cb0"})}>腹部エコー</label>
                 <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
                   {["他院で施行済","健診で施行済","行っていない","希望なし"].map(v=>(
-                    <button key={v} style={{...btn(d.disease.echoAbdomen===v,"#2b6cb0"),padding:"6px 10px",fontSize:12}} onClick={()=>up("disease","echoAbdomen",v)}>{v}</button>
+                    <button key={v} style={{...btn(d.disease.echoAbdomen===v,UI.primary.fg),padding:"6px 10px",fontSize:12}} onClick={()=>up("disease","echoAbdomen",v)}>{v}</button>
                   ))}
                 </div>
               </div>
@@ -433,7 +433,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               {i>0&&<button onClick={()=>setData(p=>{const a=(p.history.otherDiseases||[]).filter((_,j)=>j!==i);return{...p,history:{...p.history,otherDiseases:a}};})} style={{fontSize:12,color:"#e53e3e",background:"none",border:"none",cursor:"pointer",fontWeight:700,paddingTop:10}}>✕</button>}
             </div>
           ))}
-          <button style={{...btn(false,"#718096"),fontSize:13,marginBottom:14}} onClick={()=>setData(p=>{const a=[...(p.history.otherDiseases||[]),{name:"",hospital:"",hospitalOther:""}];return{...p,history:{...p.history,otherDiseases:a}};})}>＋ その他の病名を追加</button>
+          <button style={{...btn(false,UI.neutral.fg),fontSize:13,marginBottom:14}} onClick={()=>setData(p=>{const a=[...(p.history.otherDiseases||[]),{name:"",hospital:"",hospitalOther:""}];return{...p,history:{...p.history,otherDiseases:a}};})}>＋ その他の病名を追加</button>
           <label style={lbl()}>アレルギー歴</label>
           <div style={{display:"flex",gap:8,marginBottom:8}}>
             {["なし","あり"].map(v=><button key={v} style={btn(d.history.allergy===v)} onClick={()=>up("history","allergy",v)}>{v}</button>)}
@@ -444,7 +444,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                 {ALLERGY_QUICK.map(v=>{
                   const selected = (d.history.allergyDetail||"").includes(v);
                   return (
-                    <button key={v} style={btn(selected,"#c53030")} onClick={()=>{
+                    <button key={v} style={btn(selected,UI.danger.fg)} onClick={()=>{
                       const cur = d.history.allergyDetail||"";
                       if(selected){ const next = cur.split(/[・、,]/).map(s=>s.trim()).filter(s=>s&&s!==v).join("・"); up("history","allergyDetail",next); }
                       else { up("history","allergyDetail",cur?`${cur}・${v}`:v); }
@@ -459,7 +459,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <label style={lbl({marginTop:10})}>家族歴（FH）</label>
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:16}}>
             {[["dm","糖尿病(DM)"],["ht","高血圧(HT)"],["apo","脳卒中(APO)"],["ihd","虚血性心疾患(IHD)"]].map(([k,l])=>(
-              <button key={k} style={btn(d.history.fh[k],"#6b3fa8")} onClick={()=>upN("history","fh",k,!d.history.fh[k])}>{l}</button>
+              <button key={k} style={btn(d.history.fh[k],UI.fixed.fg)} onClick={()=>upN("history","fh",k,!d.history.fh[k])}>{l}</button>
             ))}
           </div>
           {d.history.fh.dm && (
@@ -467,7 +467,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               <label style={lbl({color:"#6b3fa8",fontSize:11})}>糖尿病：誰が（複数選択可）</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
                 {["父","母","祖父（父方）","祖母（父方）","祖父（母方）","祖母（母方）","兄弟・姉妹"].map(v=>(
-                  <button key={v} style={{...btn(d.history.fh.dmWho.includes(v),"#6b3fa8"),padding:"5px 10px",fontSize:12}}
+                  <button key={v} style={{...btn(d.history.fh.dmWho.includes(v),UI.fixed.fg),padding:"5px 10px",fontSize:12}}
                     onClick={()=>setData(p=>{const a=p.history.fh.dmWho;return{...p,history:{...p.history,fh:{...p.history.fh,dmWho:a.includes(v)?a.filter(x=>x!==v):[...a,v]}}};})}>
                     {v}
                   </button>
@@ -491,7 +491,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                   <label style={lbl({fontSize:11})}>受診中の眼科</label>
                   <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:6}}>
                     {EYE_CLINICS.map(v=>(
-                      <button key={v} style={{...btn(d.history.eye===v,"#1a5fa8"),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","eye",v)}>{v}</button>
+                      <button key={v} style={{...btn(d.history.eye===v,UI.primary.fg),padding:"6px 10px",fontSize:12}} onClick={()=>up("history","eye",v)}>{v}</button>
                     ))}
                   </div>
                   <input style={{...inp(),marginBottom:8}} placeholder="その他の眼科名を入力"
@@ -586,7 +586,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <label style={lbl()}>医師の希望</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:14}}>
             {["指定なし","女性医師希望","男性医師希望","院長（初回のみ）"].map(v=>(
-              <button key={v} style={btn(d.body.doctorGender===v,"#c05c8a")} onClick={()=>up("body","doctorGender",v)}>{v}</button>
+              <button key={v} style={btn(d.body.doctorGender===v,UI.primary.fg)} onClick={()=>up("body","doctorGender",v)}>{v}</button>
             ))}
           </div>
           <label style={lbl()}>診察への要望・聞きたいこと</label>
@@ -596,7 +596,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             <label style={lbl({color:"#c05621",fontSize:11})}>患者フラグ</label>
             <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:10}}>
               {["通常","○患者疑い（話が長い方）","●患者疑い（出禁対象）"].map(v=>(
-                <button key={v} style={btn(d.body.patientFlag===v,"#c05621",{fontSize:12})} onClick={()=>up("body","patientFlag",v)}>{v}</button>
+                <button key={v} style={btn(d.body.patientFlag===v,UI.warning.fg,{fontSize:12})} onClick={()=>up("body","patientFlag",v)}>{v}</button>
               ))}
             </div>
             <label style={{fontSize:13,color:"#c05621",display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}>
