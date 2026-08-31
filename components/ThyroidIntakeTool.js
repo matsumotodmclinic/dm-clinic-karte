@@ -3,8 +3,8 @@ import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
 
-// スタイルは lib/formStyles.js に集約（テーマ色は移行前と同一）
-const { inp, lbl, btn, sBox } = makeFormStyles(FORM_THEMES.teal);
+// スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
+const { inp, lbl, btn, sBox } = makeFormStyles(FORM_THEMES.thyroid);
 
 const TC = "#0d7d6a";
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];

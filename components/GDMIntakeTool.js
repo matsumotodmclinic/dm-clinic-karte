@@ -6,8 +6,12 @@ import { buildOtherDiseasesText } from "../lib/otherDiseases";
 import { formatEcho, buildEchoLine } from "../lib/echo";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
 
-// スタイルは lib/formStyles.js に集約（テーマ色は移行前と同一）
-const { inp, lbl, btn, sBox } = makeFormStyles(FORM_THEMES.pink);
+import { UI } from "../lib/uiTokens";
+
+// スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
+// TONE = このフォームのカテゴリ色。糖尿病関連なので青
+const TONE = UI.primary;
+const { inp, lbl, btn, sBox } = makeFormStyles(FORM_THEMES.dm);
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
 const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ", "金属"];
@@ -625,7 +629,7 @@ LINE登録ご案内→済　登録確認未・登録できない
   };
 
   return (
-    <div ref={topRef} style={{minHeight:"100vh",background:"linear-gradient(135deg,#fff0f7 0%,#fff5fb 50%,#f5f0ff 100%)",fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif",padding:"20px 16px"}}>
+    <div ref={topRef} style={{minHeight:"100vh",background:UI.surfaceAlt,fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif",padding:"20px 16px"}}>
 
       <style>{`@keyframes kinkSpin{to{transform:rotate(360deg)}}`}</style>
       {loading && (
@@ -634,39 +638,38 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{color:'#fff',fontWeight:800,fontSize:17,marginTop:22,textAlign:'center',lineHeight:1.8}}>カルテを作成しています...<br/>少々お待ちください</div>
         </div>
       )}
-      <div style={{maxWidth:680,margin:"0 auto 18px"}}>
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <button onClick={()=>router.push("/")} style={{padding:"6px 10px",borderRadius:8,border:"1.5px solid #f0d0e0",background:"#fff",color:"#c05c8a",fontWeight:700,fontSize:12,cursor:"pointer"}}>← トップ</button>
-          <div style={{width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#c05c8a,#e89abf)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>🏥</div>
+      <div style={{maxWidth:680,margin:"0 auto 16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <button onClick={()=>router.push("/")} style={{padding:"6px 11px",borderRadius:6,border:`1px solid ${UI.border}`,background:UI.surface,color:UI.textMuted,fontWeight:700,fontSize:12,cursor:"pointer"}}>← トップ</button>
           <div>
-            <div style={{fontSize:11,color:"#c05c8a",fontWeight:700,letterSpacing:"0.08em"}}>まつもと糖尿病クリニック</div>
-            <div style={{fontSize:20,fontWeight:900,color:"#1a2a4a"}}>初診事前問診</div>
+            <div style={{fontSize:11,color:UI.textFaint,fontWeight:700,letterSpacing:"0.08em"}}>まつもと糖尿病クリニック</div>
+            <div style={{fontSize:19,fontWeight:700,color:UI.text}}>初診事前問診</div>
           </div>
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
-<span style={{fontSize:12,background:"#fff0f7",color:"#c05c8a",padding:"4px 14px",borderRadius:20,fontWeight:700}}>妊娠糖尿病</span>
+            <span style={{fontSize:12,background:TONE.bg,color:TONE.fg,padding:"4px 12px",borderRadius:4,fontWeight:700}}>妊娠糖尿病</span>
           </div>
         </div>
 
       </div>
 
       <div style={{maxWidth:680,margin:"0 auto"}}>
-        {!done&&(<div style={{display:"flex",gap:4,marginBottom:18}}>
+        {!done&&(<div style={{display:"flex",gap:4,marginBottom:16}}>
           {STEPS.map((s,i)=>(<div key={s.id} onClick={()=>goStep(i)} style={{flex:1,textAlign:"center",cursor:"pointer",userSelect:"none"}}>
-            <div style={{height:4,borderRadius:2,background:i===step?"#c05c8a":i<step?"#e89abf":"#f0d0e0",marginBottom:4,transition:"background 0.3s"}}/>
-            <div style={{fontSize:10,color:i===step?"#c05c8a":i<step?"#e89abf":"#d0a0b8",fontWeight:i===step?800:i<step?600:400}}>{i<step?"✓ ":""}{s.title}</div>
+            <div style={{height:3,borderRadius:2,background:i<=step?TONE.fg:UI.border,marginBottom:5,transition:"background 0.3s"}}/>
+            <div style={{fontSize:10,color:i===step?TONE.fg:i<step?UI.textMuted:UI.textDisabled,fontWeight:i<=step?700:400}}>{i<step?"✓ ":""}{s.title}</div>
           </div>))}
         </div>)}
 
         {!done?(
-          <div style={{background:"#fff",borderRadius:16,padding:"24px 26px",boxShadow:"0 2px 20px rgba(192,92,138,0.08)"}}>
-            <h2 style={{fontSize:16,fontWeight:800,color:"#1a2a4a",marginBottom:18,borderBottom:"2px solid #fff0f7",paddingBottom:10}}>{STEPS[step].title}</h2>
+          <div style={{background:UI.surface,borderRadius:8,padding:"22px 24px",border:`1px solid ${UI.border}`,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
+            <h2 style={{fontSize:15,fontWeight:700,color:UI.text,marginBottom:18,borderBottom:`1px solid ${UI.border}`,paddingBottom:10}}>{STEPS[step].title}</h2>
             {renderStep()}
-            <div style={{display:"flex",justifyContent:"space-between",marginTop:26}}>
-              <button style={{padding:"11px 22px",borderRadius:8,border:"1.5px solid #f0d0e0",background:"#fff7fb",color:step===0?"#d0a0b8":"#9a5070",fontWeight:700,fontSize:14,cursor:step===0?"not-allowed":"pointer"}} onClick={()=>goStep(step-1)} disabled={step===0}>← 前へ</button>
+            <div style={{display:"flex",justifyContent:"space-between",marginTop:24}}>
+              <button style={{padding:"10px 20px",borderRadius:6,border:`1px solid ${UI.border}`,background:UI.surface,color:step===0?UI.textDisabled:UI.textMuted,fontWeight:700,fontSize:14,cursor:step===0?"not-allowed":"pointer"}} onClick={()=>goStep(step-1)} disabled={step===0}>← 前へ</button>
               {step<STEPS.length-1?(
-                <button style={{padding:"11px 26px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#c05c8a,#e89abf)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",boxShadow:"0 4px 12px rgba(192,92,138,0.3)"}} onClick={()=>goStep(step+1)}>次へ →</button>
+                <button style={{padding:"10px 24px",borderRadius:6,border:"none",background:TONE.fg,color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>goStep(step+1)}>次へ →</button>
               ):(
-                <button style={{padding:"11px 26px",borderRadius:8,border:"none",background:loading?"#8ab0d4":"linear-gradient(135deg,#0f9668,#34d399)",color:"#fff",fontWeight:800,fontSize:14,cursor:loading?"not-allowed":"pointer",boxShadow:"0 4px 12px rgba(15,150,104,0.25)"}} onClick={generateKarte} disabled={loading}>{loading?"生成中...":"✨ カルテ文を生成"}</button>
+                <button style={{padding:"10px 24px",borderRadius:6,border:"none",background:loading?UI.textDisabled:UI.success.fg,color:"#fff",fontWeight:700,fontSize:14,cursor:loading?"not-allowed":"pointer"}} onClick={generateKarte} disabled={loading}>{loading?"生成中...":"カルテ文を生成"}</button>
               )}
             </div>
           </div>

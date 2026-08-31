@@ -6,8 +6,8 @@ import { buildOtherDiseasesText } from "../lib/otherDiseases";
 import { formatEcho, buildEchoLine } from "../lib/echo";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
 
-// スタイルは lib/formStyles.js に集約（テーマ色は移行前と同一）
-const { inp, lbl, btn, sBox } = makeFormStyles(FORM_THEMES.blue);
+// スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
+const { inp, lbl, btn, sBox } = makeFormStyles(FORM_THEMES.other);
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
 const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ", "金属"];
