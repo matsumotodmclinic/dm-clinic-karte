@@ -8,6 +8,8 @@ import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
+// TONE = このフォームのカテゴリ色
+const TONE = UI.fixed;
 const { inp, lbl, btn, sBox } = makeFormStyles(FORM_THEMES.other);
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
@@ -414,7 +416,7 @@ LINE登録ご案内→済　登録確認未・登録できない
 
           {d.reason.sasCategory==='cpap' && (
             <div style={sBox({background:"#fff7e6",border:"1.5px solid #f0c270"})}>
-              <div style={{fontSize:13,fontWeight:800,color:"#a67000",marginBottom:8}}>📄 前医情報提供書（CPAP継続に必須）</div>
+              <div style={{fontSize:13,fontWeight: 700,color:"#a67000",marginBottom:8}}>📄 前医情報提供書（CPAP継続に必須）</div>
               <div style={{fontSize:12,color:"#7a5500",marginBottom:10,lineHeight:1.6}}>当院でのCPAP継続には、前医の情報提供書が必須です。問診時に持参いただき、内容を確認してチェックしてください。機種によっては当院で継続できない場合があります。</div>
               <label style={lbl({marginTop:4})}>前医名（任意）</label>
               <input style={{...inp(),marginBottom:10}} placeholder="例：○○呼吸器内科" value={d.reason.cpapPriorClinic} onChange={e=>up("reason","cpapPriorClinic",e.target.value)}/>
@@ -427,7 +429,7 @@ LINE登録ご案内→済　登録確認未・登録できない
 
           {d.reason.sasCategory==='screening' && (
             <div style={sBox({background:"#f0fff4",border:"1.5px solid #9ae6b4"})}>
-              <div style={{fontSize:13,fontWeight:800,color:"#276749",marginBottom:8}}>🔬 簡易PSG検査について</div>
+              <div style={{fontSize:13,fontWeight: 700,color:"#276749",marginBottom:8}}>🔬 簡易PSG検査について</div>
               <div style={{fontSize:12,color:"#1a4530",lineHeight:1.6}}>ご予約日時に業者へ発送手配を行い、後日ご自宅に検査機器が郵送されます。当院ではSASは糖尿病・脂質異常症の合併が多いため、全例に採血検査を行っています。</div>
             </div>
           )}
@@ -485,7 +487,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <button style={{...btn(false,UI.neutral.fg),fontSize:13,marginBottom:14}} onClick={()=>setData(p=>{const a=[...(p.disease.otherDiseases||[]),{name:"",hospital:"",hospitalOther:"",dept:""}];return{...p,disease:{...p.disease,otherDiseases:a}};})}>＋ その他の病名を追加</button>
 
           <div style={{...sBox({background:"#f0f8ff",border:"1.5px solid #bee3f8"}),marginTop:8}}>
-            <div style={{fontSize:13,fontWeight:800,color:"#2b6cb0",marginBottom:4}}>🔍 エコー検査について</div>
+            <div style={{fontSize:13,fontWeight: 700,color:"#2b6cb0",marginBottom:4}}>🔍 エコー検査について</div>
             <div style={{fontSize:12,color:"#4a7fa8",marginBottom:12,lineHeight:1.7}}>当院では合併症検査として、頸動脈エコー・腹部エコー等を年に1回行っています。</div>
             <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
               <div style={{flex:1,minWidth:200}}>
@@ -512,7 +514,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
             <input style={{...inp(),width:80}} type="number" placeholder="歳" value={d.history.age} onChange={e=>up("history","age",e.target.value)}/>
             <span style={{fontSize:13,color:"#666"}}>歳</span>
-            {age>0&&(<span style={{fontSize:12,fontWeight:700,padding:"4px 12px",borderRadius:20,color:isOver70?"#c53030":isOver60?"#c05621":"#276749",background:isOver70?"#fff5f5":isOver60?"#fffaf0":"#f0fff4",border:`1px solid ${isOver70?"#feb2b2":isOver60?"#fbd38d":"#9ae6b4"}`}}>
+            {age>0&&(<span style={{fontSize:12,fontWeight:700,padding:"4px 12px",borderRadius: 4,color:isOver70?"#c53030":isOver60?"#c05621":"#276749",background:isOver70?"#fff5f5":isOver60?"#fffaf0":"#f0fff4",border:`1px solid ${isOver70?"#feb2b2":isOver60?"#fbd38d":"#9ae6b4"}`}}>
               {isOver70?"70歳以上：子供の状況も確認":isOver60?"60歳以上：ワクチン確認あり":"60歳未満：ワクチン確認不要"}
             </span>)}
           </div>
@@ -583,7 +585,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             {["市の健診","会社の健診","人間ドック","なし"].map(v=><button key={v} style={btn(d.history.checkup.includes(v))} onClick={()=>toggleArr("history","checkup",v)}>{v}</button>)}
           </div>
           {isOver60&&(<div style={sBox({border:"1.5px solid #bee3f8",background:"#ebf8ff"})}>
-            <div style={{fontSize:13,fontWeight:800,color:"#2b6cb0",marginBottom:12}}>💉 ワクチン希望（60歳以上）</div>
+            <div style={{fontSize:13,fontWeight: 700,color:"#2b6cb0",marginBottom:12}}>💉 ワクチン希望（60歳以上）</div>
             <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
               <div style={{flex:1,minWidth:180}}>
                 <label style={lbl({color:"#2b6cb0"})}>プレベナー20</label>
@@ -603,7 +605,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>{LIVING_OTHERS.map(v=><button key={v} style={btn((d.history.livingOther||[]).includes(v))} onClick={()=>toggleArr("history","livingOther",v)}>{v}</button>)}</div>
           <input style={{...inp(),marginBottom:8}} placeholder="その他の場合や補足があれば（例：兄弟と同居・夫は要介護）" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>
           {isOver70&&(<div style={sBox({border:"1.5px solid #fbd38d",background:"#fffaf0"})}>
-            <div style={{fontSize:13,fontWeight:800,color:"#c05621",marginBottom:8}}>👨‍👩‍👧 お子さんの状況（70歳以上）</div>
+            <div style={{fontSize:13,fontWeight: 700,color:"#c05621",marginBottom:8}}>👨‍👩‍👧 お子さんの状況（70歳以上）</div>
             {(Array.isArray(d.history.livingOther)?d.history.livingOther:[]).includes("子供と同居なし")&&(
               <div style={{marginBottom:10}}>
                 <label style={lbl({color:"#c05621",fontSize:11})}>お子さんの居住地</label>
@@ -669,7 +671,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <label style={lbl()}>診察への要望・聞きたいこと</label>
           <textarea style={{...inp(),minHeight:80,resize:"vertical"}} placeholder="自由にご記入ください（なければ空欄）" value={d.body.concern} onChange={e=>up("body","concern",e.target.value)}/>
           <div style={sBox({background:"#fff8f0",border:"1.5px dashed #fbd38d",marginTop:14})}>
-            <div style={{fontSize:12,fontWeight:800,color:"#c05621",marginBottom:8}}>🔒 スタッフ入力欄（患者は操作不要）</div>
+            <div style={{fontSize:12,fontWeight: 700,color:"#c05621",marginBottom:8}}>🔒 スタッフ入力欄（患者は操作不要）</div>
             <label style={lbl({color:"#c05621",fontSize:11})}>患者フラグ</label>
             <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:10}}>
               {["通常","○患者疑い（話が長い方）","●患者疑い（出禁対象）"].map(v=>(<button key={v} style={btn(d.body.patientFlag===v,UI.warning.fg,{fontSize:12})} onClick={()=>up("body","patientFlag",v)}>{v}</button>))}
@@ -705,25 +707,24 @@ LINE登録ご案内→済　登録確認未・登録できない
   };
 
   return (
-    <div ref={topRef} style={{minHeight:"100vh",background:"linear-gradient(135deg,#eef2fb 0%,#f5f4ff 60%,#fff5f0 100%)",fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif",padding:"20px 16px"}}>
+    <div ref={topRef} style={{minHeight:"100vh",background:UI.surfaceAlt,fontFamily:"'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif",padding:"20px 16px"}}>
 
       <style>{`@keyframes kinkSpin{to{transform:rotate(360deg)}}`}</style>
       {loading && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.52)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:9999}}>
           <div style={{width:54,height:54,border:'5px solid rgba(255,255,255,0.25)',borderTopColor:'#fff',borderRadius:'50%',animation:'kinkSpin 0.8s linear infinite'}}/>
-          <div style={{color:'#fff',fontWeight:800,fontSize:17,marginTop:22,textAlign:'center',lineHeight:1.8}}>カルテを作成しています...<br/>少々お待ちください</div>
+          <div style={{color:'#fff',fontWeight: 700,fontSize:17,marginTop:22,textAlign:'center',lineHeight:1.8}}>カルテを作成しています...<br/>少々お待ちください</div>
         </div>
       )}
       <div style={{maxWidth:680,margin:"0 auto 18px"}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <button onClick={()=>router.push("/")} style={{padding:"6px 10px",borderRadius:8,border:"1.5px solid #d6d8f0",background:"#fff",color:"#5a4fa8",fontWeight:700,fontSize:12,cursor:"pointer"}}>← トップ</button>
-          <div style={{width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#5a4fa8,#8a7ed4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>🌙</div>
+          <button onClick={()=>router.push("/")} style={{padding:"6px 11px",borderRadius:6,border:`1px solid ${UI.border}`,background:UI.surface,color:UI.textMuted,fontWeight:700,fontSize:12,cursor:"pointer"}}>← トップ</button>
           <div>
-            <div style={{fontSize:11,color:"#7a6fd0",fontWeight:700,letterSpacing:"0.08em"}}>まつもと糖尿病クリニック</div>
-            <div style={{fontSize:20,fontWeight:900,color:"#1a2a4a"}}>初診事前問診</div>
+            <div style={{fontSize:11,color:UI.textFaint,fontWeight:700,letterSpacing:"0.08em"}}>まつもと糖尿病クリニック</div>
+            <div style={{fontSize:19,fontWeight:700,color:UI.text}}>初診事前問診</div>
           </div>
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:12,background:"#eee9ff",color:"#5a4fa8",padding:"4px 14px",borderRadius:20,fontWeight:700}}>睡眠時無呼吸症候群</span>
+            <span style={{fontSize:12,background:TONE.bg,color:TONE.fg,padding:"4px 12px",borderRadius:4,fontWeight:700}}>睡眠時無呼吸症候群</span>
           </div>
         </div>
       </div>
@@ -731,30 +732,30 @@ LINE登録ご案内→済　登録確認未・登録できない
       <div style={{maxWidth:680,margin:"0 auto"}}>
         {!done&&(<div style={{display:"flex",gap:4,marginBottom:18}}>
           {STEPS.map((s,i)=>(<div key={s.id} onClick={()=>goStep(i)} style={{flex:1,textAlign:"center",cursor:"pointer",userSelect:"none"}}>
-            <div style={{height:4,borderRadius:2,background:i===step?"#5a4fa8":i<step?"#8a7ed4":"#d6d8f0",marginBottom:4,transition:"background 0.3s"}}/>
-            <div style={{fontSize:10,color:i===step?"#5a4fa8":i<step?"#8a7ed4":"#b0b8d8",fontWeight:i===step?800:i<step?600:400}}>{i<step?"✓ ":""}{s.title}</div>
+            <div style={{height:3,borderRadius:2,background:i<=step?TONE.fg:UI.border,marginBottom:5,transition:"background 0.3s"}}/>
+            <div style={{fontSize:10,color:i===step?TONE.fg:i<step?UI.textMuted:UI.textDisabled,fontWeight:i<=step?700:400}}>{i<step?"✓ ":""}{s.title}</div>
           </div>))}
         </div>)}
 
         {!done?(
-          <div style={{background:"#fff",borderRadius:16,padding:"24px 26px",boxShadow:"0 2px 20px rgba(90,79,168,0.07)"}}>
-            <h2 style={{fontSize:16,fontWeight:800,color:"#1a2a4a",marginBottom:18,borderBottom:"2px solid #eee9ff",paddingBottom:10}}>{STEPS[step].title}</h2>
+          <div style={{background:UI.surface,borderRadius:8,padding:"22px 24px",border:`1px solid ${UI.border}`,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
+            <h2 style={{fontSize:15,fontWeight:700,color:UI.text,marginBottom:18,borderBottom:`1px solid ${UI.border}`,paddingBottom:10}}>{STEPS[step].title}</h2>
             {renderStep()}
             <div style={{display:"flex",justifyContent:"space-between",marginTop:26}}>
-              <button style={{padding:"11px 22px",borderRadius:8,border:"1.5px solid #d6d8f0",background:"#f7f6ff",color:step===0?"#c0c4e0":"#5a4fa8",fontWeight:700,fontSize:14,cursor:step===0?"not-allowed":"pointer"}} onClick={()=>goStep(step-1)} disabled={step===0}>← 前へ</button>
+              <button style={{padding:"10px 20px",borderRadius:6,border:`1px solid ${UI.border}`,background:UI.surface,color:step===0?UI.textDisabled:UI.textMuted,fontWeight:700,fontSize:14,cursor:step===0?"not-allowed":"pointer"}} onClick={()=>goStep(step-1)} disabled={step===0}>← 前へ</button>
               {step<STEPS.length-1?(
-                <button style={{padding:"11px 26px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#5a4fa8,#8a7ed4)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",boxShadow:"0 4px 12px rgba(90,79,168,0.25)"}} onClick={()=>goStep(step+1)}>次へ →</button>
+                <button style={{padding:"10px 24px",borderRadius:6,border:"none",background:TONE.fg,color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>goStep(step+1)}>次へ →</button>
               ):(
-                <button style={{padding:"11px 26px",borderRadius:8,border:"none",background:loading?"#aab0d4":"linear-gradient(135deg,#0f9668,#34d399)",color:"#fff",fontWeight:800,fontSize:14,cursor:loading?"not-allowed":"pointer",boxShadow:"0 4px 12px rgba(15,150,104,0.25)"}} onClick={generateKarte} disabled={loading}>{loading?"生成中...":"✨ カルテ文を生成"}</button>
+                <button style={{padding:"10px 24px",borderRadius:6,border:"none",background:loading?UI.textDisabled:UI.success.fg,color:"#fff",fontWeight:700,fontSize:14,cursor:loading?"not-allowed":"pointer"}} onClick={generateKarte} disabled={loading}>{loading?"生成中...":"✨ カルテ文を生成"}</button>
               )}
             </div>
           </div>
         ):(
-          <div style={{background:"#fff",borderRadius:16,padding:"24px 26px",boxShadow:"0 2px 20px rgba(90,79,168,0.07)",border:"2px solid #d6d0f8"}}>
+          <div style={{background:UI.surface,borderRadius:8,padding:"22px 24px",border:`1px solid ${UI.border}`,boxShadow:"0 2px 8px rgba(0,0,0,.06)",border:"2px solid #d6d0f8"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-              <div style={{width:32,height:32,borderRadius:8,background:"#5a4fa8",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:900,fontSize:16}}>✓</div>
+              <div style={{width:32,height:32,borderRadius:8,background:"#5a4fa8",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight: 700,fontSize:16}}>✓</div>
               <div>
-                <div style={{fontWeight:800,color:"#3a2f78",fontSize:15}}>カルテ記載文が生成されました</div>
+                <div style={{fontWeight: 700,color:"#3a2f78",fontSize:15}}>カルテ記載文が生成されました</div>
                 <div style={{fontSize:12,color:"#7a6fd0"}}>内容確認後、電子カルテにコピーしてください</div>
               </div>
             </div>
@@ -765,13 +766,13 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
             )}
             {visitCode && (
-              <div style={{background:"linear-gradient(135deg,#5a4fa8,#8a7ed4)",borderRadius:14,padding:"20px",marginBottom:16,textAlign:"center"}}>
+              <div style={{background: TONE.fg, borderRadius: 8,padding:"20px",marginBottom:16,textAlign:"center"}}>
                 <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",marginBottom:6,fontWeight:700}}>受付番号</div>
-                <div style={{fontSize:56,fontWeight:900,color:"#fff",letterSpacing:"0.2em",lineHeight:1}}>{visitCode}</div>
+                <div style={{fontSize:56,fontWeight: 700,color:"#fff",letterSpacing:"0.2em",lineHeight:1}}>{visitCode}</div>
               </div>
             )}
             <div style={{background:"#fff8e1",border:"2px solid #f59e0b",borderRadius:12,padding:"14px 18px",marginBottom:12,textAlign:"center"}}>
-              <div style={{fontSize:16,fontWeight:900,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
+              <div style={{fontSize:16,fontWeight: 700,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
               <div style={{fontSize:12,color:"#b45309",marginTop:4}}>問診は完了しています。ありがとうございました。</div>
             </div>
             <div style={{marginBottom:4}}>
@@ -783,14 +784,14 @@ LINE登録ご案内→済　登録確認未・登録できない
               <div style={{marginBottom:8}}>
                 <textarea value={result} onChange={e=>setResult(e.target.value)} style={{width:"100%",minHeight:320,background:"#f7f5ff",border:"1px solid #d6d0f8",borderRadius:10,padding:"16px 18px",fontSize:11,lineHeight:2,color:"#1a2a4a",fontFamily:"monospace",resize:"vertical",boxSizing:"border-box"}}/>
                 <div style={{display:"flex",gap:8,marginTop:8,alignItems:"center"}}>
-                  <button onClick={saveEditedKarte} disabled={saving} style={{padding:"10px 18px",borderRadius:8,border:"none",background:saving?"#a89cdc":"#5a4fa8",color:"#fff",fontWeight:800,fontSize:13,cursor:saving?"wait":"pointer"}}>{saving?"💾 保存中...":"💾 編集内容を保存"}</button>
+                  <button onClick={saveEditedKarte} disabled={saving} style={{padding:"10px 18px",borderRadius:8,border:"none",background:saving?"#a89cdc":"#5a4fa8",color:"#fff",fontWeight: 700,fontSize:13,cursor:saving?"wait":"pointer"}}>{saving?"💾 保存中...":"💾 編集内容を保存"}</button>
                   {saveMsg && <span style={{fontSize:13,fontWeight:700,color:saveMsg.startsWith("✓")?"#0f9668":"#c53030"}}>{saveMsg}</span>}
                 </div>
               </div>
             )}
 
             <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#5a4fa8,#8a7ed4)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer"}} onClick={()=>copyToClipboard(result)}>📋 コピー</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"none",background: TONE.fg,color:"#fff",fontWeight: 700,fontSize:14,cursor:"pointer"}} onClick={()=>copyToClipboard(result)}>📋 コピー</button>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #5a4fa8",background:"#f7f5ff",color:"#5a4fa8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setTimeout(scrollTop,50);}}>✏️ 修正する</button>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #d6d8f0",background:"#f7faff",color:"#5580a8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setVisitCode("");setRecordId("");setSaveMsg("");setShowKarte(false);setSaveError(false);setTimeout(scrollTop,50);}}>🔄 最初から</button>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #d6d0f8",background:"#f7f5ff",color:"#3a2f78",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{window.location.href="/";}}>🏠 TOPへ</button>

@@ -5,6 +5,8 @@ import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
+// TONE = このフォームのカテゴリ色
+const TONE = UI.success;
 const { inp, lbl, btn, sBox } = makeFormStyles(FORM_THEMES.thyroid);
 
 const TC = "#0d7d6a";
@@ -564,7 +566,7 @@ ${footerTrailing}`;
 
       {formType === 'basedow-cont' && (
         <div style={sBox({ background: "#fff8e1", border: "1.5px solid #fbd38d" })}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: "#a67000", marginBottom: 14 }}>🔄 バセドウ病：治療歴（継続患者）</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#a67000", marginBottom: 14 }}>🔄 バセドウ病：治療歴（継続患者）</div>
 
           {/* 診断時期 */}
           <div style={{ marginBottom: 14 }}>
@@ -659,7 +661,7 @@ ${footerTrailing}`;
       )}
 
       <div style={sBox({ background: "#e6fff8", border: "1.5px solid #81e6d9" })}>
-        <div style={{ fontSize: 13, fontWeight: 800, color: TC, marginBottom: 12 }}>🔬 甲状腺エコー所見</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: TC, marginBottom: 12 }}>🔬 甲状腺エコー所見</div>
 
         {/* 甲状腺ベース所見（全フォーム共通） */}
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10 }}>
@@ -712,7 +714,7 @@ ${footerTrailing}`;
 
         {data.echo.hasNodule === "あり" && (
           <div style={{ background: "#fff5f5", border: "1.5px solid #feb2b2", borderRadius: 10, padding: "14px 16px", marginBottom: 6 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: "#c53030", marginBottom: 10 }}>🔍 結節の詳細</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#c53030", marginBottom: 10 }}>🔍 結節の詳細</div>
 
             <label style={lbl({ color: "#c53030" })}>結節の部位</label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 10 }}>
@@ -788,7 +790,7 @@ ${footerTrailing}`;
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
             <input style={{ ...inp(), width: 80 }} type="number" placeholder="歳" value={data.history.age} onChange={e => up("history", "age", e.target.value)} />
             <span style={{ fontSize: 13, color: "#666" }}>歳</span>
-            {age > 0 && <span style={{ fontSize: 12, fontWeight: 700, padding: "4px 12px", borderRadius: 20, color: isOver60 ? "#c05621" : "#276749", background: isOver60 ? "#fffaf0" : "#f0fff4", border: `1px solid ${isOver60 ? "#fbd38d" : "#9ae6b4"}` }}>{isOver60 ? "60歳以上：ワクチン確認あり" : "60歳未満：ワクチン確認不要"}</span>}
+            {age > 0 && <span style={{ fontSize: 12, fontWeight: 700, padding: "4px 12px", borderRadius: 4, color: isOver60 ? "#c05621" : "#276749", background: isOver60 ? "#fffaf0" : "#f0fff4", border: `1px solid ${isOver60 ? "#fbd38d" : "#9ae6b4"}` }}>{isOver60 ? "60歳以上：ワクチン確認あり" : "60歳未満：ワクチン確認不要"}</span>}
           </div>
         </>
       )}
@@ -947,7 +949,7 @@ ${footerTrailing}`;
       )}
 
       <div style={sBox({ background: "#fff8f0", border: "1.5px dashed #fbd38d", marginTop: 14 })}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: "#c05621", marginBottom: 8 }}>🔒 スタッフ入力欄</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#c05621", marginBottom: 8 }}>🔒 スタッフ入力欄</div>
         <label style={lbl({ color: "#c05621", fontSize: 11 })}>患者フラグ</label>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
           {["通常", "○患者疑い（話が長い方）", "●患者疑い（出禁対象）"].map(v => (
@@ -987,7 +989,7 @@ ${footerTrailing}`;
       <label style={lbl()}>診察への要望・聞きたいこと</label>
       <textarea style={{ ...inp(), minHeight: 70, resize: "vertical" }} placeholder="自由にご記入ください（なければ空欄）" value={data.body.concern} onChange={e => up("body", "concern", e.target.value)} />
       <div style={sBox({ background: "#fff8f0", border: "1.5px dashed #fbd38d", marginTop: 14 })}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: "#c05621", marginBottom: 8 }}>🔒 スタッフ入力欄</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#c05621", marginBottom: 8 }}>🔒 スタッフ入力欄</div>
         <label style={lbl({ color: "#c05621", fontSize: 11 })}>患者フラグ</label>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 10 }}>
           {["通常", "○患者疑い（話が長い方）", "●患者疑い（出禁対象）"].map(v => (<button key={v} style={btn(data.body.patientFlag === v, UI.warning.fg, { fontSize: 12 })} onClick={() => up("body", "patientFlag", v)}>{v}</button>))}
@@ -1014,25 +1016,24 @@ ${footerTrailing}`;
   const isLastStep = step === steps.length - 1;
 
   return (
-    <div ref={topRef} style={{ minHeight: "100vh", background: "linear-gradient(135deg, #f0fdf9 0%, #ecfdf5 60%, #f0f9ff 100%)", fontFamily: "'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif", padding: "20px 16px" }}>
+    <div ref={topRef} style={{ minHeight:"100vh",background:UI.surfaceAlt, fontFamily: "'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif", padding: "20px 16px" }}>
       <style>{`@keyframes kinkSpin{to{transform:rotate(360deg)}}`}</style>
       {loading && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.52)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 9999 }}>
           <div style={{ width: 54, height: 54, border: "5px solid rgba(255,255,255,0.25)", borderTopColor: "#fff", borderRadius: "50%", animation: "kinkSpin 0.8s linear infinite" }} />
-          <div style={{ color: "#fff", fontWeight: 800, fontSize: 17, marginTop: 22, textAlign: "center", lineHeight: 1.8 }}>カルテを作成しています...<br />少々お待ちください</div>
+          <div style={{ color: "#fff", fontWeight: 700, fontSize: 17, marginTop: 22, textAlign: "center", lineHeight: 1.8 }}>カルテを作成しています...<br />少々お待ちください</div>
         </div>
       )}
 
       <div style={{ maxWidth: 680, margin: "0 auto 18px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <button onClick={() => router.push("/")} style={{ padding: "6px 10px", borderRadius: 8, border: "1.5px solid #a7f3d0", background: "#fff", color: TC, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>← トップへ戻る</button>
-          <div style={{ width: 42, height: 42, borderRadius: 12, background: `linear-gradient(135deg,${TC},#34d399)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>🦋</div>
           <div>
-            <div style={{ fontSize: 11, color: "#2d8a78", fontWeight: 700, letterSpacing: "0.08em" }}>まつもと糖尿病クリニック</div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: "#1a2a4a" }}>甲状腺 初診事前問診</div>
+            <div style={{ fontSize:11,color:UI.textFaint,fontWeight:700,letterSpacing:"0.08em" }}>まつもと糖尿病クリニック</div>
+            <div style={{ fontSize:19,fontWeight:700,color:UI.text }}>甲状腺 初診事前問診</div>
           </div>
           <div style={{ marginLeft: "auto" }}>
-            <span style={{ fontSize: 12, background: "#e6fff8", color: TC, padding: "4px 14px", borderRadius: 20, fontWeight: 700 }}>{meta.label}</span>
+            <span style={{ fontSize: 12, background: "#e6fff8", color: TC, padding: "4px 14px", borderRadius: 4, fontWeight: 700 }}>{meta.label}</span>
           </div>
         </div>
       </div>
@@ -1050,24 +1051,24 @@ ${footerTrailing}`;
         )}
 
         {!done ? (
-          <div style={{ background: "#fff", borderRadius: 16, padding: "24px 26px", boxShadow: "0 2px 20px rgba(13,125,106,0.07)" }}>
-            <h2 style={{ fontSize: 16, fontWeight: 800, color: "#1a2a4a", marginBottom: 18, borderBottom: "2px solid #a7f3d0", paddingBottom: 10 }}>{steps[step].title}</h2>
+          <div style={{ background:UI.surface,borderRadius:8,padding:"22px 24px",border:`1px solid ${UI.border}`,boxShadow:"0 2px 8px rgba(0,0,0,.06)" }}>
+            <h2 style={{ fontSize:15,fontWeight:700,color:UI.text,marginBottom:18,borderBottom:`1px solid ${UI.border}`,paddingBottom:10 }}>{steps[step].title}</h2>
             {renderStep()}
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 26 }}>
               <button style={{ padding: "11px 22px", borderRadius: 8, border: "1.5px solid #a7f3d0", background: "#f0fdf9", color: step === 0 ? "#a7c5bc" : TC, fontWeight: 700, fontSize: 14, cursor: step === 0 ? "not-allowed" : "pointer" }} onClick={() => goStep(step - 1)} disabled={step === 0}>← 前へ</button>
               {!isLastStep ? (
-                <button style={{ padding: "11px 26px", borderRadius: 8, border: "none", background: `linear-gradient(135deg,${TC},#34d399)`, color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer", boxShadow: "0 4px 12px rgba(13,125,106,0.25)" }} onClick={() => goStep(step + 1)}>次へ →</button>
+                <button style={{ padding:"10px 24px",borderRadius:6,border:"none",background:TONE.fg,color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer" }} onClick={() => goStep(step + 1)}>次へ →</button>
               ) : (
-                <button style={{ padding: "11px 26px", borderRadius: 8, border: "none", background: loading ? "#a0c8c0" : `linear-gradient(135deg,${TC},#34d399)`, color: "#fff", fontWeight: 800, fontSize: 14, cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 4px 12px rgba(13,125,106,0.25)" }} onClick={generateKarte} disabled={loading}>{loading ? "生成中..." : "✨ カルテ文を生成"}</button>
+                <button style={{ padding: "10px 24px", borderRadius: 6, border: "none", background: loading ? UI.textDisabled : UI.success.fg, color: "#fff", fontWeight: 700, fontSize: 14, cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 4px 12px rgba(13,125,106,0.25)" }} onClick={generateKarte} disabled={loading}>{loading ? "生成中..." : "✨ カルテ文を生成"}</button>
               )}
             </div>
           </div>
         ) : (
-          <div style={{ background: "#fff", borderRadius: 16, padding: "24px 26px", boxShadow: "0 2px 20px rgba(13,125,106,0.07)", border: "2px solid #a7f3d0" }}>
+          <div style={{ background:UI.surface,borderRadius:8,padding:"22px 24px",border:`1px solid ${UI.border}`,boxShadow:"0 2px 8px rgba(0,0,0,.06)", border: "2px solid #a7f3d0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: TC, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 900, fontSize: 16 }}>✓</div>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: TC, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 16 }}>✓</div>
               <div>
-                <div style={{ fontWeight: 800, color: "#0d4d42", fontSize: 15 }}>カルテ記載文が生成されました</div>
+                <div style={{ fontWeight: 700, color: "#0d4d42", fontSize: 15 }}>カルテ記載文が生成されました</div>
                 <div style={{ fontSize: 12, color: "#2d8a78" }}>内容確認後、電子カルテにコピーしてください</div>
               </div>
             </div>
@@ -1078,13 +1079,13 @@ ${footerTrailing}`;
               </div>
             )}
             {visitCode && (
-              <div style={{ background: `linear-gradient(135deg,${TC},#34d399)`, borderRadius: 14, padding: "20px", marginBottom: 16, textAlign: "center" }}>
+              <div style={{ background: TONE.fg, borderRadius: 8, padding: "20px", marginBottom: 16, textAlign: "center" }}>
                 <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", marginBottom: 6, fontWeight: 700 }}>受付番号</div>
-                <div style={{ fontSize: 56, fontWeight: 900, color: "#fff", letterSpacing: "0.2em", lineHeight: 1 }}>{visitCode}</div>
+                <div style={{ fontSize: 56, fontWeight: 700, color: "#fff", letterSpacing: "0.2em", lineHeight: 1 }}>{visitCode}</div>
               </div>
             )}
             <div style={{ background: "#fff8e1", border: "2px solid #f59e0b", borderRadius: 12, padding: "14px 18px", marginBottom: 12, textAlign: "center" }}>
-              <div style={{ fontSize: 16, fontWeight: 900, color: "#92400e" }}>📋 タブレットを受付にお返しください</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "#92400e" }}>📋 タブレットを受付にお返しください</div>
               <div style={{ fontSize: 12, color: "#b45309", marginTop: 4 }}>問診は完了しています。ありがとうございました。</div>
             </div>
             <div style={{ marginBottom: 4 }}>
@@ -1096,13 +1097,13 @@ ${footerTrailing}`;
               <div style={{ marginBottom: 8 }}>
                 <textarea value={result} onChange={e => setResult(e.target.value)} style={{ width: "100%", minHeight: 320, background: "#f0fdf9", border: "1px solid #a7f3d0", borderRadius: 10, padding: "16px 18px", fontSize: 11, lineHeight: 2, color: "#1a2a4a", fontFamily: "monospace", resize: "vertical", boxSizing: "border-box" }} />
                 <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
-                  <button onClick={saveEditedKarte} disabled={saving} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: saving ? "#7ab8a8" : TC, color: "#fff", fontWeight: 800, fontSize: 13, cursor: saving ? "wait" : "pointer" }}>{saving ? "💾 保存中..." : "💾 編集内容を保存"}</button>
+                  <button onClick={saveEditedKarte} disabled={saving} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: saving ? "#7ab8a8" : TC, color: "#fff", fontWeight: 700, fontSize: 13, cursor: saving ? "wait" : "pointer" }}>{saving ? "💾 保存中..." : "💾 編集内容を保存"}</button>
                   {saveMsg && <span style={{ fontSize: 13, fontWeight: 700, color: saveMsg.startsWith("✓") ? "#0f9668" : "#c53030" }}>{saveMsg}</span>}
                 </div>
               </div>
             )}
             <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "none", background: `linear-gradient(135deg,${TC},#34d399)`, color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer" }} onClick={() => copyToClipboard(result)}>📋 コピー</button>
+              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "none", background: TONE.fg, color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" }} onClick={() => copyToClipboard(result)}>📋 コピー</button>
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: `1.5px solid ${TC}`, background: "#f0fdf9", color: TC, fontWeight: 700, fontSize: 14, cursor: "pointer" }} onClick={() => { setDone(false); setStep(0); setTimeout(scrollTop, 50); }}>✏️ 修正する</button>
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #a7f3d0", background: "#f0fdf9", color: "#2d8a78", fontWeight: 700, fontSize: 14, cursor: "pointer" }} onClick={() => { setDone(false); setStep(0); setData(initialData); setResult(""); setVisitCode(""); setRecordId(""); setSaveMsg(""); setShowKarte(false); setSaveError(false); setTimeout(scrollTop, 50); }}>🔄 最初から</button>
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #a7f3d0", background: "#f0fdf9", color: "#2d8a78", fontWeight: 700, fontSize: 14, cursor: "pointer" }} onClick={() => { window.location.href = "/"; }}>🏠 トップへ戻る</button>

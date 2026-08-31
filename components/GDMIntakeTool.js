@@ -286,7 +286,7 @@ LINE登録ご案内→済　登録確認未・登録できない
       case 1: return (
         <div>
           <div style={{...sBox({background:"#fff0f7",border:"2px solid #f0b8d4"}),marginBottom:16}}>
-            <label style={lbl({ fontSize:14, fontWeight:900 })}>病名の確認</label>
+            <label style={lbl({ fontSize:14, fontWeight: 700 })}>病名の確認</label>
             <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:6}}>
               {["妊娠糖尿病（GDM）","糖尿病合併妊娠"].map(v=>(
                 <button key={v} style={btn(d.disease.dmType===v)} onClick={()=>up("disease","dmType",v)}>{v}</button>
@@ -369,7 +369,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           </div>
 
           <div style={{...sBox({background:"#f0f8ff",border:"1.5px solid #bee3f8"}),marginTop:8}}>
-            <div style={{fontSize:13,fontWeight:800,color:"#2b6cb0",marginBottom:4}}>🔍 エコー検査について</div>
+            <div style={{fontSize:13,fontWeight: 700,color:"#2b6cb0",marginBottom:4}}>🔍 エコー検査について</div>
             <div style={{fontSize:12,color:"#4a7fa8",marginBottom:12,lineHeight:1.7}}>当院では合併症検査として、頸動脈エコー・腹部エコーを年に1回行っています。</div>
             <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
               <div style={{flex:1,minWidth:200}}>
@@ -479,7 +479,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           {/* 糖尿病合併妊娠の場合のみ眼科欄を表示 */}
           {d.disease.dmType==="糖尿病合併妊娠"&&(
             <div style={sBox({background:"#f0f7ff",border:"1.5px solid #bcd4f8",marginBottom:14})}>
-              <div style={{fontSize:13,fontWeight:800,color:"#1a5fa8",marginBottom:10}}>👁 糖尿病の眼底検査（糖尿病合併妊娠のため確認）</div>
+              <div style={{fontSize:13,fontWeight: 700,color:"#1a5fa8",marginBottom:10}}>👁 糖尿病の眼底検査（糖尿病合併妊娠のため確認）</div>
               <div style={{fontSize:12,color:"#7a9abf",marginBottom:6}}>糖尿病による網膜症のフォローのため、眼底検査を受けているか確認します</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}}>
                 {["受けている","受けていない","今後受ける予定"].map(v=>(
@@ -592,7 +592,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <label style={lbl()}>診察への要望・聞きたいこと</label>
           <textarea style={{...inp(),minHeight:80,resize:"vertical"}} placeholder="自由にご記入ください（なければ空欄）" value={d.body.concern} onChange={e=>up("body","concern",e.target.value)}/>
           <div style={sBox({background:"#fff8f0",border:"1.5px dashed #fbd38d",marginTop:14})}>
-            <div style={{fontSize:12,fontWeight:800,color:"#c05621",marginBottom:8}}>🔒 スタッフ入力欄（患者は操作不要）</div>
+            <div style={{fontSize:12,fontWeight: 700,color:"#c05621",marginBottom:8}}>🔒 スタッフ入力欄（患者は操作不要）</div>
             <label style={lbl({color:"#c05621",fontSize:11})}>患者フラグ</label>
             <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:10}}>
               {["通常","○患者疑い（話が長い方）","●患者疑い（出禁対象）"].map(v=>(
@@ -635,7 +635,7 @@ LINE登録ご案内→済　登録確認未・登録できない
       {loading && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.52)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:9999}}>
           <div style={{width:54,height:54,border:'5px solid rgba(255,255,255,0.25)',borderTopColor:'#fff',borderRadius:'50%',animation:'kinkSpin 0.8s linear infinite'}}/>
-          <div style={{color:'#fff',fontWeight:800,fontSize:17,marginTop:22,textAlign:'center',lineHeight:1.8}}>カルテを作成しています...<br/>少々お待ちください</div>
+          <div style={{color:'#fff',fontWeight: 700,fontSize:17,marginTop:22,textAlign:'center',lineHeight:1.8}}>カルテを作成しています...<br/>少々お待ちください</div>
         </div>
       )}
       <div style={{maxWidth:680,margin:"0 auto 16px"}}>
@@ -674,11 +674,11 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
           </div>
         ):(
-          <div style={{background:"#fff",borderRadius:16,padding:"24px 26px",boxShadow:"0 2px 20px rgba(192,92,138,0.08)",border:"2px solid #c6f6d5"}}>
+          <div style={{background:"#fff",borderRadius: 8, padding: "22px 24px", boxShadow: "0 2px 8px rgba(0,0,0,.06)", border: `1px solid ${UI.border}`}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-              <div style={{width:32,height:32,borderRadius:8,background:"#0f9668",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:900,fontSize:16}}>✓</div>
+              <div style={{width:32,height:32,borderRadius:8,background:"#0f9668",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight: 700,fontSize:16}}>✓</div>
               <div>
-                <div style={{fontWeight:800,color:"#0a5c40",fontSize:15}}>カルテ記載文が生成されました</div>
+                <div style={{fontWeight: 700,color:"#0a5c40",fontSize:15}}>カルテ記載文が生成されました</div>
                 <div style={{fontSize:12,color:"#5a9a80"}}>内容確認後、電子カルテにコピーしてください</div>
               </div>
             </div>
@@ -689,13 +689,13 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
             )}
                         {visitCode&&(
-              <div style={{background:"linear-gradient(135deg,#c05c8a,#e89abf)",borderRadius:14,padding:"20px",marginBottom:0,textAlign:"center"}}>
+              <div style={{background: TONE.fg, borderRadius: 8,padding:"20px",marginBottom:0,textAlign:"center"}}>
                 <div style={{fontSize:13,color:"#ffe0f0",marginBottom:6,fontWeight:700}}>受付番号</div>
-                <div style={{fontSize:56,fontWeight:900,color:"#fff",letterSpacing:"0.2em",lineHeight:1}}>{visitCode}</div>
+                <div style={{fontSize:56,fontWeight: 700,color:"#fff",letterSpacing:"0.2em",lineHeight:1}}>{visitCode}</div>
               </div>
             )}
             <div style={{background:"#fff8e1",border:"2px solid #f59e0b",borderRadius:12,padding:"14px 18px",marginBottom:12,textAlign:"center"}}>
-              <div style={{fontSize:16,fontWeight:900,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
+              <div style={{fontSize:16,fontWeight: 700,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
               <div style={{fontSize:12,color:"#b45309",marginTop:4}}>問診は完了しています。ありがとうございました。</div>
             </div>
                         <div style={{marginBottom:4}}>
@@ -707,13 +707,13 @@ LINE登録ご案内→済　登録確認未・登録できない
               <div style={{marginBottom:8}}>
                 <textarea value={result} onChange={e=>setResult(e.target.value)} style={{width:"100%",minHeight:320,background:"#f5f9f7",border:"1px solid #c0e8d8",borderRadius:10,padding:"16px 18px",fontSize:11,lineHeight:2,color:"#1a3a2a",fontFamily:"monospace",resize:"vertical",boxSizing:"border-box"}}/>
                 <div style={{display:"flex",gap:8,marginTop:8,alignItems:"center"}}>
-                  <button onClick={saveEditedKarte} disabled={saving} style={{padding:"10px 18px",borderRadius:8,border:"none",background:saving?"#7fc7a6":"#0f9668",color:"#fff",fontWeight:800,fontSize:13,cursor:saving?"wait":"pointer"}}>{saving?"💾 保存中...":"💾 編集内容を保存"}</button>
+                  <button onClick={saveEditedKarte} disabled={saving} style={{padding:"10px 18px",borderRadius:8,border:"none",background:saving?"#7fc7a6":"#0f9668",color:"#fff",fontWeight: 700,fontSize:13,cursor:saving?"wait":"pointer"}}>{saving?"💾 保存中...":"💾 編集内容を保存"}</button>
                   {saveMsg && <span style={{fontSize:13,fontWeight:700,color:saveMsg.startsWith("✓")?"#0f9668":"#c53030"}}>{saveMsg}</span>}
                 </div>
               </div>
             )}
             <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#c05c8a,#e89abf)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer"}} onClick={()=>copyToClipboard(result)}>📋 コピー</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"none",background: TONE.fg,color:"#fff",fontWeight: 700,fontSize:14,cursor:"pointer"}} onClick={()=>copyToClipboard(result)}>📋 コピー</button>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #c05c8a",background:"#f0f7ff",color:"#c05c8a",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setTimeout(scrollTop,50);}}>✏️ 修正する</button>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #f0d0e0",background:"#fff7fb",color:"#9a5070",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setVisitCode("");setRecordId("");setSaveMsg("");setShowKarte(false);setSaveError(false);setTimeout(scrollTop,50);}}>🔄 最初から</button>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #9ae6b4",background:"#f0fff4",color:"#276749",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{window.location.href="/";}}>🏠 TOPへ</button>
