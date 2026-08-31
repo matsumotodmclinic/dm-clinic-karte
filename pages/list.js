@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
+import { UI } from '../lib/uiTokens';
 
 const STATUS_LABEL = { new: '新規', done: '完了' };
 const STATUS_COLOR = { new: '#e53e3e', done: '#38a169' };
@@ -132,26 +133,26 @@ export default function ListPage() {
   const newRecCount    = filtered.filter(r => r.status==='new').length;
 
   return (
-    <div style={{ minHeight:'100vh', background:'#f7faff', fontFamily:"'Noto Sans JP',sans-serif", padding:'16px' }}>
+    <div style={{ minHeight:'100vh', background:UI.surfaceAlt, fontFamily:"'Noto Sans JP',sans-serif", padding:'16px' }}>
       <div style={{ maxWidth:720, margin:'0 auto' }}>
 
         {/* ヘッダー */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
           <div>
-            <div style={{ fontSize:11, color:'#6b9fd4', fontWeight:700 }}>まつもと糖尿病クリニック</div>
-            <div style={{ fontSize:20, fontWeight:900, color:'#1a2a4a' }}>問診一覧</div>
+            <div style={{ fontSize:11, color:UI.textFaint, fontWeight:700, letterSpacing:'0.08em' }}>まつもと糖尿病クリニック</div>
+            <div style={{ fontSize:19, fontWeight:700, color:UI.text }}>問診一覧</div>
           </div>
           <div style={{ display:'flex', gap:8 }}>
             <button onClick={() => fetchRecords()}
-              style={{ padding:'8px 14px', borderRadius:8, border:'1.5px solid #d0dff5', background:'#fff', color:'#5580a8', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+              style={{ padding:'8px 14px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.textMuted, fontWeight:700, fontSize:13, cursor:'pointer' }}>
               🔄 更新
             </button>
             <button onClick={() => router.push('/')}
-              style={{ padding:'8px 14px', borderRadius:8, border:'1.5px solid #d0dff5', background:'#fff', color:'#5580a8', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+              style={{ padding:'8px 14px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.textMuted, fontWeight:700, fontSize:13, cursor:'pointer' }}>
               トップへ
             </button>
             <button onClick={handleLogout}
-              style={{ padding:'8px 14px', borderRadius:8, border:'1.5px solid #feb2b2', background:'#fff', color:'#c53030', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+              style={{ padding:'8px 14px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.neutral.fg, fontWeight:700, fontSize:13, cursor:'pointer' }}>
               ログアウト
             </button>
           </div>
@@ -159,7 +160,7 @@ export default function ListPage() {
 
         {/* 新着通知バナー */}
         {newCount > 0 && (
-          <div style={{ background:'#1a5fa8', color:'#fff', borderRadius:10, padding:'12px 18px', marginBottom:12, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div style={{ background:UI.primary.fg, color:'#fff', borderRadius:6, padding:'12px 18px', marginBottom:12, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
             <span style={{ fontWeight:700, fontSize:14 }}>🔔 新しい問診が {newCount}件 届いています</span>
             <button onClick={() => fetchRecords()} style={{ padding:'6px 14px', borderRadius:6, border:'none', background:'rgba(255,255,255,0.25)', color:'#fff', fontWeight:700, fontSize:12, cursor:'pointer' }}>
               確認する
@@ -171,13 +172,13 @@ export default function ListPage() {
         <div style={{ display:'flex', gap:6, marginBottom:10, alignItems:'center' }}>
           {DATE_FILTERS.map(f => (
             <button key={f.id} onClick={() => setDateFilter(f.id)}
-              style={{ padding:'8px 16px', borderRadius:8, border: dateFilter===f.id ? '2px solid #1a5fa8':'1.5px solid #d0dff5', background: dateFilter===f.id ? '#1a5fa8':'#fff', color: dateFilter===f.id ? '#fff':'#5580a8', fontWeight:700, fontSize:13, cursor:'pointer' }}>
+              style={{ padding:'8px 16px', borderRadius:6, border: `1px solid ${dateFilter===f.id ? UI.primary.fg : UI.border}`, background: dateFilter===f.id ? UI.primary.fg : UI.surface, color: dateFilter===f.id ? '#fff' : UI.primary.fg, fontWeight:700, fontSize:13, cursor:'pointer' }}>
               {f.label}
             </button>
           ))}
-          <div style={{ marginLeft:'auto', fontSize:13, color:'#7a9abf' }}>
+          <div style={{ marginLeft:'auto', fontSize:13, color:UI.textMuted }}>
             {newRecCount > 0 && (
-              <span style={{ background:'#e53e3e', color:'#fff', borderRadius:20, padding:'2px 10px', fontSize:12, fontWeight:700, marginRight:8 }}>
+              <span style={{ background:UI.danger.fg, color:'#fff', borderRadius:4, padding:'2px 10px', fontSize:12, fontWeight:700, marginRight:8 }}>
                 新規 {newRecCount}件
               </span>
             )}
@@ -189,36 +190,36 @@ export default function ListPage() {
         <form onSubmit={handleSearch} style={{ display:'flex', gap:8, marginBottom:12 }}>
           <input value={search} onChange={e => setSearch(e.target.value.toUpperCase())}
             placeholder="受付コードで検索（例：AB3K）"
-            style={{ flex:1, padding:'10px 14px', borderRadius:8, border:'1.5px solid #d0dff5', fontSize:14, outline:'none' }}
+            style={{ flex:1, padding:'10px 14px', borderRadius:6, border:`1px solid ${UI.border}`, fontSize:14, outline:'none' }}
           />
-          <button type="submit" style={{ padding:'10px 18px', borderRadius:8, border:'none', background:'#1a5fa8', color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer' }}>検索</button>
+          <button type="submit" style={{ padding:'10px 18px', borderRadius:6, border:'none', background:UI.primary.fg, color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer' }}>検索</button>
           <button type="button" onClick={() => { setSearch(''); fetchRecords(); }}
-            style={{ padding:'10px 14px', borderRadius:8, border:'1.5px solid #d0dff5', background:'#fff', color:'#5580a8', fontWeight:700, fontSize:14, cursor:'pointer' }}>全件</button>
+            style={{ padding:'10px 14px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.textMuted, fontWeight:700, fontSize:14, cursor:'pointer' }}>全件</button>
         </form>
 
         {/* 削除ボタン（「全件削除」は誤操作リスクのため廃止、Supabase管理画面で実行） */}
         <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginBottom:12, flexWrap:'wrap' }}>
           {canMarkAllDone && (
             <button onClick={handleMarkAllDone}
-              style={{ padding:'7px 14px', borderRadius:8, border:'1.5px solid #9ae6b4', background:'#f0fff4', color:'#276749', fontWeight:700, fontSize:12, cursor:'pointer' }}>
+              style={{ padding:'7px 14px', borderRadius:6, border:`1px solid ${UI.success.fg}`, background:UI.surface, color:UI.success.fg, fontWeight:700, fontSize:12, cursor:'pointer' }}>
               ✅ 全ての問診を完了済にする{records.filter(r=>r.status==='new').length > 0 ? `（${records.filter(r=>r.status==='new').length}件）` : ''}
             </button>
           )}
           <button onClick={handleDeleteToday}
-            style={{ padding:'7px 14px', borderRadius:8, border:'1.5px solid #fbd38d', background:'#fffaf0', color:'#c05621', fontWeight:700, fontSize:12, cursor:'pointer' }}>
+            style={{ padding:'7px 14px', borderRadius:6, border:`1px solid ${UI.warning.fg}`, background:UI.surface, color:UI.warning.fg, fontWeight:700, fontSize:12, cursor:'pointer' }}>
             🗑️ 当日完了分を削除{todayDoneCount > 0 ? `（${todayDoneCount}件）` : ''}
           </button>
           <button onClick={handleDeleteDone}
-            style={{ padding:'7px 14px', borderRadius:8, border:'1.5px solid #feb2b2', background:'#fff5f5', color:'#c53030', fontWeight:700, fontSize:12, cursor:'pointer' }}>
+            style={{ padding:'7px 14px', borderRadius:6, border:`1px solid ${UI.danger.fg}`, background:UI.surface, color:UI.danger.fg, fontWeight:700, fontSize:12, cursor:'pointer' }}>
             🗑️ 完了済みを一括削除{allDoneCount > 0 ? `（${allDoneCount}件）` : ''}
           </button>
         </div>
 
         {/* 一覧 */}
         {loading ? (
-          <div style={{ textAlign:'center', padding:40, color:'#7a9abf' }}>読み込み中...</div>
+          <div style={{ textAlign:'center', padding:40, color:UI.textMuted }}>読み込み中...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign:'center', padding:40, color:'#7a9abf' }}>
+          <div style={{ textAlign:'center', padding:40, color:UI.textMuted }}>
             {dateFilter !== 'all'
               ? `${DATE_FILTERS.find(f=>f.id===dateFilter)?.label}のデータがありません`
               : 'データがありません'}
@@ -227,19 +228,19 @@ export default function ListPage() {
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {filtered.map(r => (
               <div key={r.id} onClick={() => router.push(`/detail/${r.id}`)}
-                style={{ background:'#fff', borderRadius:12, padding:'14px 16px', boxShadow:'0 2px 8px rgba(0,0,0,0.06)', cursor:'pointer', display:'flex', alignItems:'center', gap:12, border:`1.5px solid ${isToday(r.created_at)?'#bee3f8':'#e8f0fe'}` }}>
-                <div style={{ width:48, height:48, borderRadius:10, background:'#e8f0fe', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, fontSize:16, color:'#1a5fa8', flexShrink:0 }}>
+                style={{ background:UI.surface, borderRadius:8, padding:'14px 16px', boxShadow:'0 2px 8px rgba(0,0,0,.06)', cursor:'pointer', display:'flex', alignItems:'center', gap:12, border:`1px solid ${UI.border}`, borderLeft:`3px solid ${isToday(r.created_at)?UI.primary.fg:UI.border}` }}>
+                <div style={{ width:48, height:48, borderRadius:6, background:UI.primary.bg, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:16, color:UI.primary.fg, flexShrink:0 }}>
                   {r.visit_code}
                 </div>
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:13, color:'#7a9abf' }}>
+                  <div style={{ fontSize:13, color:UI.textMuted }}>
                     {formatDate(r.created_at)}{isToday(r.created_at) ? '　🟦 本日' : ''}
                   </div>
-                  <div style={{ fontSize:14, color:'#1a2a4a', fontWeight:700 }}>
+                  <div style={{ fontSize:14, color:UI.text, fontWeight:700 }}>
                     {r.form_type || 'DM基本'}{r.age ? `　${r.age}歳` : ''}
                   </div>
                 </div>
-                <div style={{ padding:'4px 10px', borderRadius:20, background:(STATUS_COLOR[r.status]||'#718096')+'20', color:STATUS_COLOR[r.status]||'#718096', fontWeight:700, fontSize:12, flexShrink:0 }}>
+                <div style={{ padding:'4px 10px', borderRadius:4, background:(STATUS_COLOR[r.status]||'#718096')+'20', color:STATUS_COLOR[r.status]||'#718096', fontWeight:700, fontSize:12, flexShrink:0 }}>
                   {STATUS_LABEL[r.status] || r.status}
                 </div>
               </div>
@@ -247,7 +248,7 @@ export default function ListPage() {
           </div>
         )}
 
-        <div style={{ textAlign:'center', fontSize:11, color:'#b0c8e0', marginTop:16 }}>
+        <div style={{ textAlign:'center', fontSize:11, color:UI.textDisabled, marginTop:16 }}>
           30秒ごとに自動更新
         </div>
       </div>
