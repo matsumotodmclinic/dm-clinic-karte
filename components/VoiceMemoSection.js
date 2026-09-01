@@ -15,6 +15,7 @@
 import { useState } from 'react'
 import { useSpeechRecognition } from '../lib/speechRecognition'
 import { summarizeForKarte, summarizeForPastHistory } from '../lib/voiceSummary'
+import { UI } from '../lib/uiTokens';
 
 const MODE_CONFIG = {
   currentIllness: {
@@ -31,7 +32,7 @@ const MODE_CONFIG = {
     helper: '事務スタッフ or 患者さんが既往歴を口頭で述べてください。AI が ♯病名（時期・病院・薬）の形式に整形して既往歴セクションに追加します。',
     summaryLabel: '✨ AI 整形結果(編集可、既往歴に追加されます)',
     summaryHint: 'この内容は「カルテ文を生成」ボタンを押した時に既往歴セクションに追加されます。',
-    accentColor: '#1a5fa8',
+    accentColor: UI.primary.fg,
     bgColor: '#eef4fc',
     borderColor: '#7aa8d4',
   },
@@ -40,18 +41,18 @@ const MODE_CONFIG = {
 /* ── styles (form と統一感を持たせる、mode により色変化) ── */
 const buildSectionStyle = (cfg) => ({
   background: cfg.bgColor,
-  border: `2px solid ${cfg.borderColor}`,
+  border: `1px solid ${cfg.borderColor}`,
   borderRadius: 12,
   padding: '16px 18px',
   marginBottom: 14,
 })
-const buildLabelStyle = (cfg) => ({ display: 'block', fontSize: 13, fontWeight: 800, color: cfg.accentColor, marginBottom: 8 })
+const buildLabelStyle = (cfg) => ({ display: 'block', fontSize: 13, fontWeight: 700, color: cfg.accentColor, marginBottom: 8 })
 const buildHelperStyle = (cfg) => ({ fontSize: 11, color: cfg.accentColor, marginBottom: 10, lineHeight: 1.5 })
 const taStyle = {
   width: '100%',
   minHeight: 80,
   padding: '10px 12px',
-  border: '1.5px solid #d0c094',
+  border: '1px solid #d0c094',
   borderRadius: 8,
   fontSize: 14,
   color: '#1a2a3a',
@@ -63,7 +64,7 @@ const taStyle = {
 const summaryStyle = {
   ...taStyle,
   background: '#f0f7ff',
-  border: '1.5px solid #a8c8e8',
+  border: '1px solid #a8c8e8',
   color: '#1a3a5a',
   marginTop: 10,
 }
@@ -82,7 +83,7 @@ const btnPrimary = (disabled) => ({
   padding: '10px 18px',
   borderRadius: 8,
   border: 'none',
-  background: disabled ? '#cccccc' : '#1a5fa8',
+  background: disabled ? '#cccccc' : UI.primary.fg,
   color: '#fff',
   fontWeight: 700,
   fontSize: 14,
@@ -103,7 +104,7 @@ const btnDanger = (active) => ({
 const btnGhost = {
   padding: '8px 12px',
   borderRadius: 6,
-  border: '1.5px solid #b0b0b0',
+  border: '1px solid #b0b0b0',
   background: '#fff',
   color: '#555',
   fontWeight: 600,
@@ -209,8 +210,8 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
       padding: '14px 18px',
       marginBottom: 12,
       fontSize: 16,
-      fontWeight: 800,
-      color: '#c53030',
+      fontWeight: 700,
+      color: UI.danger.fg,
       lineHeight: 1.6,
     }}>
       必要なければ省略可。<br />
@@ -222,10 +223,10 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
   // 現病歴・既往歴の両モード共通: チェックボックス(常時表示)
   // 既往歴モードは既存の「📝 各疾患について確認・追記してください」リストも含む
   const reviewBox = (mode === 'currentIllness' || mode === 'pastHistory') ? (
-    <div style={{ marginTop: 12, padding: '14px 16px', background: '#fff7e6', borderRadius: 10, border: '2px solid #fbbf24' }}>
+    <div style={{ marginTop: 12, padding: '14px 16px', background: '#fff7e6', borderRadius: 10, border: '1px solid #fbbf24' }}>
       {mode === 'pastHistory' && (
         <>
-          <div style={{ fontSize: 13, fontWeight: 800, color: '#92400e', marginBottom: 6 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#92400e', marginBottom: 6 }}>
             📝 各疾患について以下を確認・追記してください
           </div>
           <ul style={{ margin: '4px 0 12px 18px', padding: 0, fontSize: 12, color: '#78350f', lineHeight: 1.7 }}>
@@ -236,7 +237,7 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
           </ul>
         </>
       )}
-      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: needsDoctorReview ? '#fff5f5' : '#fff', borderRadius: 8, border: `2px solid ${needsDoctorReview ? '#c53030' : '#fbbf24'}`, cursor: 'pointer' }}>
+      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: needsDoctorReview ? '#fff5f5' : '#fff', borderRadius: 8, border: `1px solid ${needsDoctorReview ? UI.danger.fg : '#fbbf24'}`, cursor: 'pointer' }}>
         <input
           type="checkbox"
           checked={!!needsDoctorReview}
@@ -244,7 +245,7 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
           style={{ marginTop: 3, width: 20, height: 20, cursor: 'pointer' }}
         />
         <div>
-          <div style={{ fontSize: 14, fontWeight: 900, color: needsDoctorReview ? '#c53030' : '#92400e' }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: needsDoctorReview ? UI.danger.fg : '#92400e' }}>
             🔲 {mode === 'currentIllness' ? CURRENT_ILLNESS_REVIEW_LABEL : '要ドクター確認'}
           </div>
           <div style={{ fontSize: 11, color: '#7a7a7a', marginTop: 2, lineHeight: 1.5 }}>
@@ -287,7 +288,7 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
           {aiError && <div style={{ color: '#c62828', fontSize: 12, marginTop: 8 }}>{aiError}</div>}
           {aiSummary && (
             <div style={{ marginTop: 10 }}>
-              <div style={{ ...labelStyle, color: '#1a5fa8' }}>{cfg.summaryLabel}</div>
+              <div style={{ ...labelStyle, color: UI.primary.fg }}>{cfg.summaryLabel}</div>
               {(() => {
                 const minRowsForMode = mode === 'pastHistory' ? 12 : 7
                 const baseHeight = minRowsForMode * 28
@@ -325,7 +326,7 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
         <button
           type="button"
           onClick={() => setRecordCollapsed(false)}
-          style={{ padding: '6px 12px', borderRadius: 6, border: `1.5px solid ${cfg.borderColor}`, background: '#fff', color: cfg.accentColor, fontWeight: 700, fontSize: 12, cursor: 'pointer', marginBottom: 10 }}
+          style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${cfg.borderColor}`, background: '#fff', color: cfg.accentColor, fontWeight: 700, fontSize: 12, cursor: 'pointer', marginBottom: 10 }}
         >
           ▼ 録音テキスト・操作ボタンを再表示（追加録音する場合）
         </button>
@@ -392,7 +393,7 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
       {/* AI 整形結果 */}
       {aiSummary && (
         <div style={{ marginTop: 10 }}>
-          <div style={{ ...labelStyle, color: '#1a5fa8' }}>{cfg.summaryLabel}</div>
+          <div style={{ ...labelStyle, color: UI.primary.fg }}>{cfg.summaryLabel}</div>
           <textarea
             style={summaryStyle}
             value={aiSummary}

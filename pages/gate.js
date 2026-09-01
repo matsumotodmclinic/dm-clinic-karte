@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { UI } from '../lib/uiTokens';
 
 export default function GatePage() {
   const [password, setPassword] = useState('')
@@ -29,7 +30,7 @@ export default function GatePage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0d1b3a 0%, #1a365d 100%)',
+      background: '#1a365d',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -38,7 +39,7 @@ export default function GatePage() {
     }}>
       <div style={{
         background: '#fff',
-        borderRadius: 20,
+        borderRadius: 8,
         padding: '48px 40px',
         width: '100%',
         maxWidth: 380,
@@ -46,7 +47,7 @@ export default function GatePage() {
       }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{
-            width: 56, height: 56, borderRadius: 16,
+            width: 52, height: 52, borderRadius: 8,
             background: '#1a365d', color: '#fff',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 26, margin: '0 auto 16px',
@@ -75,7 +76,7 @@ export default function GatePage() {
                 width: '100%',
                 padding: '14px 16px',
                 fontSize: 16,
-                border: '2px solid #e0e0e0',
+                border: `1px solid ${UI.border}`,
                 borderRadius: 10,
                 boxSizing: 'border-box',
               }}

@@ -234,7 +234,7 @@ LINE登録ご案内→済　登録確認未・登録できない
       case 0: return (
         <div>
           {isNurse && (
-            <div style={{...sBox({background:"#fffff0",border:"2px solid #d69e2e"}),marginBottom:16}}>
+            <div style={{...sBox({background:"#fffff0",border:"1px solid #d69e2e"}),marginBottom:16}}>
               <div style={{fontSize:13,fontWeight: 700,color:"#744210",marginBottom:10}}>👩‍⚕️ 受付時に保護者へ確認すること</div>
               <div style={{fontSize:13,color:"#744210",lineHeight:2}}>①居住地（市町村）→ 受付メモへ記載<br/>②小児慢性の申請はしているか<br/>③申請済の方：前医での支払い方法を確認し算定へ連絡</div>
             </div>
@@ -253,7 +253,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               ].map(({label,hosp,dept})=>{
                 const selected = d.reason.referralFrom===hosp&&d.reason.referralDept===dept;
                 return (
-                  <button key={label} style={{...btn(selected),fontSize:13,padding:"9px 16px",border:selected?"2px solid #0f9668":"2px dashed #0f9668",background:selected?undefined:"#f0fff8",color:selected?"#fff":undefined}}
+                  <button key={label} style={{...btn(selected),fontSize:13,padding:"9px 16px",border:selected?"1px solid #0f9668":"2px dashed #0f9668",background:selected?undefined:"#f0fff8",color:selected?"#fff":undefined}}
                     onClick={()=>setData(p=>selected
                       ? ({...p,reason:{...p.reason,referralFrom:"",referralDept:"",referralQuickSelect:false}})
                       : ({...p,reason:{...p.reason,referralFrom:hosp,referralDept:dept,referralQuickSelect:true}})
@@ -294,7 +294,7 @@ LINE登録ご案内→済　登録確認未・登録できない
 
       case 1: return (
         <div>
-          <div style={{...sBox({background:"#f0f7ff",border:"2px solid #bcd4f8"}),marginBottom:16}}>
+          <div style={{...sBox({background:"#f0f7ff",border:"1px solid #bcd4f8"}),marginBottom:16}}>
             <span style={{fontSize:15,fontWeight: 700,color:"#1a5fa8"}}>＃1型糖尿病（小児）</span>
             <div style={{marginTop:12}}>
               <label style={lbl()}>1型のタイプ</label>
@@ -352,14 +352,14 @@ LINE登録ご案内→済　登録確認未・登録できない
             ))}
           </div>
 
-          <div style={{background:"#f5f5f5",border:"1.5px solid #ccc",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#666"}}>
+          <div style={{background:"#f5f5f5",border:"1px solid #ccc",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#666"}}>
           </div>
         </div>
       );
 
       case 2: return (
         <div>
-          <div style={{...sBox({background:"#f0fff4",border:"1.5px solid #9ae6b4"}),marginBottom:16}}>
+          <div style={{...sBox({background:"#f0fff4",border:"1px solid #9ae6b4"}),marginBottom:16}}>
             <div style={{fontSize:13,color:"#276749",fontWeight:700,marginBottom:4}}>👨‍👩‍👧 サポート体制の確認</div>
             <div style={{fontSize:12,color:"#276749"}}>お子さんの糖尿病管理に関わる体制を確認します</div>
           </div>
@@ -391,7 +391,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           </div>
           <input style={{...inp(),marginBottom:14}} placeholder="補足" value={d.support.schoolSupportNote} onChange={e=>up("support","schoolSupportNote",e.target.value)}/>
           <label style={lbl()}>④開示状況</label>
-          <div style={sBox({background:"#f0f7ff",border:"1.5px solid #bcd4f8",marginBottom:14})}>
+          <div style={sBox({background:"#f0f7ff",border:"1px solid #bcd4f8",marginBottom:14})}>
             <div style={{marginBottom:12}}>
               <label style={lbl({fontSize:11,color:"#2b6cb0",marginBottom:4})}>本人（お子さん）がクラスメートに話しているか</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
@@ -465,11 +465,11 @@ LINE登録ご案内→済　登録確認未・登録できない
           <label style={lbl()}>母子手帳の持参</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:12}}>
             {["持ってきた","忘れた"].map(v=>(
-              <button key={v} style={btn(d.chronic.maternalHandbook===v, v==="忘れた"?undefined:undefined)} onClick={()=>up("chronic","maternalHandbook",v)}>{v}</button>
+              <button key={v} style={btn(d.chronic.maternalHandbook===v, v==="忘れた"?UI.danger.fg:undefined)} onClick={()=>up("chronic","maternalHandbook",v)}>{v}</button>
             ))}
           </div>
           {d.chronic.status==="申請済"&&(
-            <div style={sBox({background:"#f0fff4",border:"1.5px solid #9ae6b4",marginBottom:14})}>
+            <div style={sBox({background:"#f0fff4",border:"1px solid #9ae6b4",marginBottom:14})}>
               <div style={{fontSize:13,fontWeight: 700,color:"#276749",marginBottom:8}}>✅ 申請済の方への確認</div>
               <label style={lbl({color:"#276749"})}>前医での窓口負担の有無</label>
               <div style={{display:"flex",gap:3,marginBottom:8}}>
@@ -481,12 +481,12 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
           )}
           {d.chronic.status==="申請未"&&(
-            <div style={{background:"#fff8f0",border:"1.5px solid #e07000",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:13,color:"#a05000"}}>
+            <div style={{background:"#fff8f0",border:"1px solid #e07000",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:13,color:"#a05000"}}>
               ⚠️ 申請未の方には制度の説明と申請促しをお願いします
             </div>
           )}
           {(d.chronic.status==="申請未"||d.chronic.status==="申請中")&&(
-            <div style={sBox({background:"#fef9f0",border:"2px solid #d69e2e"})}>
+            <div style={sBox({background:"#fef9f0",border:"1px solid #d69e2e"})}>
               <div style={{fontSize:13,fontWeight: 700,color:"#744210",marginBottom:12}}>📋 小児慢性申請時の必須事項</div>
               <label style={lbl({color:"#744210"})}>①出生体重</label>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
@@ -806,7 +806,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
           </div>
         ):(
-          <div style={{background:UI.surface,borderRadius:8,padding:"22px 24px",border:`1px solid ${UI.border}`,boxShadow:"0 2px 8px rgba(0,0,0,.06)",border:"2px solid #c6f6d5"}}>
+          <div style={{background:UI.surface,borderRadius:8,padding:"22px 24px",border:`1px solid ${UI.border}`,boxShadow:"0 2px 8px rgba(0,0,0,.06)",border:"1px solid #c6f6d5"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
               <div style={{width:32,height:32,borderRadius:8,background:"#0f9668",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight: 700,fontSize:16}}>✓</div>
               <div>
@@ -815,7 +815,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
             </div>
             {saveError && (
-              <div style={{background:"#fff5f5",border:"2px solid #feb2b2",borderRadius:10,padding:"14px 16px",marginBottom:12,textAlign:"center"}}>
+              <div style={{background:"#fff5f5",border:"1px solid #feb2b2",borderRadius:10,padding:"14px 16px",marginBottom:12,textAlign:"center"}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#c53030",marginBottom:8}}>⚠️ 受付番号の登録に失敗しました。スタッフへ口頭でお知らせください。</div>
                 <button onClick={handleSaveRetry} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#e53e3e",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer"}}>🔄 再試行</button>
               </div>
@@ -826,12 +826,12 @@ LINE登録ご案内→済　登録確認未・登録できない
                 <div style={{fontSize:56,fontWeight: 700,color:"#fff",letterSpacing:"0.2em",lineHeight:1}}>{visitCode}</div>
               </div>
             )}
-            <div style={{background:"#fff8e1",border:"2px solid #f59e0b",borderRadius:12,padding:"14px 18px",marginBottom:12,textAlign:"center"}}>
+            <div style={{background:"#fff8e1",border:"1px solid #f59e0b",borderRadius:12,padding:"14px 18px",marginBottom:12,textAlign:"center"}}>
               <div style={{fontSize:16,fontWeight: 700,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
               <div style={{fontSize:12,color:"#b45309",marginTop:4}}>問診は完了しています。ありがとうございました。</div>
             </div>
                         <div style={{marginBottom:4}}>
-              <button onClick={()=>setShowKarte(v=>!v)} style={{width:"100%",padding:"11px",borderRadius:8,border:"1.5px solid #c0e8d8",background:showKarte?"#e8f5f0":"#f5f9f7",color:"#276749",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+              <button onClick={()=>setShowKarte(v=>!v)} style={{width:"100%",padding:"11px",borderRadius:8,border:"1px solid #c0e8d8",background:showKarte?"#e8f5f0":"#f5f9f7",color:"#276749",fontWeight:700,fontSize:13,cursor:"pointer"}}>
                 {showKarte?"▲ カルテ文を閉じる（スタッフ用）":"▼ スタッフ用カルテを確認する"}
               </button>
             </div>
@@ -846,9 +846,9 @@ LINE登録ご案内→済　登録確認未・登録できない
             )}
             <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"none",background: TONE.fg,color:"#fff",fontWeight: 700,fontSize:14,cursor:"pointer"}} onClick={()=>copyToClipboard(result)}>📋 コピー</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #3182ce",background:"#f0f7ff",color:"#3182ce",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setTimeout(scrollTop,50);}}>✏️ 修正する</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #d0dff5",background:"#f7faff",color:"#5580a8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setVisitCode("");setRecordId("");setSaveMsg("");setShowKarte(false);setSaveError(false);setTimeout(scrollTop,50);}}>🔄 最初から</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #9ae6b4",background:"#f0fff4",color:"#276749",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{window.location.href="/";}}>🏠 TOPへ</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1px solid #3182ce",background:"#f0f7ff",color:"#3182ce",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setTimeout(scrollTop,50);}}>✏️ 修正する</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1px solid #d0dff5",background:"#f7faff",color:"#5580a8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setVisitCode("");setRecordId("");setSaveMsg("");setShowKarte(false);setSaveError(false);setTimeout(scrollTop,50);}}>🔄 最初から</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1px solid #9ae6b4",background:"#f0fff4",color:"#276749",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{window.location.href="/";}}>🏠 TOPへ</button>
             </div>
           </div>
         )}

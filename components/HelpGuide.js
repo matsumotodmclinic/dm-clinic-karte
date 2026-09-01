@@ -76,7 +76,7 @@ export function Toc({ items, themeColor }) {
 export function Section({ id, icon, title, themeColor, children }) {
   return (
     <section id={id} style={{ scrollMarginTop: 16, background: '#fff', borderRadius: 12, padding: 18, marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,.06)' }}>
-      <h2 style={{ fontSize: 17, fontWeight: 700, color: themeColor, marginBottom: 12, paddingBottom: 8, borderBottom: `2px solid ${themeColor}33` }}>
+      <h2 style={{ fontSize: 17, fontWeight: 700, color: themeColor, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${themeColor}33` }}>
         {icon} {title}
       </h2>
       <div style={{ fontSize: 13, color: '#333', lineHeight: 1.8 }}>

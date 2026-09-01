@@ -120,7 +120,7 @@ function DetailBox({ title, color, data, onChange, showResection, resectionLabel
   const opts = resectionOptions || defaultResectionOpts;
   const rLabel = resectionLabel || "胃の切除範囲";
   return (
-    <div style={{ ...sBox(), border: `1.5px solid ${color}40`, background: `${color}08`, marginTop: 6 }}>
+    <div style={{ ...sBox(), border: `1px solid ${color}40`, background: `${color}08`, marginTop: 6 }}>
       <div style={{ fontSize: 13, fontWeight: 700, color, marginBottom: 12 }}>{title} ― 詳細</div>
       <div style={{ marginBottom: 12 }}>
         <label style={lbl({ color })}>治療の種類</label>
@@ -172,7 +172,7 @@ function DetailBox({ title, color, data, onChange, showResection, resectionLabel
 function AlcoholRow({ item, index, onChange, onRemove, showRemove }) {
   const typeInfo = ALCOHOL_TYPES.find(t => t.key === item.type);
   return (
-    <div style={sBox({ background: "#f0f8ff", border: "1.5px solid #bee3f8", marginBottom: 8 })}>
+    <div style={sBox({ background: "#f0f8ff", border: "1px solid #bee3f8", marginBottom: 8 })}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
         <label style={lbl({ color: "#2b6cb0", marginBottom: 0 })}>種類</label>
         {showRemove && <button onClick={onRemove} style={{ fontSize: 12, color: "#e53e3e", background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>✕ 削除</button>}
@@ -485,7 +485,7 @@ LINE登録ご案内→済　登録確認未・登録できない
       /* 0: 重要確認 */
       case 0: return (
         <div>
-          <div style={{ background: "#fff5f5", border: "2px solid #e53e3e", borderRadius: 12, padding: "16px 20px", marginBottom: 20 }}>
+          <div style={{ background: "#fff5f5", border: "1px solid #e53e3e", borderRadius: 12, padding: "16px 20px", marginBottom: 20 }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: "#c53030", marginBottom: 6 }}>⚠️ 最初に必ず確認してください</div>
             <div style={{ fontSize: 13, color: "#742a2a", lineHeight: 1.7 }}>体重減少がある患者様は<strong>早急なインスリン導入</strong>が必要な場合があります。<br />※体重減少の定義：<strong>3ヶ月以内に3kg以上の体重減少</strong></div>
           </div>
@@ -514,7 +514,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           </div>
 
           {d.reason.dmConcern && (
-            <div style={{ ...sBox({ border: "1.5px solid #d6bcfa", background: "#faf5ff" }), marginBottom: 14 }}>
+            <div style={{ ...sBox({ border: "1px solid #d6bcfa", background: "#faf5ff" }), marginBottom: 14 }}>
               <label style={lbl({ color: '#8e44ad' })}>気になる理由</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginBottom: 8 }}>
                 {['家族に糖尿病の方がいる', '健診でHbA1cを指摘された', '喉が渇く・尿が多い', 'その他'].map(v => (
@@ -542,7 +542,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                   ].map(({ hosp, dept }) => {
                     const selected = d.reason.referralFrom === hosp && d.reason.referralDept === dept;
                     return (
-                      <button key={hosp+dept} style={{ ...btn(selected), fontSize: 12, padding: "7px 14px", border: selected ? "2px solid #0f9668" : "2px dashed #0f9668", background: selected ? undefined : "#f0fff8", color: selected ? "#fff" : undefined }}
+                      <button key={hosp+dept} style={{ ...btn(selected), fontSize: 12, padding: "7px 14px", border: selected ? "1px solid #0f9668" : "2px dashed #0f9668", background: selected ? undefined : "#f0fff8", color: selected ? "#fff" : undefined }}
                         onClick={() => setData(p => selected
                           ? ({ ...p, reason: { ...p.reason, referralFrom: "", referralDept: "", referralQuickSelect: false } })
                           : ({ ...p, reason: { ...p.reason, referralFrom: hosp, referralDept: dept, referralQuickSelect: true } })
@@ -560,7 +560,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                   {["加藤泌尿器科"].map(hosp => {
                     const selected = d.reason.referralFrom === hosp;
                     return (
-                      <button key={hosp} style={{ ...btn(selected), fontSize: 12, padding: "7px 14px", border: selected ? "2px solid #0f9668" : "2px dashed #0f9668", background: selected ? undefined : "#f0fff8", color: selected ? "#fff" : undefined }}
+                      <button key={hosp} style={{ ...btn(selected), fontSize: 12, padding: "7px 14px", border: selected ? "1px solid #0f9668" : "2px dashed #0f9668", background: selected ? undefined : "#f0fff8", color: selected ? "#fff" : undefined }}
                         onClick={() => setData(p => selected
                           ? ({ ...p, reason: { ...p.reason, referralFrom: "", referralDept: "", referralQuickSelect: false } })
                           : ({ ...p, reason: { ...p.reason, referralFrom: hosp, referralDept: "", referralQuickSelect: true } })
@@ -628,7 +628,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           {d.disease.gastricCancer.selected  && <DetailBox title="胃癌（胃切除後）"  color="#c0392b" showResection data={d.disease.gastricCancer}  onChange={(f,v) => upN("disease","gastricCancer",f,v)} />}
           {d.disease.pancreasCancer.selected && <DetailBox title="膵臓癌（術後）"    color="#c0392b" showResection resectionLabel="膵臓の切除範囲" resectionOptions={["膵頭部切除","膵体部・尾部切除","膵全摘","不明"]} data={d.disease.pancreasCancer} onChange={(f,v) => upN("disease","pancreasCancer",f,v)} />}
           {d.disease.ihd.selected && (
-            <div style={{ background: "#8e44ad08", border: "1.5px solid #8e44ad40", borderRadius: 10, padding: "14px 16px", marginTop: 6, marginBottom: 14 }}>
+            <div style={{ background: "#8e44ad08", border: "1px solid #8e44ad40", borderRadius: 10, padding: "14px 16px", marginTop: 6, marginBottom: 14 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#8e44ad", marginBottom: 12 }}>狭心症・心筋梗塞 ― 詳細</div>
               <div style={{ marginBottom: 12 }}>
                 <label style={lbl({ color: "#8e44ad" })}>治療方法</label>
@@ -685,7 +685,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
           )}
           {d.disease.stroke.selected && (
-            <div style={{ background: "#8e44ad08", border: "1.5px solid #8e44ad40", borderRadius: 10, padding: "14px 16px", marginTop: 6, marginBottom: 14 }}>
+            <div style={{ background: "#8e44ad08", border: "1px solid #8e44ad40", borderRadius: 10, padding: "14px 16px", marginTop: 6, marginBottom: 14 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#8e44ad", marginBottom: 12 }}>脳梗塞後 ― 詳細</div>
               <div style={{ marginBottom: 12 }}>
                 <label style={lbl({ color: "#8e44ad" })}>発症時期</label>
@@ -794,7 +794,7 @@ LINE登録ご案内→済　登録確認未・登録できない
       /* 2: 既往・家族歴 */
       case 2: return (
         <div>
-          <div style={{ ...sBox({ background: "#f0f7ff", border: "2px solid #bcd4f8" }), marginBottom: 16 }}>
+          <div style={{ ...sBox({ background: "#f0f7ff", border: "1px solid #bcd4f8" }), marginBottom: 16 }}>
             <span style={{ fontSize: 15, fontWeight: 700, color: "#1a5fa8" }}>＃糖尿病</span>
             {(d.reason.type !== "検診異常" && !d.reason.dmConcern) && (
               <>
@@ -813,7 +813,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             )}
           </div>
 
-          <label style={{ fontSize: 15, fontWeight: 700, color: "#1a5fa8", display: "flex", alignItems: "center", gap: 8, marginBottom: 16, cursor: "pointer", background: "#f0f7ff", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #bcd4f8" }}>
+          <label style={{ fontSize: 15, fontWeight: 700, color: "#1a5fa8", display: "flex", alignItems: "center", gap: 8, marginBottom: 16, cursor: "pointer", background: "#f0f7ff", padding: "12px 14px", borderRadius: 10, border: "1px solid #bcd4f8" }}>
             <input type="checkbox" checked={d.disease.insulinUse} onChange={e => up("disease", "insulinUse", e.target.checked)} style={{ width: 20, height: 20 }} />
             現在インスリン治療中
           </label>
@@ -916,7 +916,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             {["なし","あり","禁煙済"].map(v => <button key={v} style={btn(d.history.smoking === v)} onClick={() => up("history","smoking",v)}>{v}</button>)}
           </div>
           {(d.history.smoking === "あり" || d.history.smoking === "禁煙済") && (
-            <div style={sBox({ border: "1.5px solid #bee3f8", background: "#ebf8ff", marginBottom: 10 })}>
+            <div style={sBox({ border: "1px solid #bee3f8", background: "#ebf8ff", marginBottom: 10 })}>
               <div style={{ fontSize: 12, color: "#2b6cb0", fontWeight: 700, marginBottom: 10 }}>📝 カルテ記載：{buildSmoking() || "入力中..."}</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
                 <div style={{ flex: "1 1 80px" }}><label style={lbl({ color: "#2b6cb0" })}>1日の本数</label><input style={inp()} type="number" placeholder="本/日" value={d.history.smokingAmount} onChange={e => up("history","smokingAmount",e.target.value)} /></div>
@@ -983,7 +983,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           </div>
 
           {isOver60 && (
-            <div style={sBox({ border: "1.5px solid #bee3f8", background: "#ebf8ff" })}>
+            <div style={sBox({ border: "1px solid #bee3f8", background: "#ebf8ff" })}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#2b6cb0", marginBottom: 12 }}>💉 ワクチン希望（60歳以上）</div>
               <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
               <div style={{ flex: 1, minWidth: 180 }}>
@@ -1002,7 +1002,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
           )}
 
-          <div style={{ ...sBox({ background: "#f0f8ff", border: "1.5px solid #bee3f8" }), marginTop: 16 }}>
+          <div style={{ ...sBox({ background: "#f0f8ff", border: "1px solid #bee3f8" }), marginTop: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#2b6cb0", marginBottom: 4 }}>🔍 エコー検査について</div>
             <div style={{ fontSize: 12, color: "#4a7fa8", marginBottom: 12, lineHeight: 1.7 }}>
               当院では糖尿病の合併症検査として、頸動脈エコー・腹部エコー等を年に1回行っています。
@@ -1048,7 +1048,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <input style={{ ...inp(), marginBottom: 8 }} placeholder="補足があれば（例：夫は要介護・義母と同居）" value={d.lifestyle.livingCustom} onChange={e => up("lifestyle", "livingCustom", e.target.value)} />
 
           {isOver70 && (
-            <div style={sBox({ border: "1.5px solid #fbd38d", background: "#fffaf0" })}>
+            <div style={sBox({ border: "1px solid #fbd38d", background: "#fffaf0" })}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#c05621", marginBottom: 8 }}>👨‍👩‍👧 お子さんの状況（70歳以上）</div>
               {(Array.isArray(d.lifestyle.livingOther) ? d.lifestyle.livingOther : []).includes("子供と同居なし") && (
                 <div style={{ marginBottom: 10 }}>
@@ -1171,7 +1171,7 @@ LINE登録ご案内→済　登録確認未・登録できない
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <button onClick={() => router.push("/")} style={{ padding:"6px 11px",borderRadius:6,border:`1px solid ${UI.border}`,background:UI.surface,color:UI.textMuted,fontWeight:700,fontSize:12, cursor: "pointer" }}>← トップ</button>
           {/* 📖 完全ガイド (スタッフ用、 2026-05-31 追加): 別タブで開くので患者の問診入力を中断しない */}
-          <a href="/help/dm" target="_blank" rel="noopener noreferrer" style={{ padding: "6px 10px", borderRadius: 8, border: "1.5px solid #d0dff5", background: "#fff", color: "#5580a8", fontWeight: 700, fontSize: 11, cursor: "pointer", textDecoration: "none" }} title="完全ガイドを別タブで開く (スタッフ用)">📖 完全ガイド</a>
+          <a href="/help/dm" target="_blank" rel="noopener noreferrer" style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #d0dff5", background: "#fff", color: "#5580a8", fontWeight: 700, fontSize: 11, cursor: "pointer", textDecoration: "none" }} title="完全ガイドを別タブで開く (スタッフ用)">📖 完全ガイド</a>
           <div>
             <div style={{ fontSize:11,color:UI.textFaint,fontWeight:700,letterSpacing:"0.08em" }}>まつもと糖尿病クリニック</div>
             <div style={{ fontSize:19,fontWeight:700,color:UI.text }}>初診事前問診</div>
@@ -1202,7 +1202,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             {renderStep()}
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 26 }}>
-              <button style={{ padding: "11px 22px", borderRadius: 8, border: "1.5px solid #d0dff5", background: "#f7faff", color: step === 0 ? "#c0d0e0" : "#5580a8", fontWeight: 700, fontSize: 14, cursor: step === 0 ? "not-allowed" : "pointer" }}
+              <button style={{ padding: "11px 22px", borderRadius: 8, border: "1px solid #d0dff5", background: "#f7faff", color: step === 0 ? "#c0d0e0" : "#5580a8", fontWeight: 700, fontSize: 14, cursor: step === 0 ? "not-allowed" : "pointer" }}
                 onClick={() => goStep(step - 1)} disabled={step === 0}>← 前へ</button>
               {step < STEPS.length - 1 ? (
                 <button style={{ padding:"10px 24px",borderRadius:6,border:"none",background:TONE.fg,color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer" }}
@@ -1214,7 +1214,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
           </div>
         ) : (
-          <div style={{ background:UI.surface,borderRadius:8,padding:"22px 24px",border:`1px solid ${UI.border}`,boxShadow:"0 2px 8px rgba(0,0,0,.06)", border: "2px solid #c6f6d5" }}>
+          <div style={{ background:UI.surface,borderRadius:8,padding:"22px 24px",border:`1px solid ${UI.border}`,boxShadow:"0 2px 8px rgba(0,0,0,.06)", border: "1px solid #c6f6d5" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
               <div style={{ width: 32, height: 32, borderRadius: 8, background: "#0f9668", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 16 }}>✓</div>
               <div>
@@ -1224,7 +1224,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
 
             {saveError && (
-              <div style={{background:"#fff5f5",border:"2px solid #feb2b2",borderRadius:10,padding:"14px 16px",marginBottom:12,textAlign:"center"}}>
+              <div style={{background:"#fff5f5",border:"1px solid #feb2b2",borderRadius:10,padding:"14px 16px",marginBottom:12,textAlign:"center"}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#c53030",marginBottom:8}}>⚠️ 受付番号の登録に失敗しました。スタッフへ口頭でお知らせください。</div>
                 <button onClick={handleSaveRetry} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#e53e3e",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer"}}>🔄 再試行</button>
               </div>
@@ -1235,7 +1235,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                 <div style={{ fontSize: 56, fontWeight: 700, color: "#fff", letterSpacing: "0.2em", lineHeight: 1 }}>{visitCode}</div>
               </div>
             )}
-            <div style={{background:"#fff8e1",border:"2px solid #f59e0b",borderRadius:12,padding:"14px 18px",textAlign:"center"}}>
+            <div style={{background:"#fff8e1",border:"1px solid #f59e0b",borderRadius:12,padding:"14px 18px",textAlign:"center"}}>
               <div style={{fontSize:16,fontWeight: 700,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
               <div style={{fontSize:12,color:"#b45309",marginTop:4}}>問診は完了しています。ありがとうございました。</div>
             </div>
@@ -1246,7 +1246,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
             )}
             <div style={{marginBottom:4}}>
-              <button onClick={()=>setShowKarte(v=>!v)} style={{width:"100%",padding:"11px",borderRadius:8,border:"1.5px solid #c0e8d8",background:showKarte?"#e8f5f0":"#f5f9f7",color:"#276749",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+              <button onClick={()=>setShowKarte(v=>!v)} style={{width:"100%",padding:"11px",borderRadius:8,border:"1px solid #c0e8d8",background:showKarte?"#e8f5f0":"#f5f9f7",color:"#276749",fontWeight:700,fontSize:13,cursor:"pointer"}}>
                 {showKarte?"▲ カルテ文を閉じる（スタッフ用）":"▼ スタッフ用カルテを確認する"}
               </button>
             </div>
@@ -1265,11 +1265,11 @@ LINE登録ご案内→済　登録確認未・登録できない
             <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "none", background: TONE.fg, color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
                 onClick={() => copyKarteToClipboard(result)}>📋 コピー</button>
-              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #1a5fa8", background: "#f0f7ff", color: "#1a5fa8", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1px solid #1a5fa8", background: "#f0f7ff", color: "#1a5fa8", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
                 onClick={() => { setDone(false); setStep(0); setTimeout(scrollTop, 50); }}>✏️ 修正する</button>
-              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #d0dff5", background: "#f7faff", color: "#5580a8", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1px solid #d0dff5", background: "#f7faff", color: "#5580a8", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
                 onClick={() => { setDone(false); setStep(0); setData(initialData); setResult(""); setVisitCode(""); setRecordId(""); setSaveMsg(""); setShowKarte(false); setSaveError(false); setTimeout(scrollTop, 50); }}>🔄 最初から</button>
-              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #9ae6b4", background: "#f0fff4", color: "#276749", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1px solid #9ae6b4", background: "#f0fff4", color: "#276749", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
                 onClick={() => { window.location.href = "/"; }}>🏠 TOPへ</button>
             </div>
 

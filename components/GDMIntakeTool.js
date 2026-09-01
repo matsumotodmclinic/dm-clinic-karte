@@ -243,7 +243,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               {[["ナラヤマレディースクリニック","産婦人科"],["葵ウィメンズクリニック","産婦人科"]].map(([hosp,dept])=>{
                 const selected = d.reason.referralFrom===hosp;
                 return (
-                <button key={hosp} style={{...btn(selected),fontSize:13,padding:"9px 16px",border:selected?"2px solid #0f9668":"2px dashed #0f9668",background:selected?undefined:"#f0fff8",color:selected?"#fff":undefined}}
+                <button key={hosp} style={{...btn(selected),fontSize:13,padding:"9px 16px",border:selected?"1px solid #0f9668":"2px dashed #0f9668",background:selected?undefined:"#f0fff8",color:selected?"#fff":undefined}}
                   onClick={()=>setData(p=>selected
                     ? ({...p,reason:{...p.reason,referralFrom:"",referralDept:"",referralQuickSelect:false}})
                     : ({...p,reason:{...p.reason,referralFrom:hosp,referralDept:dept,referralQuickSelect:true}})
@@ -285,7 +285,7 @@ LINE登録ご案内→済　登録確認未・登録できない
 
       case 1: return (
         <div>
-          <div style={{...sBox({background:"#fff0f7",border:"2px solid #f0b8d4"}),marginBottom:16}}>
+          <div style={{...sBox({background:"#fff0f7",border:"1px solid #f0b8d4"}),marginBottom:16}}>
             <label style={lbl({ fontSize:14, fontWeight: 700 })}>病名の確認</label>
             <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:6}}>
               {["妊娠糖尿病（GDM）","糖尿病合併妊娠"].map(v=>(
@@ -331,7 +331,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             ))}
           </div>
           {d.disease.pastGDM==="あり"&&(
-            <div style={sBox({background:"#fff0f7",border:"1.5px solid #f0b8d4",marginBottom:14})}>
+            <div style={sBox({background:"#fff0f7",border:"1px solid #f0b8d4",marginBottom:14})}>
               {d.disease.pastGDMChild.map((row,i)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:i<d.disease.pastGDMChild.length-1?10:8,flexWrap:"wrap"}}>
                   <span style={{fontSize:13,fontWeight:700,color:"#c05c8a",minWidth:40}}>第{i+1}子</span>
@@ -368,7 +368,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             ))}
           </div>
 
-          <div style={{...sBox({background:"#f0f8ff",border:"1.5px solid #bee3f8"}),marginTop:8}}>
+          <div style={{...sBox({background:"#f0f8ff",border:"1px solid #bee3f8"}),marginTop:8}}>
             <div style={{fontSize:13,fontWeight: 700,color:"#2b6cb0",marginBottom:4}}>🔍 エコー検査について</div>
             <div style={{fontSize:12,color:"#4a7fa8",marginBottom:12,lineHeight:1.7}}>当院では合併症検査として、頸動脈エコー・腹部エコーを年に1回行っています。</div>
             <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
@@ -478,7 +478,7 @@ LINE登録ご案内→済　登録確認未・登録できない
 
           {/* 糖尿病合併妊娠の場合のみ眼科欄を表示 */}
           {d.disease.dmType==="糖尿病合併妊娠"&&(
-            <div style={sBox({background:"#f0f7ff",border:"1.5px solid #bcd4f8",marginBottom:14})}>
+            <div style={sBox({background:"#f0f7ff",border:"1px solid #bcd4f8",marginBottom:14})}>
               <div style={{fontSize:13,fontWeight: 700,color:"#1a5fa8",marginBottom:10}}>👁 糖尿病の眼底検査（糖尿病合併妊娠のため確認）</div>
               <div style={{fontSize:12,color:"#7a9abf",marginBottom:6}}>糖尿病による網膜症のフォローのため、眼底検査を受けているか確認します</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}}>
@@ -521,7 +521,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
           )}
 
-          <div style={{...sBox({background:"#f0fff4",border:"1.5px solid #9ae6b4"}),marginBottom:14}}>
+          <div style={{...sBox({background:"#f0fff4",border:"1px solid #9ae6b4"}),marginBottom:14}}>
             <div style={{fontSize:13,color:"#276749",fontWeight:700}}>🍵 飲酒歴：妊娠中のためなし（カルテに自動記載）</div>
           </div>
 
@@ -683,7 +683,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
             </div>
             {saveError && (
-              <div style={{background:"#fff5f5",border:"2px solid #feb2b2",borderRadius:10,padding:"14px 16px",marginBottom:12,textAlign:"center"}}>
+              <div style={{background:"#fff5f5",border:"1px solid #feb2b2",borderRadius:10,padding:"14px 16px",marginBottom:12,textAlign:"center"}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#c53030",marginBottom:8}}>⚠️ 受付番号の登録に失敗しました。スタッフへ口頭でお知らせください。</div>
                 <button onClick={handleSaveRetry} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#e53e3e",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer"}}>🔄 再試行</button>
               </div>
@@ -694,12 +694,12 @@ LINE登録ご案内→済　登録確認未・登録できない
                 <div style={{fontSize:56,fontWeight: 700,color:"#fff",letterSpacing:"0.2em",lineHeight:1}}>{visitCode}</div>
               </div>
             )}
-            <div style={{background:"#fff8e1",border:"2px solid #f59e0b",borderRadius:12,padding:"14px 18px",marginBottom:12,textAlign:"center"}}>
+            <div style={{background:"#fff8e1",border:"1px solid #f59e0b",borderRadius:12,padding:"14px 18px",marginBottom:12,textAlign:"center"}}>
               <div style={{fontSize:16,fontWeight: 700,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
               <div style={{fontSize:12,color:"#b45309",marginTop:4}}>問診は完了しています。ありがとうございました。</div>
             </div>
                         <div style={{marginBottom:4}}>
-              <button onClick={()=>setShowKarte(v=>!v)} style={{width:"100%",padding:"11px",borderRadius:8,border:"1.5px solid #c0e8d8",background:showKarte?"#e8f5f0":"#f5f9f7",color:"#276749",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+              <button onClick={()=>setShowKarte(v=>!v)} style={{width:"100%",padding:"11px",borderRadius:8,border:"1px solid #c0e8d8",background:showKarte?"#e8f5f0":"#f5f9f7",color:"#276749",fontWeight:700,fontSize:13,cursor:"pointer"}}>
                 {showKarte?"▲ カルテ文を閉じる（スタッフ用）":"▼ スタッフ用カルテを確認する"}
               </button>
             </div>
@@ -714,9 +714,9 @@ LINE登録ご案内→済　登録確認未・登録できない
             )}
             <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"none",background: TONE.fg,color:"#fff",fontWeight: 700,fontSize:14,cursor:"pointer"}} onClick={()=>copyToClipboard(result)}>📋 コピー</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #c05c8a",background:"#f0f7ff",color:"#c05c8a",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setTimeout(scrollTop,50);}}>✏️ 修正する</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #f0d0e0",background:"#fff7fb",color:"#9a5070",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setVisitCode("");setRecordId("");setSaveMsg("");setShowKarte(false);setSaveError(false);setTimeout(scrollTop,50);}}>🔄 最初から</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #9ae6b4",background:"#f0fff4",color:"#276749",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{window.location.href="/";}}>🏠 TOPへ</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1px solid #c05c8a",background:"#f0f7ff",color:"#c05c8a",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setTimeout(scrollTop,50);}}>✏️ 修正する</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1px solid #f0d0e0",background:"#fff7fb",color:"#9a5070",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setVisitCode("");setRecordId("");setSaveMsg("");setShowKarte(false);setSaveError(false);setTimeout(scrollTop,50);}}>🔄 最初から</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1px solid #9ae6b4",background:"#f0fff4",color:"#276749",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{window.location.href="/";}}>🏠 TOPへ</button>
             </div>
           </div>
         )}

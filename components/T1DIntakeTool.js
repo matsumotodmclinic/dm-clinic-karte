@@ -88,7 +88,7 @@ function EraYear({ era, year, onEraChange, onYearChange, disabled }) {
 function AlcoholRow({ item, index, onChange, onRemove, showRemove }) {
   const typeInfo = ALCOHOL_TYPES.find(t=>t.key===item.type);
   return (
-    <div style={sBox({ background:"#f0f8ff", border:"1.5px solid #bee3f8", marginBottom:8 })}>
+    <div style={sBox({ background:"#f0f8ff", border:"1px solid #bee3f8", marginBottom:8 })}>
       <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
         <label style={lbl({ color:"#2b6cb0", marginBottom:0 })}>種類</label>
         {showRemove && <button onClick={onRemove} style={{ fontSize:12, color:"#e53e3e", background:"none", border:"none", cursor:"pointer", fontWeight:700 }}>✕ 削除</button>}
@@ -349,7 +349,7 @@ LINE登録ご案内→済　登録確認未・登録できない
       case 0: return (
         <div>
   
-          <div style={{background:"#fff5f5",border:"2px solid #e53e3e",borderRadius:12,padding:"16px 20px",marginBottom:20}}>
+          <div style={{background:"#fff5f5",border:"1px solid #e53e3e",borderRadius:12,padding:"16px 20px",marginBottom:20}}>
             <div style={{fontSize:15,fontWeight: 700,color:"#c53030",marginBottom:6}}>⚠️ 最初に必ず確認してください</div>
             <div style={{fontSize:13,color:"#742a2a",lineHeight:1.7}}>
               体重減少がある患者様は<strong>早急なインスリン導入</strong>が必要な場合があります。<br/>
@@ -401,7 +401,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               {[["上尾中央総合病院","糖尿病内科"],["自治医大さいたま医療センター","糖尿病内科"],["自治医大さいたま医療センター","小児科"],["埼玉県立小児医療センター","小児科"]].map(([hosp,dept])=>{
                 const selected = d.reason.referralFrom===hosp&&d.reason.referralDept===dept;
                 return (
-                <button key={hosp+dept} style={{...btn(selected),fontSize:12,padding:"7px 12px",border:selected?"2px solid #0f9668":"2px dashed #0f9668",background:selected?undefined:"#f0fff8",color:selected?"#fff":undefined}}
+                <button key={hosp+dept} style={{...btn(selected),fontSize:12,padding:"7px 12px",border:selected?"1px solid #0f9668":"2px dashed #0f9668",background:selected?undefined:"#f0fff8",color:selected?"#fff":undefined}}
                   onClick={()=>setData(p=>selected
                     ? ({...p,reason:{...p.reason,referralFrom:"",referralDept:"",referralQuickSelect:false}})
                     : ({...p,reason:{...p.reason,referralFrom:hosp,referralDept:dept,referralQuickSelect:true,dmConcern:false}})
@@ -470,7 +470,7 @@ LINE登録ご案内→済　登録確認未・登録できない
 
       case 2: return (
         <div>
-          <div style={{...sBox({background:"#f0f7ff",border:"2px solid #bcd4f8"}),marginBottom:16}}>
+          <div style={{...sBox({background:"#f0f7ff",border:"1px solid #bcd4f8"}),marginBottom:16}}>
             <span style={{fontSize:15,fontWeight: 700,color:"#1a5fa8"}}>＃1型糖尿病</span>
             <div style={{marginTop:12}}>
               <label style={lbl()}>1型のタイプ</label>
@@ -526,7 +526,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             ))}
           </div>
 
-          <div style={sBox({background:"#faf5ff",border:"1.5px solid #d6bcfa"})}>
+          <div style={sBox({background:"#faf5ff",border:"1px solid #d6bcfa"})}>
             <div style={{fontSize:13,fontWeight: 700,color:"#553c9a",marginBottom:10}}>💼 障害年金について</div>
             <label style={lbl({color:"#553c9a"})}>現在の受給状況</label>
             <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:12}}>
@@ -653,7 +653,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             {["なし","あり","禁煙済"].map(v=><button key={v} style={btn(d.history.smoking===v)} onClick={()=>up("history","smoking",v)}>{v}</button>)}
           </div>
-          {(d.history.smoking==="あり"||d.history.smoking==="禁煙済")&&(<div style={sBox({border:"1.5px solid #bee3f8",background:"#ebf8ff",marginBottom:10})}>
+          {(d.history.smoking==="あり"||d.history.smoking==="禁煙済")&&(<div style={sBox({border:"1px solid #bee3f8",background:"#ebf8ff",marginBottom:10})}>
             <div style={{fontSize:12,color:"#2b6cb0",fontWeight:700,marginBottom:10}}>📝 カルテ記載：{buildSmoking()||"入力中..."}</div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
               <div style={{flex:"1 1 80px"}}><label style={lbl({color:"#2b6cb0"})}>1日の本数</label><input style={inp()} type="number" placeholder="本/日" value={d.history.smokingAmount} onChange={e=>up("history","smokingAmount",e.target.value)}/></div>
@@ -708,7 +708,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:14}}>
             {["市の健診","会社の健診","人間ドック","なし"].map(v=><button key={v} style={btn(d.history.checkup.includes(v))} onClick={()=>toggleArr("history","checkup",v)}>{v}</button>)}
           </div>
-          {isOver60&&(<div style={sBox({border:"1.5px solid #bee3f8",background:"#ebf8ff"})}>
+          {isOver60&&(<div style={sBox({border:"1px solid #bee3f8",background:"#ebf8ff"})}>
             <div style={{fontSize:13,fontWeight: 700,color:"#2b6cb0",marginBottom:12}}>💉 ワクチン希望（60歳以上）</div>
             <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
               <div style={{flex:1,minWidth:180}}>
@@ -730,7 +730,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             {LIVING_OTHERS.map(v=><button key={v} style={btn((d.history.livingOther||[]).includes(v))} onClick={()=>toggleArr("history","livingOther",v)}>{v}</button>)}
           </div>
           <input style={{...inp(),marginBottom:8}} placeholder="その他の場合や補足があれば（例：兄弟と同居・夫は要介護）" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>
-          {isOver70&&(<div style={sBox({border:"1.5px solid #fbd38d",background:"#fffaf0"})}>
+          {isOver70&&(<div style={sBox({border:"1px solid #fbd38d",background:"#fffaf0"})}>
             <div style={{fontSize:13,fontWeight: 700,color:"#c05621",marginBottom:8}}>👨‍👩‍👧 お子さんの状況（70歳以上）</div>
             {(Array.isArray(d.history.livingOther)?d.history.livingOther:[]).includes("子供と同居なし")&&(
               <div style={{marginBottom:10}}>
@@ -890,7 +890,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
           </div>
         ):(
-          <div style={{background:UI.surface,borderRadius:8,padding:"22px 24px",border:`1px solid ${UI.border}`,boxShadow:"0 2px 8px rgba(0,0,0,.06)",border:"2px solid #c6f6d5"}}>
+          <div style={{background:UI.surface,borderRadius:8,padding:"22px 24px",border:`1px solid ${UI.border}`,boxShadow:"0 2px 8px rgba(0,0,0,.06)",border:"1px solid #c6f6d5"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
               <div style={{width:32,height:32,borderRadius:8,background:"#0f9668",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight: 700,fontSize:16}}>✓</div>
               <div>
@@ -904,7 +904,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
             )}
             {saveError && (
-              <div style={{background:"#fff5f5",border:"2px solid #feb2b2",borderRadius:10,padding:"14px 16px",marginBottom:12,textAlign:"center"}}>
+              <div style={{background:"#fff5f5",border:"1px solid #feb2b2",borderRadius:10,padding:"14px 16px",marginBottom:12,textAlign:"center"}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#c53030",marginBottom:8}}>⚠️ 受付番号の登録に失敗しました。スタッフへ口頭でお知らせください。</div>
                 <button onClick={handleSaveRetry} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#e53e3e",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer"}}>🔄 再試行</button>
               </div>
@@ -916,12 +916,12 @@ LINE登録ご案内→済　登録確認未・登録できない
                 
               </div>
             )}
-            <div style={{background:"#fff8e1",border:"2px solid #f59e0b",borderRadius:12,padding:"14px 18px",textAlign:"center"}}>
+            <div style={{background:"#fff8e1",border:"1px solid #f59e0b",borderRadius:12,padding:"14px 18px",textAlign:"center"}}>
               <div style={{fontSize:16,fontWeight: 700,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
               <div style={{fontSize:12,color:"#b45309",marginTop:4}}>問診は完了しています。ありがとうございました。</div>
             </div>
                         <div style={{marginBottom:4}}>
-              <button onClick={()=>setShowKarte(v=>!v)} style={{width:"100%",padding:"11px",borderRadius:8,border:"1.5px solid #c0e8d8",background:showKarte?"#e8f5f0":"#f5f9f7",color:"#276749",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+              <button onClick={()=>setShowKarte(v=>!v)} style={{width:"100%",padding:"11px",borderRadius:8,border:"1px solid #c0e8d8",background:showKarte?"#e8f5f0":"#f5f9f7",color:"#276749",fontWeight:700,fontSize:13,cursor:"pointer"}}>
                 {showKarte?"▲ カルテ文を閉じる（スタッフ用）":"▼ スタッフ用カルテを確認する"}
               </button>
             </div>
@@ -937,9 +937,9 @@ LINE登録ご案内→済　登録確認未・登録できない
 
             <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"none",background: TONE.fg,color:"#fff",fontWeight: 700,fontSize:14,cursor:"pointer"}} onClick={()=>copyToClipboard(result)}>📋 コピー</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #c53030",background:"#fff5f5",color:"#c53030",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setTimeout(scrollTop,50);}}>✏️ 修正する</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #d0dff5",background:"#f7faff",color:"#5580a8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setVisitCode("");setRecordId("");setSaveMsg("");setShowKarte(false);setSaveError(false);setTimeout(scrollTop,50);}}>🔄 最初から</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #9ae6b4",background:"#f0fff4",color:"#276749",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{window.location.href="/";}}>🏠 TOPへ</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1px solid #c53030",background:"#fff5f5",color:"#c53030",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setTimeout(scrollTop,50);}}>✏️ 修正する</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1px solid #d0dff5",background:"#f7faff",color:"#5580a8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setVisitCode("");setRecordId("");setSaveMsg("");setShowKarte(false);setSaveError(false);setTimeout(scrollTop,50);}}>🔄 最初から</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1px solid #9ae6b4",background:"#f0fff4",color:"#276749",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{window.location.href="/";}}>🏠 TOPへ</button>
             </div>
           </div>
         )}

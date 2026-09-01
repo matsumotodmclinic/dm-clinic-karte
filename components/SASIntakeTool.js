@@ -121,7 +121,7 @@ function EraYear({ era, year, onEraChange, onYearChange, disabled }) {
 function AlcoholRow({ item, index, onChange, onRemove, showRemove }) {
   const typeInfo = ALCOHOL_TYPES.find(t=>t.key===item.type);
   return (
-    <div style={sBox({ background:"#f0f8ff", border:"1.5px solid #bee3f8", marginBottom:8 })}>
+    <div style={sBox({ background:"#f0f8ff", border:"1px solid #bee3f8", marginBottom:8 })}>
       <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
         <label style={lbl({ color:"#2b6cb0", marginBottom:0 })}>種類</label>
         {showRemove && <button onClick={onRemove} style={{ fontSize:12, color:"#e53e3e", background:"none", border:"none", cursor:"pointer", fontWeight:700 }}>✕ 削除</button>}
@@ -415,7 +415,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           </div>
 
           {d.reason.sasCategory==='cpap' && (
-            <div style={sBox({background:"#fff7e6",border:"1.5px solid #f0c270"})}>
+            <div style={sBox({background:"#fff7e6",border:"1px solid #f0c270"})}>
               <div style={{fontSize:13,fontWeight: 700,color:"#a67000",marginBottom:8}}>📄 前医情報提供書（CPAP継続に必須）</div>
               <div style={{fontSize:12,color:"#7a5500",marginBottom:10,lineHeight:1.6}}>当院でのCPAP継続には、前医の情報提供書が必須です。問診時に持参いただき、内容を確認してチェックしてください。機種によっては当院で継続できない場合があります。</div>
               <label style={lbl({marginTop:4})}>前医名（任意）</label>
@@ -428,7 +428,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           )}
 
           {d.reason.sasCategory==='screening' && (
-            <div style={sBox({background:"#f0fff4",border:"1.5px solid #9ae6b4"})}>
+            <div style={sBox({background:"#f0fff4",border:"1px solid #9ae6b4"})}>
               <div style={{fontSize:13,fontWeight: 700,color:"#276749",marginBottom:8}}>🔬 簡易PSG検査について</div>
               <div style={{fontSize:12,color:"#1a4530",lineHeight:1.6}}>ご予約日時に業者へ発送手配を行い、後日ご自宅に検査機器が郵送されます。当院ではSASは糖尿病・脂質異常症の合併が多いため、全例に採血検査を行っています。</div>
             </div>
@@ -486,7 +486,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           ))}
           <button style={{...btn(false,UI.neutral.fg),fontSize:13,marginBottom:14}} onClick={()=>setData(p=>{const a=[...(p.disease.otherDiseases||[]),{name:"",hospital:"",hospitalOther:"",dept:""}];return{...p,disease:{...p.disease,otherDiseases:a}};})}>＋ その他の病名を追加</button>
 
-          <div style={{...sBox({background:"#f0f8ff",border:"1.5px solid #bee3f8"}),marginTop:8}}>
+          <div style={{...sBox({background:"#f0f8ff",border:"1px solid #bee3f8"}),marginTop:8}}>
             <div style={{fontSize:13,fontWeight: 700,color:"#2b6cb0",marginBottom:4}}>🔍 エコー検査について</div>
             <div style={{fontSize:12,color:"#4a7fa8",marginBottom:12,lineHeight:1.7}}>当院では合併症検査として、頸動脈エコー・腹部エコー等を年に1回行っています。</div>
             <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
@@ -571,7 +571,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             {["なし","あり","禁煙済"].map(v=><button key={v} style={btn(d.history.smoking===v)} onClick={()=>up("history","smoking",v)}>{v}</button>)}
           </div>
-          {(d.history.smoking==="あり"||d.history.smoking==="禁煙済")&&(<div style={sBox({border:"1.5px solid #bee3f8",background:"#ebf8ff",marginBottom:10})}>
+          {(d.history.smoking==="あり"||d.history.smoking==="禁煙済")&&(<div style={sBox({border:"1px solid #bee3f8",background:"#ebf8ff",marginBottom:10})}>
             <div style={{fontSize:12,color:"#2b6cb0",fontWeight:700,marginBottom:10}}>📝 カルテ記載：{buildSmoking()||"入力中..."}</div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
               <div style={{flex:"1 1 80px"}}><label style={lbl({color:"#2b6cb0"})}>1日の本数</label><input style={inp()} type="number" placeholder="本/日" value={d.history.smokingAmount} onChange={e=>up("history","smokingAmount",e.target.value)}/></div>
@@ -584,7 +584,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <div style={{display:"flex",flexWrap:"wrap",marginBottom:14}}>
             {["市の健診","会社の健診","人間ドック","なし"].map(v=><button key={v} style={btn(d.history.checkup.includes(v))} onClick={()=>toggleArr("history","checkup",v)}>{v}</button>)}
           </div>
-          {isOver60&&(<div style={sBox({border:"1.5px solid #bee3f8",background:"#ebf8ff"})}>
+          {isOver60&&(<div style={sBox({border:"1px solid #bee3f8",background:"#ebf8ff"})}>
             <div style={{fontSize:13,fontWeight: 700,color:"#2b6cb0",marginBottom:12}}>💉 ワクチン希望（60歳以上）</div>
             <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
               <div style={{flex:1,minWidth:180}}>
@@ -604,7 +604,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           <label style={lbl({marginTop:8})}>子供・その他との同居（複数選択可）</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,marginBottom:8}}>{LIVING_OTHERS.map(v=><button key={v} style={btn((d.history.livingOther||[]).includes(v))} onClick={()=>toggleArr("history","livingOther",v)}>{v}</button>)}</div>
           <input style={{...inp(),marginBottom:8}} placeholder="その他の場合や補足があれば（例：兄弟と同居・夫は要介護）" value={d.history.livingCustom} onChange={e=>up("history","livingCustom",e.target.value)}/>
-          {isOver70&&(<div style={sBox({border:"1.5px solid #fbd38d",background:"#fffaf0"})}>
+          {isOver70&&(<div style={sBox({border:"1px solid #fbd38d",background:"#fffaf0"})}>
             <div style={{fontSize:13,fontWeight: 700,color:"#c05621",marginBottom:8}}>👨‍👩‍👧 お子さんの状況（70歳以上）</div>
             {(Array.isArray(d.history.livingOther)?d.history.livingOther:[]).includes("子供と同居なし")&&(
               <div style={{marginBottom:10}}>
@@ -751,7 +751,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             </div>
           </div>
         ):(
-          <div style={{background:UI.surface,borderRadius:8,padding:"22px 24px",border:`1px solid ${UI.border}`,boxShadow:"0 2px 8px rgba(0,0,0,.06)",border:"2px solid #d6d0f8"}}>
+          <div style={{background:UI.surface,borderRadius:8,padding:"22px 24px",border:`1px solid ${UI.border}`,boxShadow:"0 2px 8px rgba(0,0,0,.06)",border:"1px solid #d6d0f8"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
               <div style={{width:32,height:32,borderRadius:8,background:"#5a4fa8",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight: 700,fontSize:16}}>✓</div>
               <div>
@@ -760,7 +760,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               </div>
             </div>
             {saveError && (
-              <div style={{background:"#fff5f5",border:"2px solid #feb2b2",borderRadius:10,padding:"14px 16px",marginBottom:12,textAlign:"center"}}>
+              <div style={{background:"#fff5f5",border:"1px solid #feb2b2",borderRadius:10,padding:"14px 16px",marginBottom:12,textAlign:"center"}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#c53030",marginBottom:8}}>⚠️ 受付番号の登録に失敗しました。スタッフへ口頭でお知らせください。</div>
                 <button onClick={handleSaveRetry} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#e53e3e",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer"}}>🔄 再試行</button>
               </div>
@@ -771,12 +771,12 @@ LINE登録ご案内→済　登録確認未・登録できない
                 <div style={{fontSize:56,fontWeight: 700,color:"#fff",letterSpacing:"0.2em",lineHeight:1}}>{visitCode}</div>
               </div>
             )}
-            <div style={{background:"#fff8e1",border:"2px solid #f59e0b",borderRadius:12,padding:"14px 18px",marginBottom:12,textAlign:"center"}}>
+            <div style={{background:"#fff8e1",border:"1px solid #f59e0b",borderRadius:12,padding:"14px 18px",marginBottom:12,textAlign:"center"}}>
               <div style={{fontSize:16,fontWeight: 700,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
               <div style={{fontSize:12,color:"#b45309",marginTop:4}}>問診は完了しています。ありがとうございました。</div>
             </div>
             <div style={{marginBottom:4}}>
-              <button onClick={()=>setShowKarte(v=>!v)} style={{width:"100%",padding:"11px",borderRadius:8,border:"1.5px solid #d6d0f8",background:showKarte?"#eee9ff":"#f7f5ff",color:"#3a2f78",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+              <button onClick={()=>setShowKarte(v=>!v)} style={{width:"100%",padding:"11px",borderRadius:8,border:"1px solid #d6d0f8",background:showKarte?"#eee9ff":"#f7f5ff",color:"#3a2f78",fontWeight:700,fontSize:13,cursor:"pointer"}}>
                 {showKarte?"▲ カルテ文を閉じる（スタッフ用）":"▼ スタッフ用カルテを確認する"}
               </button>
             </div>
@@ -792,9 +792,9 @@ LINE登録ご案内→済　登録確認未・登録できない
 
             <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
               <button style={{flex:1,padding:"12px",borderRadius:8,border:"none",background: TONE.fg,color:"#fff",fontWeight: 700,fontSize:14,cursor:"pointer"}} onClick={()=>copyToClipboard(result)}>📋 コピー</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #5a4fa8",background:"#f7f5ff",color:"#5a4fa8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setTimeout(scrollTop,50);}}>✏️ 修正する</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #d6d8f0",background:"#f7faff",color:"#5580a8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setVisitCode("");setRecordId("");setSaveMsg("");setShowKarte(false);setSaveError(false);setTimeout(scrollTop,50);}}>🔄 最初から</button>
-              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1.5px solid #d6d0f8",background:"#f7f5ff",color:"#3a2f78",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{window.location.href="/";}}>🏠 TOPへ</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1px solid #5a4fa8",background:"#f7f5ff",color:"#5a4fa8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setTimeout(scrollTop,50);}}>✏️ 修正する</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1px solid #d6d8f0",background:"#f7faff",color:"#5580a8",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{setDone(false);setStep(0);setData(initialData);setResult("");setVisitCode("");setRecordId("");setSaveMsg("");setShowKarte(false);setSaveError(false);setTimeout(scrollTop,50);}}>🔄 最初から</button>
+              <button style={{flex:1,padding:"12px",borderRadius:8,border:"1px solid #d6d0f8",background:"#f7f5ff",color:"#3a2f78",fontWeight:700,fontSize:14,cursor:"pointer"}} onClick={()=>{window.location.href="/";}}>🏠 TOPへ</button>
             </div>
           </div>
         )}

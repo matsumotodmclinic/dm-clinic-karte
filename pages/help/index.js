@@ -63,7 +63,7 @@ export default function HelpIndex() {
         {/* ガイド本体 (フォーム別) */}
         {GUIDES.map((g) => (
           <section key={g.category} style={{ background: '#fff', borderRadius: 12, padding: 18, marginBottom: 14, boxShadow: '0 2px 8px rgba(0,0,0,.06)' }}>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1a5fa8', marginBottom: 12, paddingBottom: 6, borderBottom: '2px solid #1a5fa833' }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1a5fa8', marginBottom: 12, paddingBottom: 6, borderBottom: '1px solid #1a5fa833' }}>
               {g.category}
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
@@ -71,7 +71,7 @@ export default function HelpIndex() {
                 const body = (
                   <div style={{
                     padding: 14, borderRadius: 8,
-                    border: `1.5px solid ${it.ready ? it.color + '66' : '#e0e0e0'}`,
+                    border: `1px solid ${it.ready ? it.color + '66' : '#e0e0e0'}`,
                     background: it.ready ? '#fff' : '#fafafa',
                     opacity: it.ready ? 1 : 0.6,
                     cursor: it.ready ? 'pointer' : 'not-allowed',
@@ -104,7 +104,7 @@ export default function HelpIndex() {
 
         {/* 運用トピック (将来追加予定) */}
         <section style={{ background: '#fff', borderRadius: 12, padding: 18, marginBottom: 14, boxShadow: '0 2px 8px rgba(0,0,0,.06)' }}>
-          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#7b1fa2', marginBottom: 12, paddingBottom: 6, borderBottom: '2px solid #7b1fa233' }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#7b1fa2', marginBottom: 12, paddingBottom: 6, borderBottom: '1px solid #7b1fa233' }}>
             ⚙️ 運用トピック (共通)
           </h2>
           <div style={{ fontSize: 12, color: '#888', marginBottom: 10, lineHeight: 1.6 }}>
@@ -115,7 +115,7 @@ export default function HelpIndex() {
             {OPS_TOPICS.map((it) => (
               <div key={it.id} style={{
                 padding: 14, borderRadius: 8,
-                border: '1.5px solid #e0e0e0', background: '#fafafa', opacity: 0.65,
+                border: '1px solid #e0e0e0', background: '#fafafa', opacity: 0.65,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <span style={{ fontSize: 22 }}>{it.emoji}</span>

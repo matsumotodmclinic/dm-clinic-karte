@@ -169,7 +169,7 @@ export default function HandbookIndex() {
         </nav>
 
         {/* 重要 callout */}
-        <div style={{ background: '#fff3e0', border: '1.5px solid #ffb74d', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 12, color: '#5d4037', lineHeight: 1.7 }}>
+        <div style={{ background: '#fff3e0', border: '1px solid #ffb74d', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 12, color: '#5d4037', lineHeight: 1.7 }}>
           <strong>⚠️ ハンドブックの位置づけ</strong>: 一次対応の道しるべです。 確定診断・治療決定は必ず医師が行います。
           急変・重症が疑われる場合は <strong>即座に院長 (松本壮一) を呼ぶ・救急要請</strong> を優先してください。
           記載内容は当院の運用方針に基づき、 教科書的なガイドラインと異なる箇所があります (院長判断)。
@@ -178,7 +178,7 @@ export default function HandbookIndex() {
         {/* カテゴリ × topic 一覧 */}
         {CATEGORIES.map((cat) => (
           <section key={cat.id} style={{ background: '#fff', borderRadius: 12, padding: 18, marginBottom: 14, boxShadow: '0 2px 8px rgba(0,0,0,.06)' }}>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: cat.color, marginBottom: 4, paddingBottom: 6, borderBottom: `2px solid ${cat.color}33` }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: cat.color, marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${cat.color}33` }}>
               {cat.title}
             </h2>
             <div style={{ fontSize: 12, color: '#666', marginBottom: 10, lineHeight: 1.6 }}>{cat.desc}</div>
@@ -187,7 +187,7 @@ export default function HandbookIndex() {
                 const body = (
                   <div style={{
                     padding: 14, borderRadius: 8,
-                    border: `1.5px solid ${it.ready ? cat.color + '66' : '#e0e0e0'}`,
+                    border: `1px solid ${it.ready ? cat.color + '66' : '#e0e0e0'}`,
                     background: it.ready ? '#fff' : '#fafafa',
                     opacity: it.ready ? 1 : 0.6,
                     cursor: it.ready ? 'pointer' : 'not-allowed',

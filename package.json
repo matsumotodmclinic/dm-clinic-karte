@@ -8,7 +8,8 @@
     "test": "node --test scripts/golden/prompt.test.mjs",
     "test:update": "node scripts/golden/update-snapshots.mjs",
     "check:prompt-sync": "node scripts/check-prompt-sync.mjs",
-    "check": "npm run check:prompt-sync && npm test"
+    "check": "npm run check:prompt-sync && npm run check:styles && npm test",
+    "check:styles": "node scripts/verify-form-styles.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

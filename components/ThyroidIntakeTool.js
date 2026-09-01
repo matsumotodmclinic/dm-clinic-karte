@@ -478,7 +478,7 @@ ${footerTrailing}`;
       </div>
 
       {data.reason.thyroidConcern && (
-        <div style={{ ...sBox({ border: "1.5px solid #d6bcfa", background: "#faf5ff" }), marginBottom: 14 }}>
+        <div style={{ ...sBox({ border: "1px solid #d6bcfa", background: "#faf5ff" }), marginBottom: 14 }}>
           <label style={lbl({ color: '#8e44ad' })}>気になる理由（複数選択可）</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginBottom: 8 }}>
             {['家族に甲状腺疾患の方がいる', '健診で甲状腺異常を指摘された', '首の腫れが気になる', '動悸・倦怠感・むくみ等の症状が気になる', 'その他'].map(v => {
@@ -511,7 +511,7 @@ ${footerTrailing}`;
               const selected = data.reason.referralFrom === hosp && data.reason.referralDept === dept;
               return (
                 <button key={hosp + dept}
-                  style={{ ...btn(selected), fontSize: 12, padding: "7px 14px", border: selected ? "2px solid #0f9668" : "2px dashed #0f9668", background: selected ? undefined : "#f0fff8", color: selected ? "#fff" : undefined }}
+                  style={{ ...btn(selected), fontSize: 12, padding: "7px 14px", border: selected ? "1px solid #0f9668" : "2px dashed #0f9668", background: selected ? undefined : "#f0fff8", color: selected ? "#fff" : undefined }}
                   onClick={() => setData(p => ({ ...p, reason: { ...p.reason, referralFrom: selected ? "" : hosp, referralDept: selected ? "" : dept } }))}>
                   {selected ? "✓ " : ""}{hosp}・{dept}
                 </button>
@@ -565,7 +565,7 @@ ${footerTrailing}`;
       <textarea style={{ ...inp(), minHeight: 60, resize: "vertical", marginBottom: 14 }} placeholder="補足があれば記載" value={data.reason.summary} onChange={e => up("reason", "summary", e.target.value)} />
 
       {formType === 'basedow-cont' && (
-        <div style={sBox({ background: "#fff8e1", border: "1.5px solid #fbd38d" })}>
+        <div style={sBox({ background: "#fff8e1", border: "1px solid #fbd38d" })}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#a67000", marginBottom: 14 }}>🔄 バセドウ病：治療歴（継続患者）</div>
 
           {/* 診断時期 */}
@@ -660,7 +660,7 @@ ${footerTrailing}`;
         </div>
       )}
 
-      <div style={sBox({ background: "#e6fff8", border: "1.5px solid #81e6d9" })}>
+      <div style={sBox({ background: "#e6fff8", border: "1px solid #81e6d9" })}>
         <div style={{ fontSize: 13, fontWeight: 700, color: TC, marginBottom: 12 }}>🔬 甲状腺エコー所見</div>
 
         {/* 甲状腺ベース所見（全フォーム共通） */}
@@ -713,7 +713,7 @@ ${footerTrailing}`;
         </div>
 
         {data.echo.hasNodule === "あり" && (
-          <div style={{ background: "#fff5f5", border: "1.5px solid #feb2b2", borderRadius: 10, padding: "14px 16px", marginBottom: 6 }}>
+          <div style={{ background: "#fff5f5", border: "1px solid #feb2b2", borderRadius: 10, padding: "14px 16px", marginBottom: 6 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#c53030", marginBottom: 10 }}>🔍 結節の詳細</div>
 
             <label style={lbl({ color: "#c53030" })}>結節の部位</label>
@@ -844,7 +844,7 @@ ${footerTrailing}`;
             {["なし", "あり", "禁煙済"].map(v => <button key={v} style={btn(data.history.smoking === v)} onClick={() => up("history", "smoking", v)}>{v}</button>)}
           </div>
           {(data.history.smoking === "あり" || data.history.smoking === "禁煙済") && (
-            <div style={sBox({ border: "1.5px solid #a7f3d0", background: "#e6fff8", marginBottom: 10 })}>
+            <div style={sBox({ border: "1px solid #a7f3d0", background: "#e6fff8", marginBottom: 10 })}>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
                 <div style={{ flex: "1 1 80px" }}><label style={lbl()}>1日の本数</label><input style={inp()} type="number" placeholder="本/日" value={data.history.smokingAmount} onChange={e => up("history", "smokingAmount", e.target.value)} /></div>
                 <div style={{ flex: "1 1 80px" }}><label style={lbl()}>喫煙年数</label><input style={inp()} type="number" placeholder="年" value={data.history.smokingYears} onChange={e => up("history", "smokingYears", e.target.value)} /></div>
@@ -1027,7 +1027,7 @@ ${footerTrailing}`;
 
       <div style={{ maxWidth: 680, margin: "0 auto 18px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={() => router.push("/")} style={{ padding: "6px 10px", borderRadius: 8, border: "1.5px solid #a7f3d0", background: "#fff", color: TC, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>← トップへ戻る</button>
+          <button onClick={() => router.push("/")} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #a7f3d0", background: "#fff", color: TC, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>← トップへ戻る</button>
           <div>
             <div style={{ fontSize:11,color:UI.textFaint,fontWeight:700,letterSpacing:"0.08em" }}>まつもと糖尿病クリニック</div>
             <div style={{ fontSize:19,fontWeight:700,color:UI.text }}>甲状腺 初診事前問診</div>
@@ -1055,7 +1055,7 @@ ${footerTrailing}`;
             <h2 style={{ fontSize:15,fontWeight:700,color:UI.text,marginBottom:18,borderBottom:`1px solid ${UI.border}`,paddingBottom:10 }}>{steps[step].title}</h2>
             {renderStep()}
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 26 }}>
-              <button style={{ padding: "11px 22px", borderRadius: 8, border: "1.5px solid #a7f3d0", background: "#f0fdf9", color: step === 0 ? "#a7c5bc" : TC, fontWeight: 700, fontSize: 14, cursor: step === 0 ? "not-allowed" : "pointer" }} onClick={() => goStep(step - 1)} disabled={step === 0}>← 前へ</button>
+              <button style={{ padding: "11px 22px", borderRadius: 8, border: "1px solid #a7f3d0", background: "#f0fdf9", color: step === 0 ? "#a7c5bc" : TC, fontWeight: 700, fontSize: 14, cursor: step === 0 ? "not-allowed" : "pointer" }} onClick={() => goStep(step - 1)} disabled={step === 0}>← 前へ</button>
               {!isLastStep ? (
                 <button style={{ padding:"10px 24px",borderRadius:6,border:"none",background:TONE.fg,color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer" }} onClick={() => goStep(step + 1)}>次へ →</button>
               ) : (
@@ -1064,7 +1064,7 @@ ${footerTrailing}`;
             </div>
           </div>
         ) : (
-          <div style={{ background:UI.surface,borderRadius:8,padding:"22px 24px",border:`1px solid ${UI.border}`,boxShadow:"0 2px 8px rgba(0,0,0,.06)", border: "2px solid #a7f3d0" }}>
+          <div style={{ background:UI.surface,borderRadius:8,padding:"22px 24px",border:`1px solid ${UI.border}`,boxShadow:"0 2px 8px rgba(0,0,0,.06)", border: "1px solid #a7f3d0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
               <div style={{ width: 32, height: 32, borderRadius: 8, background: TC, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 16 }}>✓</div>
               <div>
@@ -1073,7 +1073,7 @@ ${footerTrailing}`;
               </div>
             </div>
             {saveError && (
-              <div style={{ background: "#fff5f5", border: "2px solid #feb2b2", borderRadius: 10, padding: "14px 16px", marginBottom: 12, textAlign: "center" }}>
+              <div style={{ background: "#fff5f5", border: "1px solid #feb2b2", borderRadius: 10, padding: "14px 16px", marginBottom: 12, textAlign: "center" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "#c53030", marginBottom: 8 }}>⚠️ 受付番号の登録に失敗しました。スタッフへ口頭でお知らせください。</div>
                 <button onClick={handleSaveRetry} style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "#e53e3e", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>🔄 再試行</button>
               </div>
@@ -1084,12 +1084,12 @@ ${footerTrailing}`;
                 <div style={{ fontSize: 56, fontWeight: 700, color: "#fff", letterSpacing: "0.2em", lineHeight: 1 }}>{visitCode}</div>
               </div>
             )}
-            <div style={{ background: "#fff8e1", border: "2px solid #f59e0b", borderRadius: 12, padding: "14px 18px", marginBottom: 12, textAlign: "center" }}>
+            <div style={{ background: "#fff8e1", border: "1px solid #f59e0b", borderRadius: 12, padding: "14px 18px", marginBottom: 12, textAlign: "center" }}>
               <div style={{ fontSize: 16, fontWeight: 700, color: "#92400e" }}>📋 タブレットを受付にお返しください</div>
               <div style={{ fontSize: 12, color: "#b45309", marginTop: 4 }}>問診は完了しています。ありがとうございました。</div>
             </div>
             <div style={{ marginBottom: 4 }}>
-              <button onClick={() => setShowKarte(v => !v)} style={{ width: "100%", padding: "11px", borderRadius: 8, border: "1.5px solid #a7f3d0", background: showKarte ? "#e6fff8" : "#f0fdf9", color: "#0d4d42", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+              <button onClick={() => setShowKarte(v => !v)} style={{ width: "100%", padding: "11px", borderRadius: 8, border: "1px solid #a7f3d0", background: showKarte ? "#e6fff8" : "#f0fdf9", color: "#0d4d42", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                 {showKarte ? "▲ カルテ文を閉じる（スタッフ用）" : "▼ スタッフ用カルテを確認する"}
               </button>
             </div>
@@ -1104,9 +1104,9 @@ ${footerTrailing}`;
             )}
             <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
               <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "none", background: TONE.fg, color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" }} onClick={() => copyToClipboard(result)}>📋 コピー</button>
-              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: `1.5px solid ${TC}`, background: "#f0fdf9", color: TC, fontWeight: 700, fontSize: 14, cursor: "pointer" }} onClick={() => { setDone(false); setStep(0); setTimeout(scrollTop, 50); }}>✏️ 修正する</button>
-              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #a7f3d0", background: "#f0fdf9", color: "#2d8a78", fontWeight: 700, fontSize: 14, cursor: "pointer" }} onClick={() => { setDone(false); setStep(0); setData(initialData); setResult(""); setVisitCode(""); setRecordId(""); setSaveMsg(""); setShowKarte(false); setSaveError(false); setTimeout(scrollTop, 50); }}>🔄 最初から</button>
-              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1.5px solid #a7f3d0", background: "#f0fdf9", color: "#2d8a78", fontWeight: 700, fontSize: 14, cursor: "pointer" }} onClick={() => { window.location.href = "/"; }}>🏠 トップへ戻る</button>
+              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: `1px solid ${TC}`, background: "#f0fdf9", color: TC, fontWeight: 700, fontSize: 14, cursor: "pointer" }} onClick={() => { setDone(false); setStep(0); setTimeout(scrollTop, 50); }}>✏️ 修正する</button>
+              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1px solid #a7f3d0", background: "#f0fdf9", color: "#2d8a78", fontWeight: 700, fontSize: 14, cursor: "pointer" }} onClick={() => { setDone(false); setStep(0); setData(initialData); setResult(""); setVisitCode(""); setRecordId(""); setSaveMsg(""); setShowKarte(false); setSaveError(false); setTimeout(scrollTop, 50); }}>🔄 最初から</button>
+              <button style={{ flex: 1, padding: "12px", borderRadius: 8, border: "1px solid #a7f3d0", background: "#f0fdf9", color: "#2d8a78", fontWeight: 700, fontSize: 14, cursor: "pointer" }} onClick={() => { window.location.href = "/"; }}>🏠 トップへ戻る</button>
             </div>
           </div>
         )}
