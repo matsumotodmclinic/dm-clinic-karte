@@ -542,7 +542,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                   ].map(({ hosp, dept }) => {
                     const selected = d.reason.referralFrom === hosp && d.reason.referralDept === dept;
                     return (
-                      <button key={hosp+dept} style={{ ...btn(selected), fontSize: 12, padding: "7px 14px", border: selected ? "1px solid #0f9668" : "2px dashed #0f9668", background: selected ? undefined : "#f0fff8", color: selected ? "#fff" : undefined }}
+                      <button key={hosp+dept} style={{ ...btn(selected), fontSize: 12, padding: "7px 14px", border: selected ? undefined : `1px dashed ${UI.primary.fg}` }}
                         onClick={() => setData(p => selected
                           ? ({ ...p, reason: { ...p.reason, referralFrom: "", referralDept: "", referralQuickSelect: false } })
                           : ({ ...p, reason: { ...p.reason, referralFrom: hosp, referralDept: dept, referralQuickSelect: true } })
@@ -560,7 +560,7 @@ LINE登録ご案内→済　登録確認未・登録できない
                   {["加藤泌尿器科"].map(hosp => {
                     const selected = d.reason.referralFrom === hosp;
                     return (
-                      <button key={hosp} style={{ ...btn(selected), fontSize: 12, padding: "7px 14px", border: selected ? "1px solid #0f9668" : "2px dashed #0f9668", background: selected ? undefined : "#f0fff8", color: selected ? "#fff" : undefined }}
+                      <button key={hosp} style={{ ...btn(selected), fontSize: 12, padding: "7px 14px", border: selected ? undefined : `1px dashed ${UI.primary.fg}` }}
                         onClick={() => setData(p => selected
                           ? ({ ...p, reason: { ...p.reason, referralFrom: "", referralDept: "", referralQuickSelect: false } })
                           : ({ ...p, reason: { ...p.reason, referralFrom: hosp, referralDept: "", referralQuickSelect: true } })
@@ -895,7 +895,10 @@ LINE登録ご案内→済　登録確認未・登録できない
 
           <label style={lbl()}>飲酒歴</label>
           <div style={{ marginBottom: 8 }}>
-            <button style={btn(d.history.alcoholNone, UI.neutral.fg)} onClick={() => up("history", "alcoholNone", !d.history.alcoholNone)}>
+            <button style={btn(!d.history.alcoholNone)} onClick={() => up("history", "alcoholNone", false)}>
+              {!d.history.alcoholNone ? "✓ 飲む" : "飲む"}
+            </button>
+            <button style={btn(d.history.alcoholNone, UI.neutral.fg)} onClick={() => up("history", "alcoholNone", true)}>
               {d.history.alcoholNone ? "✓ 飲まない" : "飲まない"}
             </button>
           </div>

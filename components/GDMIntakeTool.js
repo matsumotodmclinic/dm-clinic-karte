@@ -243,7 +243,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               {[["ナラヤマレディースクリニック","産婦人科"],["葵ウィメンズクリニック","産婦人科"]].map(([hosp,dept])=>{
                 const selected = d.reason.referralFrom===hosp;
                 return (
-                <button key={hosp} style={{...btn(selected),fontSize:13,padding:"9px 16px",border:selected?"1px solid #0f9668":"2px dashed #0f9668",background:selected?undefined:"#f0fff8",color:selected?"#fff":undefined}}
+                <button key={hosp} style={{...btn(selected),fontSize:13,padding:"9px 16px",border: selected ? undefined : `1px dashed ${UI.primary.fg}`}}
                   onClick={()=>setData(p=>selected
                     ? ({...p,reason:{...p.reason,referralFrom:"",referralDept:"",referralQuickSelect:false}})
                     : ({...p,reason:{...p.reason,referralFrom:hosp,referralDept:dept,referralQuickSelect:true}})

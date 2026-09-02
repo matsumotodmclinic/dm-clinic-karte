@@ -234,7 +234,7 @@ LINE登録ご案内→済　登録確認未・登録できない
       case 0: return (
         <div>
           {isNurse && (
-            <div style={{...sBox({background:"#fffff0",border:"1px solid #d69e2e"}),marginBottom:16}}>
+            <div style={{...sBox({background:"#fffff0",border: "1px solid #d69e2e"}),marginBottom:16}}>
               <div style={{fontSize:13,fontWeight: 700,color:"#744210",marginBottom:10}}>👩‍⚕️ 受付時に保護者へ確認すること</div>
               <div style={{fontSize:13,color:"#744210",lineHeight:2}}>①居住地（市町村）→ 受付メモへ記載<br/>②小児慢性の申請はしているか<br/>③申請済の方：前医での支払い方法を確認し算定へ連絡</div>
             </div>
@@ -253,7 +253,7 @@ LINE登録ご案内→済　登録確認未・登録できない
               ].map(({label,hosp,dept})=>{
                 const selected = d.reason.referralFrom===hosp&&d.reason.referralDept===dept;
                 return (
-                  <button key={label} style={{...btn(selected),fontSize:13,padding:"9px 16px",border:selected?"1px solid #0f9668":"2px dashed #0f9668",background:selected?undefined:"#f0fff8",color:selected?"#fff":undefined}}
+                  <button key={label} style={{...btn(selected),fontSize:13,padding:"9px 16px",border:selected ? undefined : `1px dashed ${UI.primary.fg}`}}
                     onClick={()=>setData(p=>selected
                       ? ({...p,reason:{...p.reason,referralFrom:"",referralDept:"",referralQuickSelect:false}})
                       : ({...p,reason:{...p.reason,referralFrom:hosp,referralDept:dept,referralQuickSelect:true}})

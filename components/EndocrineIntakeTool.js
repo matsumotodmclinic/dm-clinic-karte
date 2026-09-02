@@ -358,7 +358,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           )}
           {d.reason.type==="紹介"&&(<div style={sBox()}>
             <label style={lbl()}>よく使う紹介元</label>
-            <button style={{...btn(d.reason.referralQuickSelect),marginBottom:12,fontSize:14,padding:"10px 18px",border:d.reason.referralQuickSelect?"1px solid #0f9668":"2px dashed #0f9668",background:d.reason.referralQuickSelect?undefined:"#f0fff8",color:d.reason.referralQuickSelect?"#fff":undefined}}
+            <button style={{...btn(d.reason.referralQuickSelect),marginBottom:12,fontSize:14,padding:"10px 18px",border: d.reason.referralQuickSelect ? undefined : `1px dashed ${UI.primary.fg}`}}
               onClick={()=>{const n=!d.reason.referralQuickSelect;setData(p=>({...p,reason:{...p.reason,referralQuickSelect:n,referralFrom:n?"上尾中央総合病院":"",referralDept:n?"糖尿病内科":""}}));}}>
               {d.reason.referralQuickSelect?"✓ ":""}上尾中央総合病院・糖尿病内科
             </button>
@@ -549,7 +549,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           </div>
           <label style={lbl()}>飲酒歴</label>
           <div style={{marginBottom:8}}>
-            <button style={btn(d.history.alcoholNone,UI.neutral.fg)} onClick={()=>up("history","alcoholNone",!d.history.alcoholNone)}>{d.history.alcoholNone?"✓ 飲まない":"飲まない"}</button>
+            <button style={btn(!d.history.alcoholNone)} onClick={()=>up("history","alcoholNone",false)}>{!d.history.alcoholNone?"✓ 飲む":"飲む"}</button><button style={btn(d.history.alcoholNone,UI.neutral.fg)} onClick={()=>up("history","alcoholNone",true)}>{d.history.alcoholNone?"✓ 飲まない":"飲まない"}</button>
           </div>
           {!d.history.alcoholNone&&(<div>
             {d.history.alcoholItems.map((item,i)=><AlcoholRow key={i} item={item} index={i} onChange={upAl} onRemove={()=>delAl(i)} showRemove={d.history.alcoholItems.length>1}/>)}

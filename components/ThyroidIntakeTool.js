@@ -511,7 +511,7 @@ ${footerTrailing}`;
               const selected = data.reason.referralFrom === hosp && data.reason.referralDept === dept;
               return (
                 <button key={hosp + dept}
-                  style={{ ...btn(selected), fontSize: 12, padding: "7px 14px", border: selected ? "1px solid #0f9668" : "2px dashed #0f9668", background: selected ? undefined : "#f0fff8", color: selected ? "#fff" : undefined }}
+                  style={{ ...btn(selected), fontSize: 12, padding: "7px 14px", border: selected ? undefined : `1px dashed ${UI.primary.fg}` }}
                   onClick={() => setData(p => ({ ...p, reason: { ...p.reason, referralFrom: selected ? "" : hosp, referralDept: selected ? "" : dept } }))}>
                   {selected ? "✓ " : ""}{hosp}・{dept}
                 </button>

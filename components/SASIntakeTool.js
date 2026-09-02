@@ -560,7 +560,7 @@ LINE登録ご案内→済　登録確認未・登録できない
           )}
           <label style={lbl()}>飲酒歴</label>
           <div style={{marginBottom:8}}>
-            <button style={btn(d.history.alcoholNone,UI.neutral.fg)} onClick={()=>up("history","alcoholNone",!d.history.alcoholNone)}>{d.history.alcoholNone?"✓ 飲まない":"飲まない"}</button>
+            <button style={btn(!d.history.alcoholNone)} onClick={()=>up("history","alcoholNone",false)}>{!d.history.alcoholNone?"✓ 飲む":"飲む"}</button><button style={btn(d.history.alcoholNone,UI.neutral.fg)} onClick={()=>up("history","alcoholNone",true)}>{d.history.alcoholNone?"✓ 飲まない":"飲まない"}</button>
           </div>
           {!d.history.alcoholNone&&(<div>
             {d.history.alcoholItems.map((item,i)=><AlcoholRow key={i} item={item} index={i} onChange={upAl} onRemove={()=>delAl(i)} showRemove={d.history.alcoholItems.length>1}/>)}
