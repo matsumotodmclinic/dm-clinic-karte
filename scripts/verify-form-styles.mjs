@@ -13,6 +13,7 @@
 // 実行: node scripts/verify-form-styles.mjs
 
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { makeFormStyles, FORM_THEMES } from '../lib/formStyles.js'
 import { UI } from '../lib/uiTokens.js'
 
@@ -87,6 +88,36 @@ for (const [name, tone] of Object.entries(THEMES)) {
 // 色数が増えていないことも見る（虹色に戻るのを防ぐ）
 const TONES_USED = new Set(Object.values(THEMES).map(t => t.fg))
 check('カテゴリ色は3系統', TONES_USED.size, 3)
+
+// ───────────────────────────────────────────────
+// /help ・ /handbook に直書きの色が戻らないことの検査（2026-09-03 追加）
+// ───────────────────────────────────────────────
+// ガイド 4 ページ + 共通部品 HelpGuide.js は lib/uiTokens.js のトークンだけで色を決める。
+// 直書き hex を 1 つでも書くと落ちる（コメントと、色の説明として本文に書いた hex は除く）。
+
+const GUIDE_FILES = [
+  'components/HelpGuide.js',
+  'pages/help/index.js',
+  'pages/help/dm.js',
+  'pages/handbook/index.js',
+  'pages/handbook/hypoglycemia.js',
+]
+
+// 本文テキストとして書いてある hex（音声入力欄の色の説明）。style ではないので許可する。
+const HEX_IN_PROSE = new Set(['#fff7e6', '#eef4fc'])
+
+const stripComments = (src) => src
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/^\s*\/\/.*$/gm, '')
+  .replace(/\/\/[^\n'"`]*$/gm, '')
+
+for (const rel of GUIDE_FILES) {
+  const hits = (stripComments(readFileSync(new URL('../' + rel, import.meta.url), 'utf8'))
+    .match(/#[0-9a-fA-F]{3,8}\b/g) || [])
+    .map((h) => h.toLowerCase())
+    .filter((h) => !HEX_IN_PROSE.has(h))
+  check(`${rel} に直書きの色がない`, hits.join(' '), '')
+}
 
 if (fail.length) {
   console.error(`\n❌ スタイルが期待値と違います (${fail.length}/${checks} 件)\n`)

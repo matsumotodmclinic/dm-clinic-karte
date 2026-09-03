@@ -600,7 +600,7 @@ LINE登録ご案内→済　登録確認未・登録できない
             <div style={{fontSize:19,fontWeight:700,color:UI.text}}>初診事前問診</div>
           </div>
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
-<span style={{fontSize:12,background:TONE.bg,color:TONE.fg,padding:"4px 12px",borderRadius:4,fontWeight:700,border:"1px solid #f0ddc0"}}>反応性低血糖</span>
+<span style={{fontSize:12,background:TONE.bg,color:TONE.fg,padding:"4px 12px",borderRadius:4,fontWeight:700}}>反応性低血糖</span>
           </div>
         </div>
       </div>

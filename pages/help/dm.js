@@ -24,8 +24,9 @@
 import {
   BackLink, GuideHeader, Toc, Section, Subh, Box, Code, Table, Tr, Td, Step, Scenario, Trouble, GuideFooter,
 } from '../../components/HelpGuide'
+import { UI } from '../../lib/uiTokens'
 
-const THEME = '#1a5fa8'  // DMIntakeTool の primary 色 と統一 (糖尿病 = 落ち着いた紺)
+const THEME = UI.primary.fg  // 糖尿病関連カテゴリの色 (問診フォームと同じ青)
 
 const TOC = [
   { id: 'overview',       icon: '🗺️', title: 'DM 問診の全体像 (患者 → スタッフ → 医師の動線)' },
@@ -50,7 +51,7 @@ const TOC = [
 
 export default function DmGuidePage() {
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f7fa' }}>
+    <div style={{ minHeight: '100vh', background: UI.surfaceAlt }}>
       <div style={{ maxWidth: 900, margin: '0 auto', padding: 20 }}>
         <BackLink href="/help" label="← 完全ガイド集" />
 

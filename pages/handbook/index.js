@@ -17,6 +17,8 @@
 //   - スタッフが「これ分からん」 と聞いた質問を都度 topic として追加
 //   - 「準備中」 ラベルで枠だけ先に並べて、 院長と一緒に埋めていく
 
+import { UI } from '../../lib/uiTokens'
+import { GUIDE } from '../../components/HelpGuide'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 
@@ -26,7 +28,7 @@ const CATEGORIES = [
   {
     id: 'acute',
     title: '🚨 急性合併症 / 緊急対応',
-    color: '#c62828',
+    color: UI.danger.fg,   // 赤 = 緊急。ハンドブックで別色を持つのはここだけ
     desc: '即時対応が必要な状況、 救急要請判断、 当日対応プロトコル',
     items: [
       { id: 'hypoglycemia', label: '低血糖時の対応',        ready: true,  href: '/handbook/hypoglycemia', desc: '症状 / 即時対応 (経口ブドウ糖・グルカゴン) / 重症判定 / 患者教育 / シックデイ識別' },
@@ -38,7 +40,7 @@ const CATEGORIES = [
   {
     id: 'chronic',
     title: '🩸 慢性合併症 フォロー',
-    color: '#6a1b9a',
+    color: UI.success.fg,
     desc: '三大合併症 + 動脈硬化性疾患のスクリーニング・経過観察',
     items: [
       { id: 'retinopathy',  label: '網膜症 (眼科連携)',    ready: false, desc: '眼底検査の頻度 / 連携眼科 / 糖尿病眼手帳の運用 (準備中)' },
@@ -51,7 +53,7 @@ const CATEGORIES = [
   {
     id: 'lab',
     title: '🔬 検査値の見方',
-    color: '#00838f',
+    color: UI.success.fg,
     desc: 'HbA1c / 血糖 / 腎機能 / 脂質 / その他 の解釈と次の手',
     items: [
       { id: 'hba1c',     label: 'HbA1c の解釈',        ready: false, desc: '6.5% 境界 / 7.0% 目標 / 8.0% 以上の対応 / 急変動 (貧血等) の解釈 (準備中)' },
@@ -64,7 +66,7 @@ const CATEGORIES = [
   {
     id: 'meds',
     title: '💊 薬剤・インスリン',
-    color: '#1565c0',
+    color: UI.success.fg,
     desc: '当院でよく使う薬剤の使い分け、 注射手技、 自己管理指導',
     items: [
       { id: 'oha',          label: '経口糖尿病薬の使い分け', ready: false, desc: 'BG / DPP-4 / SGLT2 / SU / α-GI / GLP-1 経口 (準備中)' },
@@ -77,7 +79,7 @@ const CATEGORIES = [
   {
     id: 'lifestyle',
     title: '🥗 食事・運動・生活指導',
-    color: '#2e7d32',
+    color: UI.success.fg,
     desc: '患者教育の素材、 よく聞かれる質問の回答集',
     items: [
       { id: 'diet-basic',  label: '食事療法 基礎',        ready: false, desc: 'カロリー設定 / 糖質量 / バランス / 主食量目安 (準備中)' },
@@ -90,7 +92,7 @@ const CATEGORIES = [
   {
     id: 'patient-education',
     title: '🗣️ 患者教育・説明素材',
-    color: '#e65100',
+    color: UI.success.fg,
     desc: '初診時 / 教育入院 / 通院フォロー で使うトーク内容',
     items: [
       { id: 'first-visit',     label: '初診時の説明テンプレ',  ready: false, desc: '診断の伝え方 / 食事・運動の初期指導 / 受診頻度 (準備中)' },
@@ -103,7 +105,7 @@ const CATEGORIES = [
   {
     id: 'partner',
     title: '🏥 連携医療機関 / 紹介',
-    color: '#5d4037',
+    color: UI.success.fg,
     desc: '上尾市内・周辺の連携先、 紹介状の書き方',
     items: [
       { id: 'partner-list',    label: '主要連携先 一覧',      ready: false, desc: '自治医大さいたま / 上尾中央総合病院 / さいたま赤十字 + 周辺クリニック (準備中)' },
@@ -115,7 +117,7 @@ const CATEGORIES = [
   {
     id: 'ops',
     title: '🏛️ 当院運用ルール',
-    color: '#37474f',
+    color: UI.success.fg,
     desc: 'スタッフ業務手順、 物品場所、 院内ルール',
     items: [
       { id: 'reception',     label: '受付・予約運用',        ready: false, desc: '新患受け入れ / 予約変更 / キャンセル / 当日初診 (準備中)' },
@@ -128,7 +130,7 @@ const CATEGORIES = [
   {
     id: 'faq',
     title: '❓ よくある質問 (Quick Answer)',
-    color: '#795548',
+    color: UI.success.fg,
     desc: 'スタッフが患者から聞かれることが多い質問の即答集',
     items: [
       { id: 'faq-general', label: '糖尿病一般 (患者向け)',   ready: false, desc: '「糖尿病って治るの?」「インスリン打ったら一生?」 等 (準備中)' },
@@ -145,31 +147,31 @@ export default function HandbookIndex() {
   const totalCount = CATEGORIES.reduce((sum, c) => sum + c.items.length, 0)
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f7fa' }}>
+    <div style={{ minHeight: '100vh', background: UI.surfaceAlt }}>
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: 20 }}>
         {/* 戻る */}
         <div style={{ marginBottom: 14 }}>
           <button
             onClick={() => router.push('/')}
-            style={{ padding: '6px 12px', borderRadius: 6, background: '#fff', border: '1px solid #cfd8dc', color: '#37474f', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+            style={{ padding: '6px 12px', borderRadius: 6, background: UI.surface, border: `1px solid ${UI.border}`, color: UI.textMuted, fontSize: GUIDE.caption, fontWeight: 700, cursor: 'pointer' }}
           >← トップ</button>
         </div>
 
         {/* ヘッダ */}
-        <nav style={{ background: '#2e7d32', color: '#fff', padding: '14px 18px', borderRadius: 10, marginBottom: 16 }}>
-          <div style={{ fontSize: 19, fontWeight: 700 }}>📚 まつもと糖尿病クリニック 院内ハンドブック</div>
-          <div style={{ fontSize: 12, opacity: 0.9, marginTop: 4, lineHeight: 1.6 }}>
+        <nav style={{ background: UI.success.fg, color: UI.surface, padding: '16px 18px', borderRadius: 10, marginBottom: 16 }}>
+          <div style={{ fontSize: 20, fontWeight: 700 }}>📚 まつもと糖尿病クリニック 院内ハンドブック</div>
+          <div style={{ fontSize: GUIDE.bodySmall, opacity: 0.92, marginTop: 6, lineHeight: 1.7 }}>
             糖尿病の医学的知識 + スタッフ対応事典。 患者対応で困った時、 急変時の初動、 検査値の解釈、
             連携医療機関への紹介手順まで、 <strong>スタッフがここを見れば解決できる</strong> ことを目指して
             院長の臨床知識を順次まとめます。
           </div>
-          <div style={{ fontSize: 11, opacity: 0.85, marginTop: 6 }}>
+          <div style={{ fontSize: GUIDE.caption, opacity: 0.88, marginTop: 8 }}>
             公開済み: <strong>{readyCount}</strong> / {totalCount} topic — 残りは順次拡充予定 (院長と一緒に育てるノート)
           </div>
         </nav>
 
         {/* 重要 callout */}
-        <div style={{ background: '#fff3e0', border: '1px solid #ffb74d', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 12, color: '#5d4037', lineHeight: 1.7 }}>
+        <div style={{ background: UI.warning.bg, border: `1px solid ${UI.warning.fg}55`, borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: GUIDE.bodySmall, color: UI.warning.fg, lineHeight: 1.75 }}>
           <strong>⚠️ ハンドブックの位置づけ</strong>: 一次対応の道しるべです。 確定診断・治療決定は必ず医師が行います。
           急変・重症が疑われる場合は <strong>即座に院長 (松本壮一) を呼ぶ・救急要請</strong> を優先してください。
           記載内容は当院の運用方針に基づき、 教科書的なガイドラインと異なる箇所があります (院長判断)。
@@ -177,30 +179,30 @@ export default function HandbookIndex() {
 
         {/* カテゴリ × topic 一覧 */}
         {CATEGORIES.map((cat) => (
-          <section key={cat.id} style={{ background: '#fff', borderRadius: 12, padding: 18, marginBottom: 14, boxShadow: '0 2px 8px rgba(0,0,0,.06)' }}>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: cat.color, marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${cat.color}33` }}>
+          <section key={cat.id} style={{ background: UI.surface, borderRadius: 12, padding: 20, marginBottom: 14, boxShadow: GUIDE.card }}>
+            <h2 style={{ fontSize: GUIDE.h3, fontWeight: 700, color: cat.color, marginBottom: 4, paddingBottom: 6, borderBottom: `1px solid ${cat.color}33` }}>
               {cat.title}
             </h2>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 10, lineHeight: 1.6 }}>{cat.desc}</div>
+            <div style={{ fontSize: GUIDE.caption, color: UI.textMuted, marginBottom: 10, lineHeight: 1.7 }}>{cat.desc}</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
               {cat.items.map((it) => {
                 const body = (
                   <div style={{
                     padding: 14, borderRadius: 8,
-                    border: `1px solid ${it.ready ? cat.color + '66' : '#e0e0e0'}`,
-                    background: it.ready ? '#fff' : '#fafafa',
-                    opacity: it.ready ? 1 : 0.6,
+                    border: `1px solid ${it.ready ? cat.color + '66' : UI.border}`,
+                    background: it.ready ? UI.surface : UI.surfaceAlt,
+                    opacity: it.ready ? 1 : 0.65,
                     cursor: it.ready ? 'pointer' : 'not-allowed',
                     height: '100%',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                      <div style={{ fontWeight: 700, color: it.ready ? cat.color : '#888', fontSize: 14 }}>{it.label}</div>
+                      <div style={{ fontWeight: 700, color: it.ready ? cat.color : UI.textFaint, fontSize: GUIDE.bodySmall }}>{it.label}</div>
                       {it.ready
-                        ? <span style={{ marginLeft: 'auto', fontSize: 10, background: '#e8f5e9', color: '#1b5e20', padding: '2px 8px', borderRadius: 10, fontWeight: 700 }}>公開中</span>
-                        : <span style={{ marginLeft: 'auto', fontSize: 10, background: '#f5f5f5', color: '#888', padding: '2px 8px', borderRadius: 10, fontWeight: 700 }}>準備中</span>
+                        ? <span style={{ marginLeft: 'auto', fontSize: 11, background: UI.success.bg, color: UI.success.fg, padding: '2px 8px', borderRadius: 10, fontWeight: 700 }}>公開中</span>
+                        : <span style={{ marginLeft: 'auto', fontSize: 11, background: UI.neutral.bg, color: UI.neutral.fg, padding: '2px 8px', borderRadius: 10, fontWeight: 700 }}>準備中</span>
                       }
                     </div>
-                    <div style={{ fontSize: 12, color: '#555', lineHeight: 1.6 }}>{it.desc}</div>
+                    <div style={{ fontSize: GUIDE.caption, color: UI.textMuted, lineHeight: 1.7 }}>{it.desc}</div>
                   </div>
                 )
                 if (it.ready && it.href) {
@@ -217,12 +219,12 @@ export default function HandbookIndex() {
         ))}
 
         {/* 育て方 footer */}
-        <div style={{ background: '#e8f5e9', borderRadius: 12, padding: 16, marginTop: 18, fontSize: 13, color: '#1b5e20', lineHeight: 1.8 }}>
+        <div style={{ background: UI.surface, border: `1px solid ${UI.border}`, borderRadius: 12, padding: 18, marginTop: 18, fontSize: GUIDE.bodySmall, color: UI.text, lineHeight: 1.9, boxShadow: GUIDE.card }}>
           <strong>🌱 このハンドブックの育て方</strong><br />
           • 「準備中」 topic を院長 (松本壮一) と相談しながら 1 つずつ書いていきます<br />
           • スタッフが患者から聞かれて困った質問は、 そのまま topic 候補としてストック (院長に伝えてください)<br />
           • 院長が普段スタッフに口頭で伝えている知識は、 ここに集約して「次のスタッフ」 が読むだけで分かるように<br />
-          • 完全ガイド (アプリの使い方) は <Link href="/help" legacyBehavior><a style={{ color: '#1565c0', textDecoration: 'underline' }}>/help</a></Link> 側 (役割分担)
+          • 完全ガイド (アプリの使い方) は <Link href="/help" legacyBehavior><a style={{ color: UI.primary.fg, textDecoration: 'underline' }}>/help</a></Link> 側 (役割分担)
         </div>
       </div>
     </div>

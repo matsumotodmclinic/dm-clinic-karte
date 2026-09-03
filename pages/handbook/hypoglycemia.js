@@ -14,10 +14,11 @@
 import {
   GuideHeader, Toc, Section, Subh, Box, Code, Table, Tr, Td, Step, Scenario, Trouble, GuideFooter,
 } from '../../components/HelpGuide'
+import { UI } from '../../lib/uiTokens'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 
-const THEME = '#c62828'  // 赤系 (緊急対応カテゴリ「🚨 急性合併症」 と統一)
+const THEME = UI.danger.fg  // 赤 = 緊急対応。ハンドブックで色を持つのはこのカテゴリだけ
 
 const TOC = [
   { id: 'overview',  icon: '🗺️', title: '低血糖の全体像 (判定 → 即時対応 → 再発予防)' },
@@ -39,14 +40,14 @@ const TOC = [
 export default function HypoglycemiaPage() {
   const router = useRouter()
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f7fa' }}>
+    <div style={{ minHeight: '100vh', background: UI.surfaceAlt }}>
       <div style={{ maxWidth: 900, margin: '0 auto', padding: 20 }}>
         {/* 戻る */}
         <div style={{ marginBottom: 10 }}>
           <Link href="/handbook" legacyBehavior>
             <a style={{
               display: 'inline-block', padding: '6px 12px', borderRadius: 6,
-              background: '#fff', border: '1px solid #cfd8dc', color: '#37474f',
+              background: UI.surface, border: `1px solid ${UI.border}`, color: UI.textMuted,
               textDecoration: 'none', fontSize: 13, fontWeight: 600,
             }}>← 院内ハンドブック</a>
           </Link>
@@ -361,7 +362,7 @@ export default function HypoglycemiaPage() {
 
           <Box color="info">
             <strong>判定に迷ったら血糖測定が決定的</strong>。 シックデイ ルールの詳細は別 topic
-            (<Link href="/handbook" legacyBehavior><a style={{ color: '#1565c0' }}>院内ハンドブック → 急性合併症 → シックデイ ルール</a></Link>) で別途記述予定。
+            (<Link href="/handbook" legacyBehavior><a style={{ color: UI.primary.fg }}>院内ハンドブック → 急性合併症 → シックデイ ルール</a></Link>) で別途記述予定。
           </Box>
         </Section>
 
@@ -412,7 +413,7 @@ export default function HypoglycemiaPage() {
           <Scenario q="子供 (小児 1 型糖尿病) の低血糖" themeColor={THEME}>
             ① 親が SMBG + 経口ブドウ糖、 ② グルカゴン (家族指導済) → 救急要請、
             ③ 学校で発生時は <strong>養護教諭 が校内常備グルカゴン</strong> 使用 (要事前指導書)、
-            ④ 当院では <Link href="/handbook" legacyBehavior><a style={{ color: '#1565c0' }}>小児 1 型糖尿病</a></Link> topic で詳細別記予定。
+            ④ 当院では <Link href="/handbook" legacyBehavior><a style={{ color: UI.primary.fg }}>小児 1 型糖尿病</a></Link> topic で詳細別記予定。
           </Scenario>
         </Section>
 
