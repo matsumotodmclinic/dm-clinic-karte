@@ -26,7 +26,7 @@ import { buildStaffFlagLines, buildStaffFlagsBlock } from '../../lib/handoffNote
 import {
   buildKarteTemplate, buildReasonSummary, buildImportantHistoryLines,
   buildPastHistoryLines, buildFhLine, buildEyeLine, buildHandoffLines,
-  buildReasonFacts, buildMergePrompt, parseMergeResponse, buildDrugAllergyWarning,
+  buildReasonFacts, buildMergePrompt, parseMergeResponse, buildDrugAllergyWarning, buildJobLine,
 } from '../../lib/buildKarteTemplate.js'
 import {
   FIXTURES, ENDOCRINE_WITH_CAREPLAN, THYROID_FIXTURE,
@@ -370,6 +370,15 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
   test('【健診】: 未選択なら値なしの空欄（行は残す）', () => {
     const karte = buildKarteTemplate('DM基本', { ...FIXTURES['DM基本'], history: { ...FIXTURES['DM基本'].history, checkup: [] } })
     assert.ok(karte.split('\n').includes('【健診】'), '【健診】の空欄行が無い')
+  })
+
+  test('【仕事】: 「していない」は就労なしと明記、未入力は空欄', () => {
+    // 院長判断 2026-09-06: 空欄だと「無職」と「聞き漏らし」が区別できない
+    assert.equal(buildJobLine({ lifestyle: { work: 'していない', job: [], activity: '' } }), '【仕事】就労なし')
+    assert.equal(buildJobLine({ lifestyle: { work: '', job: [], activity: '' } }), '【仕事】')
+    assert.equal(
+      buildJobLine({ lifestyle: { work: 'している', job: ['自営業'], jobNote: '', activity: '立ち仕事' } }),
+      '【仕事】自営業・立ち仕事')
   })
 
   test('【FH】: DM基本は HL の枠を作らない（フォームで聞いていないため）', () => {
