@@ -35,6 +35,13 @@ export default function DetailPage() {
     ? buildKarteTemplate(record.form_type, record.form_data, { merged })
     : null;
 
+  // テンプレート版を開いたら一度だけ自動で統合する。
+  // 統合しない版は紹介元が落ちて ♯ が重複すると分かっているので、それを見せて比較させない
+  useEffect(() => {
+    if (showTemplate && !merged && !merging && record?.form_data) handleMerge();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showTemplate, record]);
+
   // 統合の2点だけを AI に頼む（プロンプトは全文生成の約1/10）
   const handleMerge = async () => {
     if (!record?.form_data) return;
@@ -55,7 +62,8 @@ export default function DetailPage() {
       setMergeMsg('統合に失敗しました（AIなし版を表示中）');
     } finally {
       setMerging(false);
-      setTimeout(() => setMergeMsg(''), 4000);
+      // 成功メッセージだけ消す。失敗は「AIなし版を見ている」と気付けるよう残す
+      setTimeout(() => setMergeMsg(m => (m.startsWith('✓') ? '' : m)), 4000);
     }
   };
 
@@ -325,19 +333,20 @@ export default function DetailPage() {
               <span style={{ fontSize:11, color:UI.textMuted, border:`1px solid ${UI.border}`, borderRadius:4, padding:'2px 6px' }}>比較用・保存されません</span>
             </div>
             <div style={{ fontSize:12, color:UI.textMuted, marginBottom:10, lineHeight:1.7 }}>
-              書式・条件分岐・申し送りは JS が確定させています。
-              「🔗 統合」を押すと、<strong>受診理由サマリー</strong>と<strong>♯既往のマージ</strong>の2点だけを AI に頼みます
-              （プロンプトは全文生成の約 1/10）。押さなければ AI は一切呼びません。
+              書式・条件分岐・申し送りは JS が確定させ、<strong>受診理由サマリー</strong>と
+              <strong>♯既往のマージ</strong>の2点だけを AI が統合します（プロンプトは全文生成の約 1/10）。
+              開いたときに一度だけ統合し、閉じて開き直しても呼び直しません。
             </div>
             <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap', marginBottom:showTemplate?12:0 }}>
               <button onClick={() => setShowTemplate(v => !v)}
                 style={{ padding:'8px 14px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.textMuted, fontWeight:700, fontSize:13, cursor:'pointer' }}>
                 {showTemplate ? '▲ 閉じる' : '▼ テンプレート版を表示'}
               </button>
-              {showTemplate && (
-                <button onClick={handleMerge} disabled={merging}
-                  style={{ padding:'8px 14px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.textMuted, fontWeight:700, fontSize:13, cursor:merging?'not-allowed':'pointer' }}>
-                  {merging ? '統合中...' : '🔗 統合（受診理由・♯既往のみ AI）'}
+              {showTemplate && merging && <span style={{ fontSize:12, color:UI.textMuted }}>統合中...</span>}
+              {showTemplate && !merging && mergeMsg && !mergeMsg.startsWith('✓') && (
+                <button onClick={handleMerge}
+                  style={{ padding:'8px 14px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.textMuted, fontWeight:700, fontSize:13, cursor:'pointer' }}>
+                  🔄 統合をやり直す
                 </button>
               )}
               {mergeMsg && <span style={{ fontSize:12, fontWeight:700, color:mergeMsg.startsWith('✓')?'#0f9668':'#c53030' }}>{mergeMsg}</span>}
