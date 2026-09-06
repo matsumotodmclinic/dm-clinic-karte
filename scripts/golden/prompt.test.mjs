@@ -375,6 +375,10 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
   test('【仕事】: 「していない」は就労なしと明記、未入力は空欄', () => {
     // 院長判断 2026-09-06: 空欄だと「無職」と「聞き漏らし」が区別できない
     assert.equal(buildJobLine({ lifestyle: { work: 'していない', job: [], activity: '' } }), '【仕事】就労なし')
+    // 就労なしでも活動量は残す（2026-09-06 実患者比較で発覚。AI 版は両方書いていた）
+    assert.equal(
+      buildJobLine({ lifestyle: { work: 'していない', job: [], activity: '立っていることが多い' } }),
+      '【仕事】就労なし・立っていることが多い')
     assert.equal(buildJobLine({ lifestyle: { work: '', job: [], activity: '' } }), '【仕事】')
     assert.equal(
       buildJobLine({ lifestyle: { work: 'している', job: ['自営業'], jobNote: '', activity: '立ち仕事' } }),
