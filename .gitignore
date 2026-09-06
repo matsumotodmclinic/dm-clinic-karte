@@ -19,7 +19,11 @@ npm-debug.log*
 .vercel
 
 # Claude Code
-.claude/
+# settings.json は追跡する（SessionStart hook を全PCで共有するため。monorepo と同じ運用）
+.claude/*
+!.claude/settings.json
+.claude/worktrees/
+.claude/settings.local.json
 
 # OS
 .DS_Store
