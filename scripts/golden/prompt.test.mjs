@@ -26,7 +26,7 @@ import { buildStaffFlagLines, buildStaffFlagsBlock } from '../../lib/handoffNote
 import {
   buildKarteTemplate, buildReasonSummary, buildImportantHistoryLines,
   buildPastHistoryLines, buildFhLine, buildEyeLine, buildHandoffLines,
-  buildReasonFacts, buildMergePrompt, parseMergeResponse,
+  buildReasonFacts, buildMergePrompt, parseMergeResponse, buildDrugAllergyWarning,
 } from '../../lib/buildKarteTemplate.js'
 import {
   FIXTURES, ENDOCRINE_WITH_CAREPLAN, THYROID_FIXTURE,
@@ -294,7 +294,43 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
         },
       },
     })
-    assert.deepEqual(lines, ['♯胃癌（手術で切除、2/3切除、平成28年、上尾中央総合病院→鰐坂医院（半年に1回）、タケキャブ 内服中）'])
+    // プロンプトの指示形「♯胃癌（胃切除後：治療種類・範囲・時期・治療病院→通院先・内服薬）」に合わせる
+    assert.deepEqual(lines, ['♯胃癌（胃切除後：2/3切除、平成28年、上尾中央総合病院→鰐坂医院（半年に1回）、タケキャブ 内服中）'])
+  })
+
+  test('♯重要既往: 胃切除後の前置きは手術したときだけ', () => {
+    const g = (surgeryType) => buildImportantHistoryLines({
+      disease: { gastricCancer: { selected: true, surgeryType, resection: '2/3切除', surgeryEra: '平成', surgeryYear: '28' } },
+    })[0]
+    assert.equal(g('手術で切除'), '♯胃癌（胃切除後：2/3切除、平成28年）')
+    assert.equal(g('手術＋抗がん剤'), '♯胃癌（胃切除後：手術＋抗がん剤、2/3切除、平成28年）')
+    assert.equal(g('抗がん剤のみ'), '♯胃癌（抗がん剤のみ、2/3切除、平成28年）')
+  })
+
+  test('♯IHD: 治療法は病名側に付く（♯IHD：PCI後）', () => {
+    const ihd = (treatment) => buildImportantHistoryLines({
+      disease: { ihd: { selected: true, treatment, surgeryEra: '平成', surgeryYear: '30' } },
+    })[0]
+    assert.equal(ihd('PCI（カテーテル治療）'), '♯IHD：PCI後（平成30年）')
+    assert.equal(ihd('バイパス手術'), '♯IHD：バイパス手術後（平成30年）')
+    assert.equal(ihd('薬物療法のみ'), '♯IHD：薬物療法（平成30年）')
+    assert.equal(ihd('不明'), '♯IHD（平成30年）')
+  })
+
+  test('アレルギー警告: 薬剤アレルギーのときだけ出す（花粉・金属では出さない）', () => {
+    // プロンプトの指示は「アレルギー薬がある場合のみ」。
+    // 非薬剤で警告を出すと投薬禁忌の誤認を招くので出さない
+    const w = (allergyDetail) => buildDrugAllergyWarning({ history: { allergy: 'あり', allergyDetail } })
+    assert.equal(w('ペニシリン・金属'), '⚠️ペニシリンアレルギー⚠️')
+    assert.equal(w('花粉'), '')
+    assert.equal(w('花粉・フルーツ・金属'), '')
+    assert.equal(w('ペニシリン・造影剤'), '⚠️ペニシリン・造影剤アレルギー⚠️')
+    assert.equal(buildDrugAllergyWarning({ history: { allergy: 'なし' } }), '')
+  })
+
+  test('アレルギー警告: 判定できない自由入力は安全側（警告を出す）', () => {
+    assert.equal(buildDrugAllergyWarning({ history: { allergy: 'あり', allergyDetail: 'よく分からない薬' } }),
+      '⚠️よく分からない薬アレルギー⚠️')
   })
 
   test('♯重要既往: 選択されていなければ行を出さない / 時期不明も表現できる', () => {
