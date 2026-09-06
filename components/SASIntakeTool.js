@@ -2,10 +2,8 @@ import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
-import { buildOtherDiseasesText } from "../lib/otherDiseases";
-import { formatEcho, buildEchoLine } from "../lib/echo";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
-import { buildStaffFlagsBlock } from "../lib/handoffNotes";
+import { buildKartePrompt } from "../lib/buildKartePrompt";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
@@ -186,58 +184,7 @@ export default function SASIntakeTool() {
     const base = `${s.smokingAmount}本×${s.smokingYears}年（${s.smokingStartAge}歳〜）`;
     return s.smoking==="禁煙済"?`${base}、${s.smokingQuitEra}${s.smokingQuitYear}年に禁煙`:base;
   };
-  const buildLiving = () => {
-    const{livingSpouse,livingOther,livingCustom}=data.history;
-    const hasSpouse=livingSpouse==="配偶者あり";
-    const arr = Array.isArray(livingOther) ? livingOther : (livingOther ? [livingOther] : []);
-    const others = arr.filter(x=>x&&x!=="子供と同居なし");
-    const other = others.join("・");
-    const custom=livingCustom||"";
-    let base="";
-    if(hasSpouse&&!other) base="夫婦2人暮らし";
-    else if(hasSpouse&&other) base=`夫婦2人暮らし＋${other}`;
-    else if(!hasSpouse&&other) base=other;
-    else if(livingSpouse) base=livingSpouse;
-    return [base,custom].filter(Boolean).join("（")+(base&&custom?"）":"");
-  };
 
-  const getCurrentMonth = () => {
-    const now = new Date();
-    return `R${now.getFullYear()-2018}.${now.getMonth()+1}`;
-  };
-  const buildWeekday = () => {
-    const days = data.body.preferredDays || [];
-    if (!days.length) return "曜希望";
-    if (days.includes("指定なし")) return "曜希望：指定なし";
-    return `${days.join("・")}曜希望`;
-  };
-  const buildJob = () => {
-    const jobs = Array.isArray(data.history.job) ? data.history.job : (data.history.job ? [data.history.job] : []);
-    const note = data.history.jobNote || "";
-    return [jobs.join("、"), note].filter(Boolean).join("・");
-  };
-  const buildChildInfo = () => {
-    const { childInfo, childLocation, childGender } = data.history;
-    const parts = [];
-    if (childLocation) {
-      if (childLocation === "子供なし") parts.push("子供なし");
-      else {
-        const who = (childGender || []).includes("両方") ? "息子・娘" : (childGender || []).join("・");
-        parts.push(`${who || "子供"}は${childLocation}`);
-      }
-    }
-    if (childInfo) parts.push(childInfo);
-    return parts.join("、");
-  };
-  const buildSasSymptoms = () => {
-    const sel = data.symptom.sasSymptoms?.selected || [];
-    if (!sel.length) return "";
-    const other = (data.symptom.sasSymptoms?.otherText || "").trim();
-    const items = sel.includes("その他") && other
-      ? [...sel.filter(s=>s!=="その他"), `その他: ${other}`]
-      : sel;
-    return items.join("・");
-  };
 
   const copyToClipboard = (text) => copyKarteToClipboard(text);
 
@@ -264,99 +211,12 @@ export default function SASIntakeTool() {
 
   const generateKarte = async () => {
     setLoading(true);
-    const sasCategoryLabel = data.reason.sasCategory === 'cpap' ? 'CPAP治療の継続希望'
-      : data.reason.sasCategory === 'screening' ? '睡眠時無呼吸症候群の検査希望（簡易PSG予定）'
-      : '未選択';
     // ＃主病名は AI に区分から導かせず JS 側で確定させる（経路B と同じ）
-    const sasMainName = data.reason.sasCategory === 'screening'
-      ? '＃SAS疑い（簡易PSG予定）'
-      : data.reason.sasCategory === 'cpap'
-        ? `＃SAS（${data.reason.cpapPriorClinic ? `前医：${data.reason.cpapPriorClinic}、` : ''}CPAP継続）`
-        : '＃SAS';
-    const purposesText = (data.reason.purposes||[]).join('、') + (data.reason.purposeOther ? `（その他: ${data.reason.purposeOther}）` : '');
-    const knowSourceText = (data.reason.knowSource||[]).join('、') + (data.reason.knowSourceOther ? `（その他: ${data.reason.knowSourceOther}）` : '');
-    const sasSymptomsText = buildSasSymptoms();
-    const otherDiseasesText = buildOtherDiseasesText(data.disease.otherDiseases);
 
-    const prompt = `あなたはまつもと糖尿病クリニックの電子カルテ記載AIです。以下の患者情報をもとに、睡眠時無呼吸症候群（SAS）のカルテ記載文を生成してください。
-
-【ルール】
-- 該当しない項目は省略する
-- フォーマット記号（＃【】□♯）を使用する
-- 空行ルール（厳守）: ①自院管理＃疾患は連続列挙し空行なし ②自院管理ブロックの後、他院管理疾患の前にのみ1行空ける ③他院管理疾患同士は連続列挙し空行なし ④他院管理疾患の最終行と【アレルギー歴】の間は空行なし ⑤【事前聴取時 申し送り事項】の最終□行と【診察にあたっての要望】の間も空行なし
-- 60歳未満はワクチン歴を省略、70歳未満は子供の状況を省略
-- 喫煙歴は「○本×○年（○歳〜）」の形式
-- ＃SASの記載: ${sasMainName} を必ず受診理由サマリーの直後に空行なしで記載
-- SAS症状チェックがある場合のみ【SASの症状】セクションを【FH】の前に挿入し、「・」区切りで横一列に記載
-
-【整形済みデータ】
-受診理由：${purposesText || '未選択'}
-現通院先：${data.reason.currentClinic || 'なし/未記入'}
-SAS区分：${sasCategoryLabel}
-CPAP前医情報提供書：${data.reason.sasCategory==='cpap' ? (data.reason.cpapPriorRecordsConfirmed?'確認済':'未確認') : '対象外'}
-当院を知ったきっかけ：${knowSourceText || '未選択'}
-SAS症状チェック：${sasSymptomsText || 'なし'}
-飲酒歴：${buildAlcohol()}
-喫煙歴：${buildSmoking()}
-生活情報：${buildLiving()}
-子供の状況：${buildChildInfo()}
-職業：${buildJob()}
-頚部エコー：${data.disease.echoNeck||'未選択'}
-腹部エコー：${data.disease.echoAbdomen||'未選択'}
-その他の病名・既往歴：${otherDiseasesText}
-希望曜日：${buildWeekday()}
-医師希望：${data.body.doctorGender || "指定なし"}
-患者フラグ：${data.body.patientFlag || "通常"}
-新患2枠取得：${data.body.doubleSlot ? "取得済" : "なし"}
-
-【患者情報JSON】
-${JSON.stringify(data,null,2)}
-${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}${data.voiceMemo?.needsDoctorReview ? `\n【現病歴：要DR確認フラグあり(申し送り事項に「□現病歴：問診時間の関係で一部省略、要DR確認」を必ず追加)】\n` : ''}${data.voicePastHistory?.needsDoctorReview ? `\n【既往歴：要ドクター確認フラグあり(申し送り事項に「□既往歴：要ドクター確認」を必ず追加)】\n` : ''}
-【出力フォーマット】
-${getCurrentMonth()}：（受診理由サマリー1〜2行。SAS区分（CPAP継続/検査希望）も含める${data.voiceMemo?.aiSummary ? '。音声入力AI整形済みテキストを優先・統合して使用' : ''}）
-${sasMainName}（受診理由の直後、空行なし）
-＃HT（該当時のみ、空行なし）
-＃HL（該当時のみ、空行なし）
-（上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない。空行なし）
-
-${sasSymptomsText ? '【SASの症状】（チェックされた症状を「・」で横一列に記載。「その他」がある場合は末尾に「その他: ○○」を追加）\n' : ''}【アレルギー歴】（なしまたは内容を同じ行に）
-【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)（FH DMの場合は誰かも記載）
-【飲酒歴】（整形済みテキスト）
-【喫煙歴】（整形済みテキスト）
-【健診】
-【ワクチン歴】（60歳以上のみ）
-【生活情報】（整形済みテキスト。70歳以上は子供の状況も含む）
-【仕事】職業・活動量
----------------------------------------------
-${buildEchoLine(data.disease.echoNeck, data.disease.echoAbdomen, { abdomenFallback: "未選択" })}（必ず1行に横配置）
----------------------------------------------
-身長:○cm　初診時:○kg${bmi ? `（BMI ${bmi}）` : ""}　20歳時:○kg　max体重○kg(○歳)
----------------------------------------------
-【事前聴取時　申し送り事項】
-□通院のご案内をお渡し済
-（現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
-（既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
-（SAS区分が検査希望の場合）□SAS 簡易PSG発送手配 要
-（SAS区分がCPAP継続 かつ 前医情報提供書未確認の場合）□CPAP継続：前医情報提供書 確認要
-（SAS区分がCPAP継続 かつ 前医情報提供書確認済の場合）□CPAP継続：前医情報提供書 確認済
-（HLありの場合）□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。
-□初回療養計画書を作成済
-${buildStaffFlagsBlock(data.body)}【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
----------------------------------------------
-${getCurrentMonth()}：
-
-
-
-
-（アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
-目標HbA1c　　　　%　目標体重　　　次回検討薬：
-基本採血なし
-1月follow
-${buildWeekday()}
-LINE登録ご案内→済　登録確認未・登録できない
-`;
+    // プロンプト組立は lib/buildKartePrompt.js に一本化（詳細画面の再生成と同じ関数）
+    const { prompt, max_tokens } = buildKartePrompt("睡眠時無呼吸症候群", data);
     try {
-      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
+      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens,messages:[{role:"user",content:prompt}]})});
       const json = await res.json();
       const generated = json.content?.[0]?.text||"生成に失敗しました";
       setResult(generated);

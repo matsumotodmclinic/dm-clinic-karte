@@ -14,7 +14,7 @@
 
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
@@ -454,6 +454,34 @@ describe('buildKartePrompt: DM差分問診（採血で糖尿病判明）', () =>
   })
 })
 
+describe('プロンプトの実装は1つだけ（経路A/B の二重管理を復活させない）', () => {
+  // 2026-09-06 に経路A（コンポーネント）のプロンプト組立を廃止し、
+  // 初回生成も再生成も lib/buildKartePrompt.js を呼ぶ形に一本化した。
+  // 二重管理が復活すると「初回生成と再生成でカルテが違う」事故が戻るので、ここで固定する。
+  // （これが以前の scripts/check-prompt-sync.mjs + allow-list 65行 の代わり）
+  const COMPONENT_DIR = join(HERE, '..', '..', 'components')
+
+  test('components/*IntakeTool.js はプロンプトを自前で組み立てない', () => {
+    const offenders = []
+    for (const f of readdirSync(COMPONENT_DIR).filter(f => f.endsWith('IntakeTool.js'))) {
+      const src = readFileSync(join(COMPONENT_DIR, f), 'utf8')
+      if (/const prompt\s*=\s*`/.test(src)) offenders.push(f)
+    }
+    assert.deepEqual(offenders, [],
+      'コンポーネント内にプロンプトのテンプレートリテラルが復活している。' +
+      'buildKartePrompt() を呼ぶ形に戻すこと')
+  })
+
+  test('全 IntakeTool が buildKartePrompt を呼んでいる', () => {
+    const missing = []
+    for (const f of readdirSync(COMPONENT_DIR).filter(f => f.endsWith('IntakeTool.js'))) {
+      const src = readFileSync(join(COMPONENT_DIR, f), 'utf8')
+      if (!src.includes('buildKartePrompt(')) missing.push(f)
+    }
+    assert.deepEqual(missing, [], 'buildKartePrompt を呼んでいないフォームがある')
+  })
+})
+
 describe('buildKartePrompt: 未対応 form_type', () => {
   test('throw する（500 ではなく 400 にマップされる）', () => {
     assert.throws(() => buildKartePrompt('存在しない問診', FIXTURES['DM基本']), /未対応のform_type/)
@@ -474,6 +502,17 @@ describe('プロンプト全文スナップショット', () => {
     const { prompt } = buildKartePrompt('内分泌', ENDOCRINE_WITH_CAREPLAN)
     matchSnapshot('内分泌_生活習慣病あり', prompt)
   })
+
+  // 甲状腺6フォーム（2026-09-06 に経路A と一本化したので B のスナップショットが主経路の証拠になる）
+  for (const formType of [
+    '甲状腺（バセドウ初診）', '甲状腺（バセドウ継続）', '甲状腺（橋本病）',
+    '甲状腺（腫大異常なし）', '甲状腺（腺腫経過観察）', '甲状腺（腺腫悪性疑い）',
+  ]) {
+    test(formType, () => {
+      const { prompt } = buildKartePrompt(formType, THYROID_FIXTURE)
+      matchSnapshot(formType.replace(/[（）]/g, '_').replace(/_$/, ''), prompt)
+    })
+  }
 
   for (const [name, formType, formData] of [
     ['睡眠時無呼吸症候群_DM差分あり', '睡眠時無呼吸症候群', SAS_WITH_DM_DIFF],

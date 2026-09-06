@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
-import { buildStaffFlagLines } from "../lib/handoffNotes";
+import { buildKartePrompt } from "../lib/buildKartePrompt";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
@@ -110,7 +110,6 @@ export default function ThyroidIntakeTool({ formType }) {
   const is2step = steps.length === 2;
   const isBasedow = formType === 'basedow-new' || formType === 'basedow-cont';
   const isHashimoto = formType === 'hashimoto';
-  const isNodule = ['adenoma', 'nodule-normal', 'malignant'].includes(formType);
 
   const [step, setStep] = useState(0);
   const [data, setData] = useState(initialData);
@@ -137,22 +136,6 @@ export default function ThyroidIntakeTool({ formType }) {
   const age = parseInt(data.history.age) || 0;
   const isOver60 = age >= 60;
 
-  const buildSmoking = () => {
-    const s = data.history;
-    if (s.smoking === "なし") return "なし";
-    const base = `${s.smokingAmount}本×${s.smokingYears}年（${s.smokingStartAge}歳〜）`;
-    return s.smoking === "禁煙済" ? `${base}、${s.smokingQuitEra}${s.smokingQuitYear}年に禁煙` : base;
-  };
-  const buildWeekday = () => {
-    const days = data.body.preferredDays || [];
-    if (!days.length) return "曜希望";
-    if (days.includes("指定なし")) return "曜希望：指定なし";
-    return `${days.join("・")}曜希望`;
-  };
-  const getCurrentMonth = () => {
-    const now = new Date();
-    return `R${now.getFullYear() - 2018}.${now.getMonth() + 1}`;
-  };
   const getSymptomList = () => {
     if (formType === 'basedow-cont') return BASEDOW_CONT_SYMPTOMS;
     if (isBasedow) return BASEDOW_SYMPTOMS;
@@ -186,7 +169,6 @@ export default function ThyroidIntakeTool({ formType }) {
 
   const generateKarte = async () => {
     setLoading(true);
-    const symptomsText = (data.symptom.selected || []).join("・") + (data.symptom.otherText ? `（その他: ${data.symptom.otherText}）` : "");
 
     let diagnosisName = "";
     if (formType === 'basedow-new') diagnosisName = "＃バセドウ病疑い（エコー上の疑い）";
@@ -221,220 +203,26 @@ export default function ThyroidIntakeTool({ formType }) {
     else if (formType === 'nodule-normal') footerBloodTest = "甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：";
     else if (formType === 'adenoma') footerBloodTest = "甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：";
 
-    const jobText = (() => {
-      const jobs = Array.isArray(data.history.job) ? data.history.job : (data.history.job ? [data.history.job] : []);
-      const note = data.history.jobNote || "";
-      return [jobs.join("、"), note].filter(Boolean).join("・");
-    })();
 
-    const contMedsText = (data.history.medications || []).join("・");
-    const contTimeline = (() => {
-      if (formType !== 'basedow-cont' || !contMedsText) return "";
-      const year = data.history.diagnosisYear;
-      const month = data.history.diagnosisMonth;
-      const era = data.history.diagnosisEra;
-      if (!year) return `（${contMedsText}）内服にて症状安定`;
-      const dateStr = era === "令和"
-        ? `R${year}${month ? `/${month}` : ""}`
-        : `${era}${year}年${month ? `${month}月` : ""}`;
-      return `${dateStr}に（${contMedsText}）内服にて症状安定`;
-    })();
-    const surgeryText = (() => {
-      if (!data.history.surgeryHistory) return "なし";
-      const yr = data.history.surgeryYear;
-      const mo = data.history.surgeryMonth;
-      const type = data.history.surgeryType || "";
-      const dateStr = yr ? `R${yr}${mo ? `/${mo}` : ""}` : "";
-      return `あり（${[dateStr, type].filter(Boolean).join(" ")}）`;
-    })();
-    const sideEffectText = (() => {
-      const parts = [];
-      if (data.history.sideEffectMmz) parts.push("メルカゾール");
-      if (data.history.sideEffectPtz) parts.push("プロパジール");
-      return parts.length ? `${parts.join("・")}副作用あり` : "なし";
-    })();
 
     // 全6フォーム共通: 甲状腺ベース所見 3軸（サイズ/血流/実質エコー）
     // 「正常」は所見として記載しないので除外
-    const thyBaseFindings = [
-      data.echo.thyroidSize === "腫大"        && "甲状腺腫大(+)",
-      data.echo.thyroidSize === "萎縮"        && "甲状腺萎縮(+)",
-      data.echo.thyroidBloodFlow === "豊富"   && "血流豊富(+)",
-      data.echo.thyroidBloodFlow === "低下"   && "血流低下(+)",
-      data.echo.thyroidParenchyma === "整"    && "実質エコー整(+)",
-      data.echo.thyroidParenchyma === "不整"  && "実質エコー不整(+)",
-      data.echo.thyroidParenchyma === "不均一" && "実質エコー不均一(+)",
-    ].filter(Boolean);
-    const thyBaseFindingsText = thyBaseFindings.join("、");
 
     // フォーム別: メイン「当院エコーにて...」結語行
-    const thyEchoConclusion = (() => {
-      if (formType === 'malignant')     return '当院エコーにて悪性を疑う所見を認め当日紹介。';
-      if (formType === 'adenoma')       return '当院エコーにて結節を認めたため、エコー定期followとする。';
-      if (formType === 'nodule-normal') return thyBaseFindings.length > 0
-        ? `当院エコーにて${thyBaseFindingsText}を認める`
-        : '当院エコーにて明らかな異常所見なし';
-      if (thyBaseFindings.length === 0) return '';
-      if (formType === 'basedow-new')   return `当院エコーにて${thyBaseFindingsText}を認めバセドウ病を疑う`;
-      if (formType === 'basedow-cont')  return `当院エコーにて${thyBaseFindingsText}を認める`;
-      if (formType === 'hashimoto')     return `当院エコーにて${thyBaseFindingsText}を認め橋本病を疑う`;
-      return '';
-    })();
 
     // 結節フォーム（adenoma/malignant）でベース所見がある場合の補助行
-    const thyBaseExtraLine = (formType === 'malignant' || formType === 'adenoma') && thyBaseFindings.length > 0
-      ? `${thyBaseFindingsText}を認める`
-      : '';
 
     // 結節所見1行（hasNodule==='あり'のときのみ）
     // 例: 「両葉に最大15×8㎜大の結節あり、石灰化あり、血流豊富、充実性」
-    const noduleEchoLine = (() => {
-      if (data.echo.hasNodule !== "あり") return "";
-      const parts = [];
-      const loc = data.echo.noduleLocation;
-      const w = data.echo.noduleSizeW;
-      const d = data.echo.noduleSizeD;
-      const noduleWord = data.echo.noduleCount === "多発" ? "多発結節" : "結節";
-      if (loc && (w || d)) {
-        parts.push(`${loc}に最大${w || "○"}×${d || "○"}㎜大の${noduleWord}あり`);
-      } else if (loc) {
-        parts.push(`${loc}に${noduleWord}あり`);
-      } else if (w || d) {
-        parts.push(`最大${w || "○"}×${d || "○"}㎜大の${noduleWord}あり`);
-      }
-      if (data.echo.calcification) parts.push(`石灰化${data.echo.calcification}`);
-      if (data.echo.noduleBloodFlow === "豊富") parts.push("血流豊富");
-      else if (data.echo.noduleBloodFlow === "乏しい") parts.push("血流に乏しい");
-      if (data.echo.noduleType) parts.push(data.echo.noduleType);
-      if (data.echo.noduleOther) parts.push(data.echo.noduleOther);
-      return parts.join("、");
-    })();
-    const thyReasonText = (() => {
-      const r = data.reason;
-      const parts = [];
-      if (r.thyroidConcern) {
-        const reasonsArr = Array.isArray(r.thyroidConcernReason) ? r.thyroidConcernReason : (r.thyroidConcernReason ? [r.thyroidConcernReason] : []);
-        const noOther = reasonsArr.filter(x => x !== 'その他');
-        const otherText = reasonsArr.includes('その他') && r.thyroidConcernNote ? r.thyroidConcernNote : '';
-        const reasonText = [...noOther, otherText].filter(Boolean).join('・');
-        parts.push(reasonText ? `甲状腺疾患が気になって受診（${reasonText}）` : '甲状腺疾患が気になって受診');
-      } else if (r.type === "紹介") {
-        const ref = [r.referralFrom, r.referralDept].filter(Boolean).join("・");
-        if (ref) parts.push(`${ref}より紹介`);
-        if (r.referralDetail) parts.push(r.referralDetail);
-      } else if (r.type === "検診異常") {
-        parts.push(`${r.checkupType || "健診"}にて甲状腺異常を指摘`);
-      } else if (r.type === "自主転院") {
-        if (r.transferFrom) parts.push(`${r.transferFrom}より転院`);
-        if (r.transferDetail) parts.push(r.transferDetail);
-      }
-      if (r.summary) parts.push(r.summary);
-      return parts.join("、");
-    })();
 
-    const prompt = `あなたはまつもと糖尿病クリニックの電子カルテ記載AIです。以下の患者情報をもとに、甲状腺外来の初診カルテ記載文を生成してください。
-
-【ルール】
-- 該当しない項目は省略する
-- フォーマット記号（＃【】□♯）を使用する
-- 空行ルール（厳守）: ①自院管理＃疾患は連続列挙し空行なし ②自院管理ブロックの後、他院管理疾患の前にのみ1行空ける ③【事前聴取時 申し送り事項】の最終□行と【診察にあたっての要望】の間も空行なし
-- 追加の空行ルール（厳守）: ④条件付きで該当しない項目（空文字に展開された行）はその行ごと完全に省略し、空行を残さない ⑤エコー所見ブロック（＃診断名・結語・結節所見・ベース所見）と【アレルギー歴】の間のみ1行空ける、それ以外のセクション間（【アレルギー歴】【FH】【喫煙歴】【健診】【仕事】など）は全て空行なし ⑥フッター「R8.5：採血項目」の直下、アレルギー薬警告が該当しない場合はその行ごと省略し、フォローアップ行（"1月follow" "6か月follow" "（当日紹介、当院終診）" 等）に直接続ける ⑦区切り線（---------）は連続させず、その間に必ず1行以上の内容を入れる
-- 注意書き・内部メモは出力しない。HTMLタグ・style属性は絶対に出力しない
-- バセドウ初診の「甲状腺エコー：」行は後ろに何も追記せず「甲状腺エコー：」のみ出力する
-
-【患者情報】
-受診理由：${thyReasonText || data.reason.summary || "（未記入）"}
-${data.reason.thyroidConcern ? `※「甲状腺疾患が気になって受診」の患者です。受診理由サマリーは検査前の暫定的な経緯として記載してください。` : ""}
-${formType === 'basedow-cont' ? `診断時期：${data.history.diagnosisEra}${data.history.diagnosisYear || "（不明）"}年\n内服薬：${contMedsText || "（未選択）"}` : ""}
-甲状腺ベース所見：${thyBaseFindingsText || "（未選択 or 全て正常）"}
-${formType === 'basedow-new' && data.echo.ecg ? `ECG：${data.echo.ecg}` : ""}
-結節について：${data.echo.hasNodule || "未選択"}
-${data.echo.hasNodule === "あり" && noduleEchoLine ? `結節所見（整形済み）：${noduleEchoLine}` : ""}
-症状：${symptomsText || "なし"}
-年齢：${data.history.age || "未記入"}歳
-アレルギー：${data.history.allergy === "なし" ? "なし" : (data.history.allergyDetail || "あり")}
-${!is2step ? `家族歴（甲状腺）：${data.history.fh.thyroid ? ("あり" + (data.history.fh.thyroidWho?.length ? `（${data.history.fh.thyroidWho.join("・")}）` : "")) : "なし"}
-家族歴（DM）：${data.history.fh.dm ? ("あり" + (data.history.fh.dmWho?.length ? `（${data.history.fh.dmWho.join("・")}）` : "")) : "なし"}
-喫煙歴：${buildSmoking()}
-健診：${(data.history.checkup || []).join("・") || "なし"}
-仕事：${jobText || "未記入"}
-活動量：${data.history.activity || "未記入"}` : ""}
-${formType === 'basedow-cont' ? `手術歴：${surgeryText}
-アイソトープ治療歴：${data.history.isotopeHistory ? "あり" : "なし"}
-薬の副作用歴：${sideEffectText}
-眼科通院歴：${data.history.eyeHistory ? ("あり" + (data.history.eyeClinic ? `（${data.history.eyeClinic}）` : "")) : "なし"}` : ""}
-${formType === 'hashimoto' && data.history.treatmentHistory ? `治療経緯：${data.history.treatmentHistory}` : ""}
-医師希望：${data.body.doctorGender || "指定なし"}
-患者フラグ：${data.body.patientFlag || "通常"}
-診察への要望：${data.body.concern || "なし"}
-
-${(() => {
-  // 出力フォーマットを空行が混ざらないよう配列で組み立てて join する
-  const reasonLine = `${getCurrentMonth()}：（受診理由サマリー1〜2行。${symptomsText ? `自覚症状チェックあり: ${symptomsText} → サマリー末尾に「${symptomsText}の訴えあり。」を必ず追記し、＃診断名の上に位置するようにする` : '自覚症状なしの場合は症状追記は省略'}）`;
-  const diagnosisLine = `${diagnosisName}（サマリーの直後、空行なし）`;
-  const echoBlock = [
-    formType === 'basedow-cont' && contTimeline ? contTimeline : '',
-    formType === 'basedow-cont' ? `手術歴：${surgeryText}　アイソトープ歴：${data.history.isotopeHistory ? "あり" : "なし"}　副作用歴：${sideEffectText}　眼科：${data.history.eyeHistory ? ("あり" + (data.history.eyeClinic ? `（${data.history.eyeClinic}）` : "")) : "なし"}` : '',
-    thyEchoConclusion,
-    thyBaseExtraLine,
-    noduleEchoLine,
-    formType === 'basedow-new' && data.echo.ecg ? `ECG：${data.echo.ecg}` : '',
-  ].filter(Boolean).join('\n');
-
-  const fhBlock = !is2step ? [
-    '【FH】甲状腺(-/+) DM(-/+)（該当者名も記載）',
-    '【喫煙歴】（整形済みテキスト）',
-    '【健診】',
-    formType !== 'adenoma' ? '【仕事】職業・活動量' : '',
-  ].filter(Boolean).join('\n') : '';
-
-  const dividerEchoLine = (formType === 'malignant' || formType === 'nodule-normal' || formType === 'adenoma')
-    ? '空欄：検査技師が後ほど貼り付けます。'
-    : `甲状腺エコー：${formType === 'basedow-new' ? '' : (() => {
-        const segs = [];
-        if (thyBaseFindingsText) segs.push(thyBaseFindingsText);
-        if (noduleEchoLine) segs.push(noduleEchoLine);
-        return segs.length ? segs.join('　') : '本日施行';
-      })()}`;
-
-  const heightBlock = (formType === 'malignant' || formType === 'adenoma') ? '' : `身長:${data.body.height || "○"}cm　初診時:${data.body.weightNow || "○"}kg${bmi ? `（BMI ${bmi}）` : ""}\n---------------------------------------------`;
-
-  const shinsokuItems = [
-    formType === 'malignant' ? '' : '□通院のご案内をお渡し済',
-    shinsokuLines,
-    ...buildStaffFlagLines(data.body),
-  ].filter(Boolean).join('\n');
-
-  const footerTrailing = formType === 'malignant'
-    ? '（当日紹介、当院終診）'
-    : formType === 'adenoma'
-      ? `6か月follow\n${buildWeekday()}\nLINE登録ご案内→済　登録確認未・登録できない`
-      : `1月follow\n${buildWeekday()}\nLINE登録ご案内→済　登録確認未・登録できない`;
-
-  return `【出力フォーマット】
-${reasonLine}
-${diagnosisLine}
-${echoBlock}
-
-【アレルギー歴】（なしまたは内容を同じ行に）
-${fhBlock ? fhBlock + '\n' : ''}---------------------------------------------
-${dividerEchoLine}
----------------------------------------------
-${heightBlock ? heightBlock + '\n' : ''}【事前聴取時　申し送り事項】
-${shinsokuItems}
-【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
----------------------------------------------
-${getCurrentMonth()}：${footerBloodTest}
-
-（アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
-${footerTrailing}`;
-})()}`;
+    // プロンプト組立は lib/buildKartePrompt.js に一本化（詳細画面の再生成と同じ関数）
+    const { prompt, max_tokens } = buildKartePrompt(meta.dbLabel, data);
 
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-sonnet-4-5", max_tokens: 1200, messages: [{ role: "user", content: prompt }] }),
+        body: JSON.stringify({ model: "claude-sonnet-4-5", max_tokens, messages: [{ role: "user", content: prompt }] }),
       });
       const json = await res.json();
       const raw = json.content?.[0]?.text || "生成に失敗しました";

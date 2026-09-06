@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   verify:
-    name: prompt-sync + golden tests + build
+    name: golden tests + build
     runs-on: ubuntu-latest
 
     steps:
@@ -43,9 +43,6 @@ jobs:
         run: npm ci
 
       # 依存なしで走る検査を先に回す（速い & 失敗理由が読みやすい）
-      - name: プロンプト同期チェック（経路A ↔ 経路B）
-        run: npm run check:prompt-sync
-
       - name: ゴールデンテスト（プロンプト内容）
         run: npm test
 

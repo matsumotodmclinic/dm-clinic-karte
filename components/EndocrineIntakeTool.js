@@ -2,10 +2,8 @@ import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
-import { buildOtherDiseasesText } from "../lib/otherDiseases";
-import { formatEcho, buildEchoLine } from "../lib/echo";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
-import { buildStaffFlagsBlock } from "../lib/handoffNotes";
+import { buildKartePrompt } from "../lib/buildKartePrompt";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
@@ -136,27 +134,10 @@ export default function EndocrineIntakeTool() {
   const isOver70 = age >= 70;
 
   // 家族歴の自由記入（誰が／病気名、複数組）→「母：バセドウ病、姉：橋本病」形式。片方だけでも出力する
-  const buildFhOther = () => {
-    return (data.history.fhOthers||[]).map(f=>{
-      const who=(f.who||"").trim(), dis=(f.disease||"").trim();
-      if(who&&dis) return `${who}：${dis}`;
-      return who||dis||"";
-    }).filter(Boolean).join("、");
-  };
 
   // その他の病名・既往歴 →「子宮筋腫（鰐坂医院）、慢性腎臓病（上尾中央総合病院 腎臓内科）」形式
-  const buildOtherDiseases = () => buildOtherDiseasesText(data.disease.otherDiseases);
 
   // 療養計画書は 糖尿病・高血圧・脂質異常症 がある場合のみ必要
-  const buildCarePlanDiseases = () => {
-    const c = data.disease.carePlanDiseases||{};
-    const names = [c.dm&&"糖尿病", c.ht&&"高血圧", c.hl&&"脂質異常症"].filter(Boolean);
-    return names.length ? names.join("・") : "なし";
-  };
-  const needsCarePlan = (() => {
-    const c = data.disease.carePlanDiseases||{};
-    return !!(c.dm||c.ht||c.hl);
-  })();
 
   const buildAlcohol = () => {
     if(data.history.alcoholNone) return "なし";
@@ -170,49 +151,7 @@ export default function EndocrineIntakeTool() {
     const base = `${s.smokingAmount}本×${s.smokingYears}年（${s.smokingStartAge}歳〜）`;
     return s.smoking==="禁煙済"?`${base}、${s.smokingQuitEra}${s.smokingQuitYear}年に禁煙`:base;
   };
-  const buildLiving = () => {
-    const{livingSpouse,livingOther,livingCustom}=data.history;
-    const hasSpouse=livingSpouse==="配偶者あり";
-    const arr = Array.isArray(livingOther) ? livingOther : (livingOther ? [livingOther] : []);
-    const others = arr.filter(x=>x&&x!=="子供と同居なし");
-    const other = others.join("・");
-    const custom=livingCustom||"";
-    let base="";
-    if(hasSpouse&&!other) base="夫婦2人暮らし";
-    else if(hasSpouse&&other) base=`夫婦2人暮らし＋${other}`;
-    else if(!hasSpouse&&other) base=other;
-    else if(livingSpouse) base=livingSpouse;
-    return [base,custom].filter(Boolean).join("（")+(base&&custom?"）":"");
-  };
 
-  const getCurrentMonth = () => {
-    const now = new Date();
-    return `R${now.getFullYear()-2018}.${now.getMonth()+1}`;
-  };
-  const buildWeekday = () => {
-    const days = data.body.preferredDays || [];
-    if (!days.length) return "曜希望";
-    if (days.includes("指定なし")) return "曜希望：指定なし";
-    return `${days.join("・")}曜希望`;
-  };
-  const buildJob = () => {
-    const jobs = Array.isArray(data.history.job) ? data.history.job : (data.history.job ? [data.history.job] : []);
-    const note = data.history.jobNote || "";
-    return [jobs.join("、"), note].filter(Boolean).join("・");
-  };
-  const buildChildInfo = () => {
-    const { childInfo, childLocation, childGender } = data.history;
-    const parts = [];
-    if (childLocation) {
-      if (childLocation === "子供なし") parts.push("子供なし");
-      else {
-        const who = (childGender || []).includes("両方") ? "息子・娘" : (childGender || []).join("・");
-        parts.push(`${who || "子供"}は${childLocation}`);
-      }
-    }
-    if (childInfo) parts.push(childInfo);
-    return parts.join("、");
-  };
 
   const copyToClipboard = (text) => copyKarteToClipboard(text);
 
@@ -239,81 +178,10 @@ export default function EndocrineIntakeTool() {
 
   const generateKarte = async () => {
     setLoading(true);
-    const prompt = `あなたはまつもと糖尿病クリニックの電子カルテ記載AIです。以下の患者情報をもとに、内分泌疾患のカルテ記載文を生成してください。
-
-【ルール】
-- 該当しない項目は省略する
-- フォーマット記号（＃【】□♯）を使用する
-- 自院管理の主病名（＃：全角シャープ）は医師が診察時に確定するため、問診では聴取していない。＃で始まる行は絶対に推測して出力しない
-- ただし「その他の病名・既往歴」は別扱い。入力があれば ♯（音楽記号のシャープ）で1疾患1行、必ず全て記載する。＃の抑制ルールを ♯ に適用してはならない
-- 空行ルール（厳守）: ①自院管理＃疾患は連続列挙し空行なし ②自院管理ブロックの後、他院管理疾患の前にのみ1行空ける ③他院管理疾患が複数あっても他院管理同士は連続列挙し空行なし ④他院管理疾患の最終行と【アレルギー歴】の間は空行なし（直接続ける） ⑤【事前聴取時 申し送り事項】の最終□行と【診察にあたっての要望】の間も空行なし（連続）
-- 60歳未満はワクチン歴を省略、70歳未満は子供の状況を省略
-- 喫煙歴は「○本×○年（○歳〜）」の形式
-
-【整形済みデータ】
-家族歴（自由記入）：${buildFhOther()||"なし"}
-飲酒歴：${buildAlcohol()}
-喫煙歴：${buildSmoking()}
-生活情報：${buildLiving()}
-子供の状況：${buildChildInfo()}
-職業：${buildJob()}
-頚部エコー：${data.disease.echoNeck||"未選択"}
-腹部エコー：${data.disease.echoAbdomen||"未選択"}
-その他の病名・既往歴：${buildOtherDiseases()}
-生活習慣病（療養計画書の要否判定）：${buildCarePlanDiseases()}
-希望曜日：${buildWeekday()}
-医師希望：${data.body.doctorGender || "指定なし"}
-患者フラグ：${data.body.patientFlag || "通常"}
-新患2枠取得：${data.body.doubleSlot ? "取得済" : "なし"}
-
-【患者情報JSON】
-${JSON.stringify(data,null,2)}
-${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}${data.voiceMemo?.needsDoctorReview ? `\n【現病歴：要DR確認フラグあり(申し送り事項に「□現病歴：問診時間の関係で一部省略、要DR確認」を必ず追加)】\nスタッフが時間制約により現病歴を完全聴取できなかった、または患者発話を完全には拾えなかったと判定。\n` : ''}${data.voicePastHistory?.needsDoctorReview ? `\n【既往歴：要ドクター確認フラグあり(申し送り事項に「□ 既往歴：要ドクター確認」を必ず追加)】\nスタッフが既往歴の確認で医師の判断が必要と判定。\n` : ''}
-【ルール追加】
-- 「診察にあたっての要望」は必ず【】付きで記載。記載なければ「なし」と記載
-- その他の病名がある場合は既往歴として記載
-- 頚部エコー・腹部エコーの情報を記載
-
-【出力フォーマット】
-${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の場合は気になる理由も含めて記載。自由記入欄の内容も含める${data.voiceMemo?.aiSummary ? '。音声入力AI整形済みテキストを優先・統合して使用' : ''}）
-（＃で始まる自院管理の主病名行は出力しない。医師が診察時に記載する）
-（上記「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。空行なし）
-
-【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載）
-【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)（FH DMの場合は誰かも記載。家族歴の自由記入があれば、同じ行の末尾に全角スペース区切りでそのまま続けて記載。例「【FH】DM(+：母) HT(-) HL(-) APO(-) IHD(-)　母：バセドウ病」。自由記入がなければ何も足さない）
-【飲酒歴】（整形済みテキスト）
-【喫煙歴】（整形済みテキスト）
-【健診】
-【ワクチン歴】（60歳以上のみ）
-【生活情報】（整形済みテキスト。70歳以上は子供の状況も含む）
-【仕事】職業・活動量
----------------------------------------------
-${buildEchoLine(data.disease.echoNeck, data.disease.echoAbdomen, { abdomenFallback: "未選択" })}（必ず1行に横配置）
----------------------------------------------
-身長:○cm　初診時:○kg${bmi ? `（BMI ${bmi}）` : ""}　20歳時:○kg　max体重○kg(○歳)
----------------------------------------------
-【事前聴取時　申し送り事項】
-□通院のご案内をお渡し済
-（現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
-（既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
-□主病名：医師の診察時に確定・記載
-${needsCarePlan ? "□初回療養計画書を作成済" : "（生活習慣病のチェックがないため「□初回療養計画書を作成済」の行は出力しない）"}
-${buildStaffFlagsBlock(data.body)}（その他該当する申し送り事項があれば記載）
-【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
----------------------------------------------
-${getCurrentMonth()}：
-
-
-
-
-（アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
-基本採血なし
-1月follow
-${buildWeekday()}
-LINE登録ご案内→済　登録確認未・登録できない
-`;
+    // プロンプト組立は lib/buildKartePrompt.js に一本化（詳細画面の再生成と同じ関数）
+    const { prompt, max_tokens } = buildKartePrompt("内分泌", data);
     try {
-      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
+      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens,messages:[{role:"user",content:prompt}]})});
       const json = await res.json();
       const generated = json.content?.[0]?.text||"生成に失敗しました";
       setResult(generated);

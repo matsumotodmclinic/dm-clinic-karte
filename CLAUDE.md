@@ -118,37 +118,42 @@ DMのみ「病気について」step を解体し以下に分散:
 
 他5フォームは A案（voice section 集約のみ）で温存。B案（DM完全模倣）は ROI が悪いため未着手。
 
-## アーキテクチャ: カルテ生成の2経路
+## アーキテクチャ: カルテ生成の2経路（プロンプトは1本）
+
+★**プロンプトの組み立ては `lib/buildKartePrompt.js` の 1 箇所だけ**（2026-09-06 に一本化）。
+初回生成も再生成も同じ関数を呼ぶので、「初回生成と再生成でカルテが違う」事故は構造的に起きない。
 
 ### 経路A: フォーム送信時（メイン）
-`components/*IntakeTool.js` の `generateKarte()` → `/api/generate`（プロキシ）→ Claude API → `/api/questionnaire` POST で保存
+`components/*IntakeTool.js` の `generateKarte()` が **`buildKartePrompt(form_type, data)` を呼ぶ**
+→ `/api/generate`（プロキシ）→ Claude API → `/api/questionnaire` POST で保存
 
 ### 経路B: 詳細画面で再生成
-`detail/[id].js` → `/api/generate-karte`（サーバー側でプロンプト組立）→ Claude API → `/api/questionnaire` PATCH で上書き
+`detail/[id].js` → `/api/generate-karte` が **同じ `buildKartePrompt()` を呼ぶ**
+→ Claude API → `/api/questionnaire` PATCH で上書き
+
+違いは **dmDiff（採血で糖尿病が判明したときの追加聴取）だけ**。これは詳細画面でしか入力できないので
+経路A では常に無い状態で同じ関数に入る。
 
 ## バグ防止機構（2026-08-22 導入）
 
 ```bash
-npm run check          # プロンプト同期チェック + ゴールデンテスト（コミット前に必ず）
-npm run check:prompt-sync   # 経路A ↔ 経路B のプロンプト差分だけ
-npm test               # ゴールデンテスト（60件）だけ
+npm run check          # スタイル検査 + ゴールデンテスト（コミット前に必ず）
+npm test               # ゴールデンテスト（119件）だけ
 npm run test:update    # スナップショット更新（差分を目視確認してからコミット）
 ```
 
 GitHub Actions（`.github/workflows/ci.yml`）が push / PR で上記 + `next build` を実行し、
 main で失敗したら GitHub issue を自動作成してメール通知する。
 
-### ① プロンプト同期チェッカー（`scripts/check-prompt-sync.mjs`）
-経路A（`components/*IntakeTool.js`）と経路B（`lib/buildKartePrompt.js`）のプロンプトから
-「人が書いた指示文」だけを抽出して比較する。`${...}` は変数名が経路ごとに違う（`data.` / `d.?.`）ので
-`⟨expr⟩` に潰してから比較 = 日本語の指示文の差分だけを見る。
-`STAFF_FLAGS` のような定数はインライン展開してから比較する。
+### ① プロンプトの単一実装（2026-09-06〜）
+`scripts/check-prompt-sync.mjs` と `scripts/prompt-sync-allow.json` は**役目を終えて削除**した。
+比較する相手（コンポーネント側のプロンプト）が無くなったため。
 
-- 既知の差分は `scripts/prompt-sync-allow.json` に記録済み（導入時点で 8フォーム計137行の差分が既に存在した）
-- **新しい差分が出たら CI が落ちる** = 片側だけ直したことに気付ける
-- 意図的な差分は `npm run check:prompt-sync -- --update`（実体は `node scripts/check-prompt-sync.mjs --update`）で記録
+代わりに `prompt.test.mjs` に **二重管理を復活させないテスト 2 本**を置いている:
+- `components/*IntakeTool.js` に `const prompt = \`` が現れたら落ちる
+- 全 IntakeTool が `buildKartePrompt()` を呼んでいなければ落ちる
 
-甲状腺6フォームは 1コンポーネント + 1分岐で `formType` prop 分岐のため未対応（TODO）。
+**プロンプトを直すときは `lib/buildKartePrompt.js` の 1 箇所だけ**。9 ファイル同期はもう不要。
 
 ### ② ゴールデンテスト（`scripts/golden/`、`node --test`・依存パッケージなし）
 - `fixtures.mjs`: 疑似 form_data。**実患者データは絶対に置かない**。過去に取りこぼしたパターン
@@ -166,47 +171,47 @@ main で失敗したら GitHub issue を自動作成してメール通知する�
 API ハンドラの中にあるとテストから呼べなかったため。ハンドラは
 入力検証 → `buildKartePrompt()` → Anthropic 呼び出し → 整形 だけになった（76行）。
 
-### ⚠️ プロンプト二重管理（最重要注意点）
-プロンプトは経路A（コンポーネント内、8ファイル）と経路B（generate-karte.js、8 form_type分）の**計9箇所に同一内容が存在**する。
-**プロンプト修正時は必ず9ファイル全て同期すること。** 片方だけだと初回生成と再生成で不整合が出る。
+### ✅ プロンプト二重管理は解消済（2026-09-06）
 
-> **2026-09-06 に 8 フォーム全ての差分を解消済**（151行 → 65行、残りは dmDiff 由来のみ）。
-> 経路A・経路B の指示文は現在**完全に同一**なので、片側だけ直すと即座に同期チェッカーが落ちる。
+かつては経路A（コンポーネント 9 ファイル）と経路B（`lib/buildKartePrompt.js`）に
+**同じプロンプトが 10 箇所**あり、片方だけ直すと初回生成と再生成でカルテが変わる事故になっていた。
+**コンポーネント側のプロンプト組立を全廃**し、`buildKartePrompt()` の呼び出し 1 行に置き換えて解消した。
 
-修正対象パターン:
-```
-components/DMIntakeTool.js       (DM基本 client)
-components/T1DIntakeTool.js      (1型糖尿病 client)
-components/PedT1DIntakeTool.js   (小児1型糖尿病 client)
-components/HTHLIntakeTool.js     (高血圧・脂質異常症 client)
-components/GDMIntakeTool.js      (妊娠糖尿病 client)
-components/RHIntakeTool.js       (反応性低血糖 client)
-components/SASIntakeTool.js      (睡眠時無呼吸症候群 client)
-components/EndocrineIntakeTool.js (内分泌 client)
-lib/buildKartePrompt.js          (再生成用 server, 14 form_type 全部含む ※2026-08-22 に
-                                  pages/api/generate-karte.js から切り出し)
+```js
+// components/*IntakeTool.js の generateKarte() 内
+const { prompt, max_tokens } = buildKartePrompt("DM基本", data);   // 甲状腺は meta.dbLabel
 ```
 
-修正後は必ず `npm run check` を実行すること。片側だけの修正なら同期チェッカーが落ちる。
+- **プロンプトを直す場所は `lib/buildKartePrompt.js` だけ**
+- `components/` にプロンプトのテンプレートリテラルを書き戻すとテストが落ちる
+- 削除できたもの: コンポーネントのプロンプト 737 行 + 死んだヘルパー 約 350 行 +
+  同期チェッカー 260 行 + allow-list 65 行
 
-#### テンプレート化で二重管理を減らす（2026-09-06〜）
+#### 一本化する前にやった証明（再現手順を残す）
+コンポーネントの JSX 直前までを切り出して実行し、`fetch` をスタブして
+**実際に `/api/generate` へ送られるプロンプト**を捕まえ、`buildKartePrompt()` の出力と
+バイト比較した（8 フォーム × 6 条件 ＋ 甲状腺 6 × 3 条件 = 66 ケース）。
+一本化後は同じコードが両経路を担うので、このハーネスは repo には残していない。
+
+**この証明で見つかった不整合**（同期チェッカーでは原理的に見えなかったもの）:
+- 音声入力ブロックの文言が経路ごとに違った（`${...}` の中なのでチェッカーは `⟨expr⟩` に潰していた）
+- 経路B の `${hasDm ? … : ''}` が単独行にあり、dmDiff が無いとき空行を残していた（既知バグ④）
+- 甲状腺の出力フォーマットが経路A ではプレースホルダ（`【喫煙歴】（整形済みテキスト）`）、
+  経路B では値を埋めていた
+- プロンプト末尾の改行の有無
+
+#### テンプレート化（AI に判定させない）
 プロンプトに「（○○の場合）□△△」と条件文を書いて AI に判定させている行のうち、
-**判定材料が form_data に揃っていて AI の判断が要らないもの**は、共通 lib の純粋関数に移して
-経路A・経路Bの両方から呼ぶ。条件の取りこぼしが原理的に起きなくなり、ユニットテストで固定でき、
-その行がプロンプト二重管理の対象から外れる。
+**判定材料が form_data に揃っていて AI の判断が要らないもの**は、純粋関数に移して確定した文字列を渡す。
+条件の取りこぼしが原理的に起きなくなり、ユニットテストで固定できる。
 
 | 移した行 | 実装 |
 |---|---|
 | □新患2枠取得済み / □医師希望：○○ / □○患者疑い（対応注意） / □●患者疑い（出禁対象・要確認） | `lib/handoffNotes.js` (2026-09-06) |
+| ＃SAS疑い（簡易PSG予定） / ＃SAS（前医：○○、CPAP継続） | `buildKartePrompt()` 内の `sasMainName` |
 
 書き方は `${buildStaffFlagsBlock(body)}【診察にあたっての要望】` のように**次の行と連結**する
 （該当なしのとき空行が残らないようにするため。空行はそのまま AI 出力に混入する = 既知バグ④）。
-
-#### 既知の差分には reason が必須（2026-09-06〜）
-`scripts/prompt-sync-allow.json` の各フォームは、差分が 1 行でもあれば `reason` が要る。
-無いと CI が落ちる。**理由を書けない差分は「まだ直していない借金」**であり、黙って積めるようにすると
-本物のバグが埋もれる（2026-08 に実際に 4 件埋もれた）。
-現在 reason が付いているのは dmDiff を持つ 4 フォーム（HTHL / RH / SAS / 内分泌）のみ。
 
 ### SAS フォームの dmDiff（採血後 DM 判明時の差分問診）
 SAS問診は当院の事前採血（全例）で HbA1c 高値→糖尿病確定するケースを想定。
@@ -362,7 +367,7 @@ dmDiff フォームで聞く項目（DM基本との差分のみ）:
 2. **visitCode重複表示**: 非同期保存のstate更新順序に注意
 3. **duplicate key**: 病院ボタンで `key={hosp}` → `key={hosp+dept}` に
 4. **AI空行挿入**: テンプレートリテラル内の空行がAI出力に混入。プロンプトに「空行なし」明記
-5. **プロンプト二重管理**: 経路AとBの片方だけ修正すると再生成で不整合（上記参照）
+5. ~~**プロンプト二重管理**~~: 2026-09-06 に `lib/buildKartePrompt.js` へ一本化して解消（上記参照）
 6. **lib/config.js未参照**: `CLAUDE_MODEL`定義済みだが各所ハードコード。統一TODO
 
 ## 実装済み機能（2026-04月時点）
@@ -382,7 +387,7 @@ dmDiff フォームで聞く項目（DM基本との差分のみ）:
 1. **Claude Code向けプロンプトは1塊のmarkdownコードブロック**で出す（コピーボタン1回取得）
 2. **可能な限り複数タスクを1プロンプトにまとめて一括コミット**
 3. コード修正時は**フルパスを明示**（例: `components/DMIntakeTool.js`）
-4. プロンプト修正は**必ず2箇所**（コンポーネント内 + generate-karte.js）
+4. プロンプト修正は `lib/buildKartePrompt.js` の**1箇所だけ**（2026-09-06 に一本化。コンポーネント側には無い）
 5. 実装詳細はClaude Codeに委ねてよい
 6. 確認はまつ判断が必要なもののみ、発注前に済ませる
 
@@ -442,6 +447,54 @@ dmDiff フォームで聞く項目（DM基本との差分のみ）:
 ## タスク履歴
 
 （ここに完了タスクを追記していく）
+
+### 2026-09-06 (2) プロンプトを `buildKartePrompt()` に一本化（二重管理の完全解消）
+
+#### やったこと
+コンポーネント 9 ファイルのプロンプト組立を全廃し、初回生成も再生成も
+`lib/buildKartePrompt.js` を呼ぶ形にした。**14 フォーム全て**（甲状腺6を含む）。
+
+| 削除 | 行数 |
+|---|---|
+| コンポーネント内のプロンプト | 737 |
+| 参照されなくなったヘルパー・import | 約 350 |
+| `scripts/check-prompt-sync.mjs` | 260 |
+| `scripts/prompt-sync-allow.json` | 65 |
+
+#### 一本化する前に「出力が変わらない」ことを証明した
+コンポーネントの JSX 直前までを切り出して実行し、`fetch` をスタブして
+**実際に `/api/generate` に送られるプロンプト**を捕まえ、`buildKartePrompt()` の出力とバイト比較。
+8 フォーム × 6 条件（未入力 / フィクスチャ / スタッフフラグ全部 / 医師希望なし / 音声入力+要DR確認 / dmDiff）
+＋ 甲状腺 6 × 3 条件 = **66 ケースで一致**を確認してから切り替えた。
+
+#### 証明で見つかった不整合（同期チェッカーでは見えなかったもの）
+1. **音声入力ブロックの文言が経路ごとに違う** — `${...}` の中なのでチェッカーは `⟨expr⟩` に潰していた。
+   音声入力は毎日使う機能なので、実質ほぼ全例で違うプロンプトが飛んでいた
+2. **経路B の `${hasDm ? … : ''}` が単独行にあり、dmDiff が無いとき空行を残していた**（既知バグ④の再発）
+3. **甲状腺の出力フォーマット**が経路A ではプレースホルダ、経路B では値を埋めていた
+4. プロンプト末尾の改行の有無
+5. SAS の `max_tokens` が経路A=1500 / 経路B=1800
+
+#### 出力が変わる箇所
+- **SAS の max_tokens が 1500 → 1800**（経路B に合わせた。長い出力が切れにくくなる方向）
+- 甲状腺の【喫煙歴】【健診】【仕事】が確定値で渡るようになる（AI に整形済みデータから拾わせない）
+- 音声入力ありのときの指示文が統一される
+- それ以外はバイト一致
+
+#### 同期チェッカーの後継
+`prompt.test.mjs` に 2 本のテストを追加:
+- `components/*IntakeTool.js` に `const prompt = \`` が復活したら落ちる
+- 全 IntakeTool が `buildKartePrompt()` を呼んでいなければ落ちる
+
+甲状腺 6 フォームのスナップショットも追加（テスト 111 → 119 件）。
+
+#### 教訓
+> **「差分を検出する仕組み」より「差分が存在し得ない構造」の方が強い。**
+> 同期チェッカーは 3 ヶ月半 CI を緑にし続けながら、音声入力の不整合を一度も報告しなかった。
+> `${...}` を潰して比較する以上、変数の中身の違いは原理的に見えない。
+
+> ★**「本物を実行して捕まえる」検証は、コードを写して比べるより安全で速い。**
+> JSX の直前までを切り出して `fetch` をスタブする方法なら、React も JSX 変換も要らない。
 
 ### 2026-09-06 テンプレート化 第1歩（申し送りのスタッフ入力行）
 

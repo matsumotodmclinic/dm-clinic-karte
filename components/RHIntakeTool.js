@@ -2,9 +2,8 @@ import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
-import { buildOtherDiseasesText } from "../lib/otherDiseases";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
-import { buildStaffFlagsBlock } from "../lib/handoffNotes";
+import { buildKartePrompt } from "../lib/buildKartePrompt";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
@@ -143,48 +142,6 @@ export default function RHIntakeTool() {
     const base = `${s.smokingAmount}本×${s.smokingYears}年（${s.smokingStartAge}歳〜）`;
     return s.smoking==="禁煙済"?`${base}、${s.smokingQuitEra}${s.smokingQuitYear}年に禁煙`:base;
   };
-  const buildLiving = () => {
-    const{livingSpouse,livingOther,livingCustom}=data.history;
-    const hasSpouse=livingSpouse==="配偶者あり";
-    const arr = Array.isArray(livingOther) ? livingOther : (livingOther ? [livingOther] : []);
-    const others = arr.filter(x=>x&&x!=="子供と同居なし");
-    const other = others.join("・");
-    const custom=livingCustom||"";
-    let base="";
-    if(hasSpouse&&!other) base="夫婦2人暮らし";
-    else if(hasSpouse&&other) base=`夫婦2人暮らし＋${other}`;
-    else if(!hasSpouse&&other) base=other;
-    else if(livingSpouse) base=livingSpouse;
-    return [base,custom].filter(Boolean).join("（")+(base&&custom?"）":"");
-  };
-  const getCurrentMonth = () => {
-    const now = new Date();
-    return `R${now.getFullYear()-2018}.${now.getMonth()+1}`;
-  };
-  const buildWeekday = () => {
-    const days = data.body.preferredDays || [];
-    if (!days.length) return "曜希望";
-    if (days.includes("指定なし")) return "曜希望：指定なし";
-    return `${days.join("・")}曜希望`;
-  };
-  const buildJob = () => {
-    const jobs = Array.isArray(data.history.job) ? data.history.job : (data.history.job ? [data.history.job] : []);
-    const note = data.history.jobNote || "";
-    return [jobs.join("、"), note].filter(Boolean).join("・");
-  };
-  const buildChildInfo = () => {
-    const { childInfo, childLocation, childGender } = data.history;
-    const parts = [];
-    if (childLocation) {
-      if (childLocation === "子供なし") parts.push("子供なし");
-      else {
-        const who = (childGender || []).includes("両方") ? "息子・娘" : (childGender || []).join("・");
-        parts.push(`${who || "子供"}は${childLocation}`);
-      }
-    }
-    if (childInfo) parts.push(childInfo);
-    return parts.join("、");
-  };
 
   const copyToClipboard = (text) => copyKarteToClipboard(text);
 
@@ -211,73 +168,10 @@ export default function RHIntakeTool() {
 
   const generateKarte = async () => {
     setLoading(true);
-    const prompt = `あなたは糖尿病専門クリニックの電子カルテ記載AIです。以下の患者情報をもとに、反応性低血糖のカルテ記載文を生成してください。
-
-【ルール】
-- 該当しない項目は省略する
-- フォーマット記号（♯【】）を使用する
-- CGM/リブレ装着情報も申し送り事項に記載
-- 60歳未満はワクチン歴を省略、70歳未満は子供の状況を省略
-- 空行ルール（厳守）: ①♯反応性低血糖疑いと【アレルギー歴】の間は空行なし（直接続ける） ②【事前聴取時 申し送り事項】の最終□行と【診察にあたっての要望】の間も空行なし（連続）
-
-【整形済みデータ】
-飲酒歴：${buildAlcohol()}
-喫煙歴：${buildSmoking()}
-生活情報：${buildLiving()}
-子供の状況：${buildChildInfo()}
-職業：${buildJob()}
-その他の病名・既往歴：${buildOtherDiseasesText(data.history.otherDiseases)}
-希望曜日：${buildWeekday()}
-医師希望：${data.body.doctorGender || "指定なし"}
-患者フラグ：${data.body.patientFlag || "通常"}
-新患2枠取得：${data.body.doubleSlot ? "取得済" : "なし"}
-
-【患者情報JSON】
-${JSON.stringify(data,null,2)}
-${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}${data.voiceMemo?.needsDoctorReview ? `\n【現病歴：要DR確認フラグあり(申し送り事項に「□現病歴：問診時間の関係で一部省略、要DR確認」を必ず追加)】\nスタッフが時間制約により現病歴を完全聴取できなかった、または患者発話を完全には拾えなかったと判定。\n` : ''}${data.voicePastHistory?.needsDoctorReview ? `\n【既往歴：要ドクター確認フラグあり(申し送り事項に「□ 既往歴：要ドクター確認」を必ず追加)】\nスタッフが既往歴の確認で医師の判断が必要と判定。\n` : ''}
-【出力フォーマット】
-${getCurrentMonth()}：${data.voiceMemo?.aiSummary ? '（音声入力AI整形済みテキストを優先・統合して使用）' : ''}
-♯反応性低血糖疑い
-・低血糖が生じるタイミング：${(data.symptom.timing||[]).join("、")}${data.symptom.timingNote?"（"+data.symptom.timingNote+"）":""}
-・症状：${(data.symptom.symptoms||[]).join("、")}${data.symptom.symptomsNote?"（"+data.symptom.symptomsNote+"）":""}
-・思い当たる原因：${(data.symptom.cause||[]).join("、")}${data.symptom.causeNote?"（"+data.symptom.causeNote+"）":""}
-
-（上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない。♯疾患同士は空行なしで連続列挙し、最終行と【アレルギー歴】の間も空行なし）
-【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載）
-【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)
-【飲酒歴】（整形済みテキスト）
-【喫煙歴】（整形済みテキスト）
-【健診】
-【ワクチン歴】（60歳以上のみ）
-【生活情報】（整形済みテキスト。70歳以上は子供の状況も含む）
-【仕事】職業・活動量
----------------------------------------------
-頚部エコー：当院で施行予定　腹部エコー：当院で施行予定（必ず1行に横配置）
----------------------------------------------
-身長:○cm　初診時:○kg${bmi ? `（BMI ${bmi}）` : ""}　20歳時:○kg　max体重○kg(○歳)
----------------------------------------------
-【事前聴取時　申し送り事項】
-□通院のご案内をお渡し済
-（現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
-□自費CGM（リブレ）装着済（反応性低血糖疑いは全例必須記載）
-（既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
-${buildStaffFlagsBlock(data.body)}（なければ省略）
-【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
----------------------------------------------
-${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲状腺項目追加してください　CPR0.5以下の方は今後半年ごとCPR測定を入れてください。
-
-
-
-
-（アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
-目標HbA1c　　　　%　目標体重　　　次回検討薬：
-DM基本セット
-1月follow
-${buildWeekday()}
-LINE登録ご案内→済　登録確認未・登録できない
-`;
+    // プロンプト組立は lib/buildKartePrompt.js に一本化（詳細画面の再生成と同じ関数）
+    const { prompt, max_tokens } = buildKartePrompt("反応性低血糖", data);
     try {
-      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
+      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens,messages:[{role:"user",content:prompt}]})});
       const json = await res.json();
       const generated = json.content?.[0]?.text||"生成に失敗しました";
       setResult(generated);

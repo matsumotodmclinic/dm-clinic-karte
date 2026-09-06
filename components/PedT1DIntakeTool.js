@@ -2,9 +2,8 @@ import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
-import { buildOtherDiseasesText } from "../lib/otherDiseases";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
-import { buildStaffFlagsBlock } from "../lib/handoffNotes";
+import { buildKartePrompt } from "../lib/buildKartePrompt";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
@@ -80,16 +79,6 @@ export default function PedT1DIntakeTool() {
   const toggleArr = (sec,f,v) => setData(p=>{const a=p[sec][f];return{...p,[sec]:{...p[sec],[f]:a.includes(v)?a.filter(x=>x!==v):[...a,v]}};});
 
 
-  const getCurrentMonth = () => {
-    const now = new Date();
-    return `R${now.getFullYear()-2018}.${now.getMonth()+1}`;
-  };
-  const buildWeekday = () => {
-    const days = data.body.preferredDays || [];
-    if (!days.length) return "曜希望";
-    if (days.includes("指定なし")) return "曜希望：指定なし";
-    return `${days.join("・")}曜希望`;
-  };
 
   const copyToClipboard = (text) => copyKarteToClipboard(text);
 
@@ -116,97 +105,10 @@ export default function PedT1DIntakeTool() {
 
   const generateKarte = async () => {
     setLoading(true);
-    const prompt = `あなたは糖尿病専門クリニックの電子カルテ記載AIです。以下の患者情報をもとに、小児1型糖尿病のカルテ記載文を生成してください。
-
-【ルール】
-- 該当しない項目は省略する
-- フォーマット記号（＃【】□♯・）を使用する
-- 小児慢性申請状況を必ず記載する
-- 受診理由の直後、空行なしで＃1型糖尿病を続ける
-- 各項目（・GAD抗体、・CPR等）の間は空行なし
-- 【アレルギー歴】【FH】【眼科通院歴】【協力体制】【本人のスケジュール】【親のスケジュール】【注射・血糖測定の自立度】【生活情報】の間は全て空行なし
-- 空行ルール（厳守）: ①自院管理＃疾患（＃1型糖尿病/＃HT/＃HL等）は連続列挙し空行なし ②自院管理ブロックの後、他院管理疾患の前にのみ1行空ける ③他院管理疾患が複数あっても他院管理同士は連続列挙し空行なし ④他院管理疾患の最終行と【アレルギー歴】の間は空行なし（直接続ける） ⑤【事前聴取時 申し送り事項】の最終□行と【診察にあたっての要望】の間も空行なし（連続）
-- ＃HT・＃HLは必ず＃1型糖尿病の直後に記載し、末尾には絶対に記載しない
-- アレルギー薬の記載以降は指定フォーマットのみを出力し、病名・診断名を追記しない
-
-【整形済みデータ】
-その他の病名・既往歴：${buildOtherDiseasesText(data.history.otherDiseases)}
-希望曜日：${buildWeekday()}
-医師希望：${data.body.doctorGender || "指定なし"}
-患者フラグ：${data.body.patientFlag || "通常"}
-新患2枠取得：${data.body.doubleSlot ? "取得済" : "なし"}
-
-【患者情報JSON】
-${JSON.stringify({disease:data.disease,history:data.history,body:data.body,reason:data.reason,support:data.support,chronic:data.chronic},null,2)}
-${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}${data.voiceMemo?.needsDoctorReview ? `\n【現病歴：要DR確認フラグあり(申し送り事項に「□現病歴：問診時間の関係で一部省略、要DR確認」を必ず追加)】\nスタッフが時間制約により現病歴を完全聴取できなかった、または患者発話を完全には拾えなかったと判定。\n` : ''}${data.voicePastHistory?.needsDoctorReview ? `\n【既往歴：要ドクター確認フラグあり(申し送り事項に「□ 既往歴：要ドクター確認」を必ず追加)】\nスタッフが既往歴の確認で医師の判断が必要と判定。\n` : ''}${(()=>{
-  const sel=data.disease.dmSymptoms?.selected||[];
-  if(sel.length===0)return'';
-  const items=sel.filter(s=>s!=='その他');
-  const other=(data.disease.dmSymptoms?.otherText||'').trim();
-  if(sel.includes('その他')&&other)items.push(`その他: ${other}`);
-  return `\n【糖尿病の症状(チェック済、横一列に「・」区切りで【糖尿病の症状】セクションに記載)】\n${items.join('・')}\n`;
-})()}
-【出力フォーマット（空行は一切入れないこと）】
-${getCurrentMonth()}：（受診理由1〜2行${data.voiceMemo?.aiSummary ? '。音声入力AI整形済みテキストを優先・統合して使用' : ''}）
-＃1型糖尿病（タイプ）（発症時期）
-＃HT（HTありの場合のみ。当院で管理なら「＃HT」、他院管理なら「＃HT（他院管理）」）
-＃HL（HLありの場合のみ。当院で管理なら「＃HL」、他院管理なら「＃HL（他院管理）」）
-（上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない。空行なし）
-・GAD抗体：（初診時採血）
-・CPR：（初診時採血）
-・甲状腺検査：（確認済/初診時採血）
-・バクスミー希望：あり/なし
-・小児慢性特定疾病助成制度：（申請状況）（申請ありの場合：出生体重・出生週数・出生時住民登録地・手帳取得内容）
-・書類関係：（選択された書類を全て記載）（「学校生活管理指導表」が含まれる場合）□4月頃に処方
-・居住地：（市町村）
----------------------------------------------
-【アレルギー歴】（なしまたは内容を同じ行に）
-【FH】DM(-/+、誰かも記載) 1型糖尿病(-/+、誰かも記載) 膠原病(-/+、誰が・どの病気かも記載) HT(-/+) APO(-/+) IHD(-/+)
-【眼科通院歴】（眼底検査を受けている場合：眼科名・網膜症の状況・緑内障の有無を記載。受けていない場合は「未受診」と記載）
-【協力体制】
-①家族の協力体制：（内容）
-②学校の協力体制：（内容）
-③学校でサポートしてくれる人：（内容）
-④開示状況（クラスメート）：（内容）
-④開示状況（先生）：（内容）
-【本人のスケジュール】（内容）
-【親のスケジュール】（内容）
-【注射・血糖測定の自立度】（内容）
-【生活情報】家族構成・キーパーソン：（内容）
----------------------------------------------
-身長:○cm　初診時:○kg${bmi ? `（BMI ${bmi}）` : ""}
----------------------------------------------
-（症状チェックがある場合のみ）【糖尿病の症状】（チェックされた症状を「・」で横一列に記載。「その他」がチェックされていれば末尾に「その他: ○○」を追加）
----------------------------------------------
-【事前聴取時　申し送り事項】
-□通院のご案内をお渡し済
-（現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
-（既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
-（眼底検査=受けていない or 連携手帳=持っていない の場合）□糖尿病-眼科連携手帳をお渡し
-□甲状腺3項目・GAD抗体・CPRを初診時採血
-（HTありの場合）□HTの確認のため、血圧手帳をお渡ししています。
-（HLありの場合）□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。
-（書類関係で「学校生活管理指導表」を選択した場合）□4月頃に処方
-（CGM希望がある場合）□デバイス希望：（現在→希望の形式で記載）
-（小児慢性申請済の場合）□小児慢性申請済・窓口負担を確認し算定へ連絡
-（母子手帳「忘れた」の場合）□次回以降、母子手帳を確認してください
-${buildStaffFlagsBlock(data.body)}（その他申し送り事項があれば記載）
-【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
----------------------------------------------
-${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲状腺項目追加してください　CPR0.5以下の方は今後半年ごとCPR測定を入れてください。
-
-
-
-
-（アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
-目標HbA1c　　　　%　目標体重　　　次回検討薬：
-DM基本セット
-1月follow
-${buildWeekday()}
-LINE登録ご案内→済　登録確認未・登録できない
-`;
+    // プロンプト組立は lib/buildKartePrompt.js に一本化（詳細画面の再生成と同じ関数）
+    const { prompt, max_tokens } = buildKartePrompt("小児1型糖尿病", data);
     try {
-      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:2000,messages:[{role:"user",content:prompt}]})});
+      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens,messages:[{role:"user",content:prompt}]})});
       const json = await res.json();
       const generated = json.content?.[0]?.text||"生成に失敗しました";
       setResult(generated);

@@ -2,10 +2,8 @@ import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
-import { buildOtherDiseasesText } from "../lib/otherDiseases";
-import { formatEcho, buildEchoLine } from "../lib/echo";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
-import { buildStaffFlagsBlock } from "../lib/handoffNotes";
+import { buildKartePrompt } from "../lib/buildKartePrompt";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
@@ -248,61 +246,11 @@ export default function DMIntakeTool() {
     return s.smoking === "禁煙済" ? `${base}、${s.smokingQuitEra}${s.smokingQuitYear}年に禁煙` : base;
   };
 
-  const buildLiving = () => {
-    const { livingSpouse, livingOther, livingCustom } = data.lifestyle;
-    const hasSpouse = livingSpouse === "配偶者あり";
-    const arr = Array.isArray(livingOther) ? livingOther : (livingOther ? [livingOther] : []);
-    const others = arr.filter(x => x && x !== "子供と同居なし");
-    const other = others.join("・");
-    const custom = livingCustom || "";
-    let base = "";
-    if (hasSpouse && !other) base = "夫婦2人暮らし";
-    else if (hasSpouse && other) base = `夫婦2人暮らし＋${other}`;
-    else if (!hasSpouse && other) base = other;
-    else if (livingSpouse) base = livingSpouse;
-    return [base, custom].filter(Boolean).join("（") + (base && custom ? "）" : "");
-  };
 
-  const dmOnsetText = () => {
-    if (data.disease.dmOnsetUnknown) return "";
-    if (!data.disease.dmOnset) return "";
-    return `（${data.disease.dmOnsetEra}${data.disease.dmOnset}年）`;
-  };
 
-  const buildWeekday = () => {
-    const days = data.body.preferredDays || [];
-    if (!days.length) return "曜希望";
-    if (days.includes("指定なし")) return "曜希望：指定なし";
-    return `${days.join("・")}曜希望`;
-  };
 
-  const buildJob = () => {
-    const jobs = Array.isArray(data.lifestyle.job) ? data.lifestyle.job : (data.lifestyle.job ? [data.lifestyle.job] : []);
-    const note = data.lifestyle.jobNote || "";
-    return [jobs.join("、"), note].filter(Boolean).join("・");
-  };
 
-  const buildChildInfo = () => {
-    const { childInfo, childLocation, childGender } = data.lifestyle;
-    const parts = [];
-    if (childLocation) {
-      if (childLocation === "子供なし") parts.push("子供なし");
-      else {
-        const who = (childGender || []).includes("両方") ? "息子・娘" : (childGender || []).join("・");
-        parts.push(`${who || "子供"}は${childLocation}`);
-      }
-    }
-    if (childInfo) parts.push(childInfo);
-    return parts.join("、");
-  };
 
-  const getCurrentMonth = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth() + 1;
-    const reiwaYear = year - 2018;
-    return `R${reiwaYear}.${month}`;
-  };
 
   const handleSaveRetry = async () => {
     setSaveError(false);
@@ -336,108 +284,8 @@ export default function DMIntakeTool() {
 
   const generateKarte = async () => {
     setLoading(true);
-    const prompt = `あなたはまつもと糖尿病クリニックの電子カルテ記載AIです。
-以下の患者情報をもとに、クリニックのフォーマット通りにカルテ記載文を生成してください。
-
-【ルール】
-- 注意書き・内部メモは出力しない
-- 該当しない項目は省略する
-- フォーマット記号（＃【】□♯）を使用する
-- 空行ルール（厳守）: ①自院管理＃疾患（＃糖尿病/＃HT/＃HL等）は連続列挙し空行なし ②自院管理ブロックの後、他院管理疾患の前にのみ1行空ける ③他院管理疾患が複数あっても他院管理同士は連続列挙し空行なし ④他院管理疾患の最終行と【アレルギー歴】の間は空行なし（直接続ける） ⑤【事前聴取時 申し送り事項】の最終□行と【診察にあたっての要望】の間も空行なし（連続）
-- 体重減少ありの場合は一番上に【⚠️ 体重減少あり・早急なインスリン導入を検討】と記載
-- 60歳未満はワクチン歴を省略、70歳未満は子供の状況を省略
-- 喫煙歴は「○本×○年（○歳〜）」の形式
-- 重要既往歴には「治療した病院 → 現在通院先」を記載
-- ＃糖尿病の右に発症時期を記載（例：＃糖尿病（令和2年））
-- 受診理由の直後に改行なしで＃糖尿病を続ける
-- 受診理由が「糖尿病か気になる」(reason.dmConcern=true)の場合、＃糖尿病ではなく「＃糖尿病 or IGT or 正常耐糖能」と記載（検査前の暫定診断）。発症時期は付けない。
-
-【整形済みデータ】
-飲酒歴：${buildAlcohol()}
-喫煙歴：${buildSmoking()}
-生活情報：${buildLiving()}
-子供の状況：${buildChildInfo()}
-職業：${buildJob()}
-発症時期テキスト：${dmOnsetText()}
-頚部エコー：${formatEcho(data.disease.echoNeck, "未記入")}
-腹部エコー：${formatEcho(data.disease.echoAbdomen, "未記入")}
-その他の病名・既往歴：${buildOtherDiseasesText(data.disease.otherDiseases)}
-希望曜日：${buildWeekday()}
-医師希望：${data.body.doctorGender || "指定なし"}
-患者フラグ：${data.body.patientFlag || "通常"}
-新患2枠取得：${data.body.doubleSlot ? "取得済" : "なし"}
-
-【患者情報JSON】
-${JSON.stringify(data, null, 2)}
-
-【追加情報】
-現在日時：${getCurrentMonth()}
-体重減少：${data.alert.weightLoss}
-HTあり：${data.disease.ht}
-HLあり：${data.disease.hl}
-${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}${data.voiceMemo?.needsDoctorReview ? `\n【現病歴：要DR確認フラグあり(申し送り事項に「□現病歴：問診時間の関係で一部省略、要DR確認」を必ず追加)】\nスタッフが時間制約により現病歴を完全聴取できなかった、または患者発話を完全には拾えなかったと判定。\n` : ''}${data.voicePastHistory?.needsDoctorReview ? `\n【既往歴：要ドクター確認フラグあり(申し送り事項に「□ 既往歴：要ドクター確認」を必ず追加)】\nスタッフが既往歴の確認で医師の判断が必要と判定。\n` : ''}${(() => {
-  const sel = data.disease.dmSymptoms?.selected || [];
-  if (sel.length === 0) return '';
-  const items = sel.filter(s => s !== 'その他');
-  const other = (data.disease.dmSymptoms?.otherText || '').trim();
-  if (sel.includes('その他') && other) items.push(`その他: ${other}`);
-  return `\n【糖尿病の症状(チェック済、横一列に「・」区切りで【糖尿病の症状】セクションに記載)】\n${items.join('・')}\n`;
-})()}
-【出力フォーマット（必ずこの順序で。該当なければ省略）】
-（体重減少が「あり」かつ3kg以上の場合のみ）【⚠️ 体重減少あり・早急なインスリン導入を検討】
-
-${getCurrentMonth()}：（受診理由サマリー1〜2行。記載なければ省略${data.voiceMemo?.aiSummary ? "。音声入力AI整形済みテキストがある場合はそれを優先・統合して使用" : ""}）
-${data.reason.dmConcern ? '＃糖尿病 or IGT or 正常耐糖能' : `＃糖尿病${dmOnsetText()}`}（サマリーの直後、空行なし）
-＃HT（該当時のみ）
-＃HL（該当時のみ）
-
-♯胃癌（胃切除後：治療種類・範囲・時期・治療病院→通院先・内服薬）（該当時のみ）
-♯膵臓癌（術後：治療種類・切除範囲・時期・治療病院→通院先・内服薬）（該当時のみ）
-♯IHD：PCI後（時期・治療病院→通院先・抗血小板薬）（該当時のみ）
-♯脳梗塞後（時期・治療病院→通院先・抗血小板薬）（該当時のみ）
-（上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない）
-（その他既往があれば記載）
-
-【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載。例：【アレルギー歴】ペニシリン系）
-【FH】DM(-/+) HT(-/+) APO(-/+) IHD(-/+)（FH DMの場合は誰かも記載）
-【飲酒歴】（整形済みテキスト）
-【喫煙歴】（整形済みテキスト）
-【眼科通院歴】（眼底検査を受けている場合：眼科名・網膜症の状況・緑内障の有無を記載。受けていない場合は「未受診」と記載）
-【健診】
-【ワクチン歴】（60歳以上のみ）
-【生活情報】（整形済みテキスト。70歳以上は子供の状況も含む）
-【仕事】職業・活動量
----------------------------------------------
-${buildEchoLine(data.disease.echoNeck, data.disease.echoAbdomen, { neckFallback: "未記入", abdomenFallback: "未記入" })}（必ず1行に横配置。この行はそのまま出力する）
----------------------------------------------
-身長:○cm　初診時:○kg${bmi ? `（BMI ${bmi}）` : ""}　20歳時:○kg　max体重○kg(○歳)
----------------------------------------------
-（症状チェックがある場合のみ）【糖尿病の症状】（チェックされた症状を「・」で横一列に記載。「その他」がチェックされていれば末尾に「その他: ○○」を追加）
----------------------------------------------
-【事前聴取時　申し送り事項】
-□通院のご案内をお渡し済
-（現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
-（既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
-（眼底検査=受けていない or 連携手帳=持っていない の場合）□糖尿病-眼科連携手帳をお渡し
-（体重減少ありかつ3kg以上の場合）□体重減少あり（3ヶ月以内に3kg以上）インスリン導入要検討
-（HTありの場合）□HTの確認のため、血圧手帳をお渡ししています。
-（HLありの場合）□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。
-（インスリン未使用の場合）□生活習慣病療養計画書を作成済
-（糖尿病か気になるで受診=reason.dmConcern=true の場合）□血糖、HbA1cの結果により上段の診断を確定してください
-${buildStaffFlagsBlock(data.body)}【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
----------------------------------------------
-${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲状腺項目追加してください　CPR0.5以下の方は今後半年ごとCPR測定を入れてください。
-
-
-
-
-（アレルギー薬がある場合のみ「⚠️○○アレルギー⚠️」と1行で記載。HTMLタグ・style属性は絶対に出力しない。プレーンテキストのみ）
-目標HbA1c　　　　%　目標体重　　　次回検討薬：
-DM基本セット
-1月follow
-${buildWeekday()}
-LINE登録ご案内→済　登録確認未・登録できない
-`;
+    // プロンプト組立は lib/buildKartePrompt.js に一本化（詳細画面の再生成と同じ関数）
+    const { prompt, max_tokens } = buildKartePrompt("DM基本", data);
     try {
       // ① カルテ文生成
       const res  = await fetch("/api/generate", {
@@ -445,7 +293,7 @@ LINE登録ご案内→済　登録確認未・登録できない
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-5",
-          max_tokens: 1500,
+          max_tokens,
           messages: [{ role: "user", content: prompt }]
         })
       });
