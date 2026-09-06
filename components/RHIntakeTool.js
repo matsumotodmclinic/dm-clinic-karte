@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { buildOtherDiseasesText } from "../lib/otherDiseases";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
+import { buildStaffFlagsBlock } from "../lib/handoffNotes";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
@@ -242,16 +243,16 @@ ${getCurrentMonth()}：${data.voiceMemo?.aiSummary ? '（音声入力AI整形済
 ・思い当たる原因：${(data.symptom.cause||[]).join("、")}${data.symptom.causeNote?"（"+data.symptom.causeNote+"）":""}
 
 （上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない。♯疾患同士は空行なしで連続列挙し、最終行と【アレルギー歴】の間も空行なし）
-【アレルギー歴】
+【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載）
 【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)
-【飲酒歴】
-【喫煙歴】
+【飲酒歴】（整形済みテキスト）
+【喫煙歴】（整形済みテキスト）
 【健診】
 【ワクチン歴】（60歳以上のみ）
-【生活情報】（70歳以上は子供の状況も含む）
+【生活情報】（整形済みテキスト。70歳以上は子供の状況も含む）
 【仕事】職業・活動量
 ---------------------------------------------
-頚部エコー：当院で施行予定　腹部エコー：当院で施行予定
+頚部エコー：当院で施行予定　腹部エコー：当院で施行予定（必ず1行に横配置）
 ---------------------------------------------
 身長:○cm　初診時:○kg${bmi ? `（BMI ${bmi}）` : ""}　20歳時:○kg　max体重○kg(○歳)
 ---------------------------------------------
@@ -260,11 +261,7 @@ ${getCurrentMonth()}：${data.voiceMemo?.aiSummary ? '（音声入力AI整形済
 （現病歴：要DR確認フラグありの場合のみ）□現病歴：問診時間の関係で一部省略、要DR確認
 □自費CGM（リブレ）装着済（反応性低血糖疑いは全例必須記載）
 （既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
-（新患2枠取得済の場合）□新患2枠取得済み
-${(() => { const g = data.body.doctorGender; if (!g || g === "指定なし") return ""; const label = g === "女性医師希望" ? "女性医師" : g === "男性医師希望" ? "男性医師" : g; return `□医師希望：${label}`; })()}
-（患者フラグが「○患者疑い（話が長い方）」の場合）□○患者疑い（対応注意）
-（患者フラグが「●患者疑い（出禁対象）」の場合）□●患者疑い（出禁対象・要確認）
-（なければ省略）
+${buildStaffFlagsBlock(data.body)}（なければ省略）
 【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
 ---------------------------------------------
 ${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲状腺項目追加してください　CPR0.5以下の方は今後半年ごとCPR測定を入れてください。

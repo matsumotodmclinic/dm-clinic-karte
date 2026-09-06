@@ -5,6 +5,7 @@ import { copyKarteToClipboard } from "../lib/copyKarte";
 import { buildOtherDiseasesText } from "../lib/otherDiseases";
 import { formatEcho, buildEchoLine } from "../lib/echo";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
+import { buildStaffFlagsBlock } from "../lib/handoffNotes";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
@@ -266,6 +267,12 @@ export default function SASIntakeTool() {
     const sasCategoryLabel = data.reason.sasCategory === 'cpap' ? 'CPAP治療の継続希望'
       : data.reason.sasCategory === 'screening' ? '睡眠時無呼吸症候群の検査希望（簡易PSG予定）'
       : '未選択';
+    // ＃主病名は AI に区分から導かせず JS 側で確定させる（経路B と同じ）
+    const sasMainName = data.reason.sasCategory === 'screening'
+      ? '＃SAS疑い（簡易PSG予定）'
+      : data.reason.sasCategory === 'cpap'
+        ? `＃SAS（${data.reason.cpapPriorClinic ? `前医：${data.reason.cpapPriorClinic}、` : ''}CPAP継続）`
+        : '＃SAS';
     const purposesText = (data.reason.purposes||[]).join('、') + (data.reason.purposeOther ? `（その他: ${data.reason.purposeOther}）` : '');
     const knowSourceText = (data.reason.knowSource||[]).join('、') + (data.reason.knowSourceOther ? `（その他: ${data.reason.knowSourceOther}）` : '');
     const sasSymptomsText = buildSasSymptoms();
@@ -279,7 +286,7 @@ export default function SASIntakeTool() {
 - 空行ルール（厳守）: ①自院管理＃疾患は連続列挙し空行なし ②自院管理ブロックの後、他院管理疾患の前にのみ1行空ける ③他院管理疾患同士は連続列挙し空行なし ④他院管理疾患の最終行と【アレルギー歴】の間は空行なし ⑤【事前聴取時 申し送り事項】の最終□行と【診察にあたっての要望】の間も空行なし
 - 60歳未満はワクチン歴を省略、70歳未満は子供の状況を省略
 - 喫煙歴は「○本×○年（○歳〜）」の形式
-- ＃SASの記載: SAS区分が「検査希望」なら「＃SAS疑い（簡易PSG予定）」、「CPAP継続希望」なら「＃SAS（${data.reason.cpapPriorClinic ? `前医：${data.reason.cpapPriorClinic}、`:''}CPAP継続）」
+- ＃SASの記載: ${sasMainName} を必ず受診理由サマリーの直後に空行なしで記載
 - SAS症状チェックがある場合のみ【SASの症状】セクションを【FH】の前に挿入し、「・」区切りで横一列に記載
 
 【整形済みデータ】
@@ -307,7 +314,7 @@ ${JSON.stringify(data,null,2)}
 ${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴(必ず受診理由サマリーに統合)】\n${data.voiceMemo.aiSummary}\n` : ''}${data.voicePastHistory?.aiSummary ? `\n【音声入力からのAI整形済み既往歴(♯既往疾患セクションに統合)】\n${data.voicePastHistory.aiSummary}\n` : ''}${data.voiceMemo?.needsDoctorReview ? `\n【現病歴：要DR確認フラグあり(申し送り事項に「□現病歴：問診時間の関係で一部省略、要DR確認」を必ず追加)】\n` : ''}${data.voicePastHistory?.needsDoctorReview ? `\n【既往歴：要ドクター確認フラグあり(申し送り事項に「□既往歴：要ドクター確認」を必ず追加)】\n` : ''}
 【出力フォーマット】
 ${getCurrentMonth()}：（受診理由サマリー1〜2行。SAS区分（CPAP継続/検査希望）も含める${data.voiceMemo?.aiSummary ? '。音声入力AI整形済みテキストを優先・統合して使用' : ''}）
-（SAS区分により上記ルールに従って＃SAS or ＃SAS疑い行を記載、空行なし）
+${sasMainName}（受診理由の直後、空行なし）
 ＃HT（該当時のみ、空行なし）
 ＃HL（該当時のみ、空行なし）
 （上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない。空行なし）
@@ -334,11 +341,7 @@ ${buildEchoLine(data.disease.echoNeck, data.disease.echoAbdomen, { abdomenFallba
 （SAS区分がCPAP継続 かつ 前医情報提供書確認済の場合）□CPAP継続：前医情報提供書 確認済
 （HLありの場合）□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。
 □初回療養計画書を作成済
-（新患2枠取得済の場合）□新患2枠取得済み
-${(() => { const g = data.body.doctorGender; if (!g || g === "指定なし") return ""; const label = g === "女性医師希望" ? "女性医師" : g === "男性医師希望" ? "男性医師" : g; return `□医師希望：${label}`; })()}
-（患者フラグが「○患者疑い（話が長い方）」の場合）□○患者疑い（対応注意）
-（患者フラグが「●患者疑い（出禁対象）」の場合）□●患者疑い（出禁対象・要確認）
-【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
+${buildStaffFlagsBlock(data.body)}【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
 ---------------------------------------------
 ${getCurrentMonth()}：
 

@@ -5,6 +5,7 @@ import { copyKarteToClipboard } from "../lib/copyKarte";
 import { buildOtherDiseasesText } from "../lib/otherDiseases";
 import { formatEcho, buildEchoLine } from "../lib/echo";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
+import { buildStaffFlagsBlock } from "../lib/handoffNotes";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
@@ -385,7 +386,7 @@ ${data.voiceMemo?.aiSummary ? `\n【音声入力からのAI整形済み現病歴
 【出力フォーマット（必ずこの順序で。該当なければ省略）】
 （体重減少が「あり」かつ3kg以上の場合のみ）【⚠️ 体重減少あり・早急なインスリン導入を検討】
 
-${getCurrentMonth()}：（受診理由サマリー1〜2行。記載なければ省略。音声入力AI整形済みテキストがある場合はそれを統合・優先して使用）
+${getCurrentMonth()}：（受診理由サマリー1〜2行。記載なければ省略${data.voiceMemo?.aiSummary ? "。音声入力AI整形済みテキストがある場合はそれを優先・統合して使用" : ""}）
 ${data.reason.dmConcern ? '＃糖尿病 or IGT or 正常耐糖能' : `＃糖尿病${dmOnsetText()}`}（サマリーの直後、空行なし）
 ＃HT（該当時のみ）
 ＃HL（該当時のみ）
@@ -423,11 +424,7 @@ ${buildEchoLine(data.disease.echoNeck, data.disease.echoAbdomen, { neckFallback:
 （HLありの場合）□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。
 （インスリン未使用の場合）□生活習慣病療養計画書を作成済
 （糖尿病か気になるで受診=reason.dmConcern=true の場合）□血糖、HbA1cの結果により上段の診断を確定してください
-（新患2枠取得済の場合）□新患2枠取得済み
-${(() => { const g = data.body.doctorGender; if (!g || g === "指定なし") return ""; const label = g === "女性医師希望" ? "女性医師" : g === "男性医師希望" ? "男性医師" : g; return `□医師希望：${label}`; })()}
-（患者フラグが「○患者疑い（話が長い方）」の場合）□○患者疑い（対応注意）
-（患者フラグが「●患者疑い（出禁対象）」の場合）□●患者疑い（出禁対象・要確認）
-【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
+${buildStaffFlagsBlock(data.body)}【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
 ---------------------------------------------
 ${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲状腺項目追加してください　CPR0.5以下の方は今後半年ごとCPR測定を入れてください。
 

@@ -5,6 +5,7 @@ import { copyKarteToClipboard } from "../lib/copyKarte";
 import { buildOtherDiseasesText } from "../lib/otherDiseases";
 import { formatEcho, buildEchoLine } from "../lib/echo";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
+import { buildStaffFlagsBlock } from "../lib/handoffNotes";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
@@ -278,13 +279,13 @@ ${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の�
 （＃で始まる自院管理の主病名行は出力しない。医師が診察時に記載する）
 （上記「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。空行なし）
 
-【アレルギー歴】
-【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)（家族歴の自由記入があれば、同じ行の末尾に全角スペース区切りでそのまま続けて記載。例「【FH】DM(+：母) HT(-) HL(-) APO(-) IHD(-)　母：バセドウ病」。自由記入がなければ何も足さない）
-【飲酒歴】
-【喫煙歴】
+【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載）
+【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)（FH DMの場合は誰かも記載。家族歴の自由記入があれば、同じ行の末尾に全角スペース区切りでそのまま続けて記載。例「【FH】DM(+：母) HT(-) HL(-) APO(-) IHD(-)　母：バセドウ病」。自由記入がなければ何も足さない）
+【飲酒歴】（整形済みテキスト）
+【喫煙歴】（整形済みテキスト）
 【健診】
 【ワクチン歴】（60歳以上のみ）
-【生活情報】（70歳以上は子供の状況も含む）
+【生活情報】（整形済みテキスト。70歳以上は子供の状況も含む）
 【仕事】職業・活動量
 ---------------------------------------------
 ${buildEchoLine(data.disease.echoNeck, data.disease.echoAbdomen, { abdomenFallback: "未選択" })}（必ず1行に横配置）
@@ -297,11 +298,7 @@ ${buildEchoLine(data.disease.echoNeck, data.disease.echoAbdomen, { abdomenFallba
 （既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
 □主病名：医師の診察時に確定・記載
 ${needsCarePlan ? "□初回療養計画書を作成済" : "（生活習慣病のチェックがないため「□初回療養計画書を作成済」の行は出力しない）"}
-（新患2枠取得済の場合）□新患2枠取得済み
-${(() => { const g = data.body.doctorGender; if (!g || g === "指定なし") return ""; const label = g === "女性医師希望" ? "女性医師" : g === "男性医師希望" ? "男性医師" : g; return `□医師希望：${label}`; })()}
-（患者フラグが「○患者疑い（話が長い方）」の場合）□○患者疑い（対応注意）
-（患者フラグが「●患者疑い（出禁対象）」の場合）□●患者疑い（出禁対象・要確認）
-（その他該当する申し送り事項があれば記載）
+${buildStaffFlagsBlock(data.body)}（その他該当する申し送り事項があれば記載）
 【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
 ---------------------------------------------
 ${getCurrentMonth()}：

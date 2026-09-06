@@ -22,6 +22,7 @@ import { buildKartePrompt } from '../../lib/buildKartePrompt.js'
 import { buildOtherDiseasesText, pickOtherDiseases } from '../../lib/otherDiseases.js'
 import { formatEcho, buildEchoLine } from '../../lib/echo.js'
 import { buildDmDxNoteLine, buildPastValuesText, insertDmDxNote } from '../../lib/dmDxNote.js'
+import { buildStaffFlagLines, buildStaffFlagsBlock } from '../../lib/handoffNotes.js'
 import {
   FIXTURES, ENDOCRINE_WITH_CAREPLAN, THYROID_FIXTURE,
   SAS_WITH_DM_DIFF, HTHL_WITH_DM_DIFF, RH_WITH_DM_DIFF, ENDOCRINE_WITH_DM_DIFF,
@@ -145,6 +146,43 @@ describe('スナップショット正規化（stabilize）', () => {
   })
 })
 
+describe('lib/handoffNotes（申し送り: スタッフ入力由来の行）', () => {
+  test('該当なしなら 1 行も出さない', () => {
+    assert.deepEqual(buildStaffFlagLines({ doubleSlot: false, doctorGender: '', patientFlag: '通常' }), [])
+    assert.equal(buildStaffFlagsBlock({ patientFlag: '通常' }), '')
+    assert.equal(buildStaffFlagsBlock(undefined), '')
+  })
+
+  test('医師希望は「□医師希望：女性医師」形式（□女性医師希望 ではない）', () => {
+    assert.deepEqual(buildStaffFlagLines({ doctorGender: '女性医師希望' }), ['□医師希望：女性医師'])
+    assert.deepEqual(buildStaffFlagLines({ doctorGender: '男性医師希望' }), ['□医師希望：男性医師'])
+    assert.deepEqual(buildStaffFlagLines({ doctorGender: '院長（初回のみ）' }), ['□医師希望：院長（初回のみ）'])
+  })
+
+  test('「指定なし」/ 未入力は医師希望の行そのものを出さない', () => {
+    assert.deepEqual(buildStaffFlagLines({ doctorGender: '指定なし' }), [])
+    assert.deepEqual(buildStaffFlagLines({ doctorGender: '' }), [])
+  })
+
+  test('患者フラグは該当する 1 行だけ（「通常」では出さない）', () => {
+    assert.deepEqual(buildStaffFlagLines({ patientFlag: '○患者疑い（話が長い方）' }), ['□○患者疑い（対応注意）'])
+    assert.deepEqual(buildStaffFlagLines({ patientFlag: '●患者疑い（出禁対象）' }), ['□●患者疑い（出禁対象・要確認）'])
+    assert.deepEqual(buildStaffFlagLines({ patientFlag: '通常' }), [])
+  })
+
+  test('順序は 新患2枠 → 医師希望 → 患者フラグ', () => {
+    assert.deepEqual(
+      buildStaffFlagLines({ doubleSlot: true, doctorGender: '男性医師希望', patientFlag: '●患者疑い（出禁対象）' }),
+      ['□新患2枠取得済み', '□医師希望：男性医師', '□●患者疑い（出禁対象・要確認）']
+    )
+  })
+
+  test('ブロックは末尾に改行を付ける（次行の【診察にあたっての要望】との間に空行を作らない）', () => {
+    assert.equal(buildStaffFlagsBlock({ doubleSlot: true }), '□新患2枠取得済み\n')
+    assert.ok(!buildStaffFlagsBlock({ doubleSlot: true }).endsWith('\n\n'))
+  })
+})
+
 describe('lib/dmDxNote', () => {
   const KARTE = [
     '【事前聴取時　申し送り事項】',
@@ -245,6 +283,46 @@ describe('buildKartePrompt: 全フォーム共通の必須事項', () => {
       assert.ok(!prompt.includes('[object Object]'), 'プロンプトに [object Object] が混入している')
     })
   }
+})
+
+
+describe('buildKartePrompt: 申し送りのスタッフ入力行は JS で確定させる', () => {
+  // 2026-09-06 テンプレート化の第一歩。従来は「（新患2枠取得済の場合）□…」と
+  // 条件文を渡して AI に判定させていた。判定材料は全て body にあるので JS で確定させる。
+  const withFlags = data => ({
+    ...data,
+    body: { ...(data.body || {}), doubleSlot: true, doctorGender: '院長（初回のみ）', patientFlag: '○患者疑い（話が長い方）' },
+  })
+  const withoutFlags = data => ({
+    ...data,
+    body: { ...(data.body || {}), doubleSlot: false, doctorGender: '指定なし', patientFlag: '通常' },
+  })
+
+  for (const [formType, formData] of Object.entries(FIXTURES)) {
+    test(`${formType}: 条件文でなく確定した □ 行が入る`, () => {
+      const { prompt } = buildKartePrompt(formType, withFlags(formData))
+      assert.ok(prompt.includes('□新患2枠取得済み'))
+      assert.ok(prompt.includes('□医師希望：院長（初回のみ）'))
+      assert.ok(prompt.includes('□○患者疑い（対応注意）'))
+      assert.ok(!prompt.includes('（新患2枠取得済の場合）'), 'AI に判定させる条件文が残っている')
+      assert.ok(!prompt.includes('（医師希望指定ありの場合）'), 'AI に判定させる条件文が残っている')
+    })
+
+    test(`${formType}: 該当なしなら 1 行も出さず、要望の前に空行を作らない`, () => {
+      const { prompt } = buildKartePrompt(formType, withoutFlags(formData))
+      assert.ok(!prompt.includes('□新患2枠取得済み'))
+      assert.ok(!prompt.includes('□医師希望：'))
+      assert.ok(!prompt.includes('□指定なし'))
+      assert.ok(!prompt.includes('\n\n【診察にあたっての要望】'), '申し送り最終行と要望の間に空行が入っている')
+    })
+  }
+
+  test('甲状腺も同じ関数を使う（□女性医師希望 でなく □医師希望：女性医師）', () => {
+    const { prompt } = buildKartePrompt('甲状腺（バセドウ初診）', withFlags(THYROID_FIXTURE))
+    assert.ok(prompt.includes('□医師希望：院長（初回のみ）'))
+    assert.ok(!prompt.includes('□院長希望（初回のみ）'))
+    assert.ok(prompt.includes('□○患者疑い（対応注意）'))
+  })
 })
 
 describe('buildKartePrompt: エコー「希望なし」', () => {

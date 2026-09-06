@@ -5,6 +5,7 @@ import { copyKarteToClipboard } from "../lib/copyKarte";
 import { buildOtherDiseasesText } from "../lib/otherDiseases";
 import { formatEcho, buildEchoLine } from "../lib/echo";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
+import { buildStaffFlagsBlock } from "../lib/handoffNotes";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
@@ -243,13 +244,13 @@ ${getCurrentMonth()}：（受診理由1〜2行。「気になって受診」の�
 ＃HL（該当時のみ、空行なし）
 （上記【整形済みデータ】の「その他の病名・既往歴」が「なし」以外なら、1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する。通院先が空なら「♯病名」のみ。整形済みデータの通院先表記をそのまま使い、JSONの hospital 値で上書きしない。空行なし）
 
-【アレルギー歴】
-【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)
-【飲酒歴】
-【喫煙歴】
+【アレルギー歴】（アレルギーなしなら「なし」、ありなら内容をそのまま同じ行に記載）
+【FH】DM(-/+) HT(-/+) HL(-/+) APO(-/+) IHD(-/+)（FH DMの場合は誰かも記載）
+【飲酒歴】（整形済みテキスト）
+【喫煙歴】（整形済みテキスト）
 【健診】
 【ワクチン歴】（60歳以上のみ）
-【生活情報】（70歳以上は子供の状況も含む）
+【生活情報】（整形済みテキスト。70歳以上は子供の状況も含む）
 【仕事】職業・活動量
 ---------------------------------------------
 ${buildEchoLine(data.disease.echoNeck, data.disease.echoAbdomen, { abdomenFallback: "未選択" })}（必ず1行に横配置）
@@ -262,11 +263,7 @@ ${buildEchoLine(data.disease.echoNeck, data.disease.echoAbdomen, { abdomenFallba
 （既往歴：要ドクター確認フラグありの場合のみ）□既往歴：要ドクター確認
 （HLありの場合）□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。
 □初回療養計画書を作成済
-（新患2枠取得済の場合）□新患2枠取得済み
-${(() => { const g = data.body.doctorGender; if (!g || g === "指定なし") return ""; const label = g === "女性医師希望" ? "女性医師" : g === "男性医師希望" ? "男性医師" : g; return `□医師希望：${label}`; })()}
-（患者フラグが「○患者疑い（話が長い方）」の場合）□○患者疑い（対応注意）
-（患者フラグが「●患者疑い（出禁対象）」の場合）□●患者疑い（出禁対象・要確認）
-（その他該当する申し送り事項があれば記載）
+${buildStaffFlagsBlock(data.body)}（その他該当する申し送り事項があれば記載）
 【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
 ---------------------------------------------
 ${getCurrentMonth()}：

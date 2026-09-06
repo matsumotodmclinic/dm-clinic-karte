@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { buildOtherDiseasesText } from "../lib/otherDiseases";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
+import { buildStaffFlagsBlock } from "../lib/handoffNotes";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
@@ -189,11 +190,7 @@ ${getCurrentMonth()}：（受診理由1〜2行${data.voiceMemo?.aiSummary ? '。
 （CGM希望がある場合）□デバイス希望：（現在→希望の形式で記載）
 （小児慢性申請済の場合）□小児慢性申請済・窓口負担を確認し算定へ連絡
 （母子手帳「忘れた」の場合）□次回以降、母子手帳を確認してください
-（新患2枠取得済の場合）□新患2枠取得済み
-${(() => { const g = data.body.doctorGender; if (!g || g === "指定なし") return ""; const label = g === "女性医師希望" ? "女性医師" : g === "男性医師希望" ? "男性医師" : g; return `□医師希望：${label}`; })()}
-（患者フラグが「○患者疑い（話が長い方）」の場合）□○患者疑い（対応注意）
-（患者フラグが「●患者疑い（出禁対象）」の場合）□●患者疑い（出禁対象・要確認）
-（その他申し送り事項があれば記載）
+${buildStaffFlagsBlock(data.body)}（その他申し送り事項があれば記載）
 【診察にあたっての要望】（記載あれば内容を、なければ「なし」と記載）
 ---------------------------------------------
 ${getCurrentMonth()}：HbA1c　　%　CPR（　）　※GAD陽性の場合は甲状腺項目追加してください　CPR0.5以下の方は今後半年ごとCPR測定を入れてください。

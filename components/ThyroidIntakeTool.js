@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
+import { buildStaffFlagLines } from "../lib/handoffNotes";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
@@ -401,10 +402,7 @@ ${(() => {
   const shinsokuItems = [
     formType === 'malignant' ? '' : '□通院のご案内をお渡し済',
     shinsokuLines,
-    '（新患2枠取得済の場合）□新患2枠取得済み',
-    `（医師希望指定ありの場合）□${data.body.doctorGender || "指定なし"}`,
-    '（患者フラグが「○患者疑い」の場合）□○患者疑い（対応注意）',
-    '（患者フラグが「●患者疑い」の場合）□●患者疑い（出禁対象・要確認）',
+    ...buildStaffFlagLines(data.body),
   ].filter(Boolean).join('\n');
 
   const footerTrailing = formType === 'malignant'

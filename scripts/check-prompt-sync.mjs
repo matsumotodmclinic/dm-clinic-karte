@@ -18,6 +18,10 @@
 // 既知の差分は scripts/prompt-sync-allow.json に保存する。
 // 意図的な差分（フォーム固有の事情）はここに載せて CI を通す。
 // 新しい差分が出たら CI が落ちる = 片側だけ直したことに気付ける。
+//
+// ⚠️ 差分を載せるときは reason（なぜ経路A/Bで違ってよいのか）を必ず書く。
+//    reason が無いエントリは CI を落とす。理由を書けない差分は「まだ直していない借金」であり、
+//    それを黙って積めるようにすると本物のバグが埋もれる（2026-08 に実際に4件埋もれた）。
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -210,12 +214,20 @@ for (const { formType, component } of FORMS) {
   const known = allow[formType] || { onlyA: [], onlyB: [] }
   const newA = onlyA.filter(l => !known.onlyA.includes(l))
   const newB = onlyB.filter(l => !known.onlyB.includes(l))
+  const reason = known.reason || ''
 
-  newAllow[formType] = { onlyA, onlyB }
+  // --update でも reason は引き継ぐ（自動生成で理由が消えないように）
+  newAllow[formType] = reason ? { reason, onlyA, onlyB } : { onlyA, onlyB }
 
   if (newA.length === 0 && newB.length === 0) {
     const knownCount = onlyA.length + onlyB.length
-    console.log(`✅ ${formType}${knownCount ? `  (既知の差分 ${knownCount} 行)` : ''}`)
+    if (knownCount && !reason) {
+      failed++
+      console.log(`\n❌ ${formType}: 既知の差分 ${knownCount} 行に reason がありません`)
+      console.log(`   scripts/prompt-sync-allow.json の "${formType}" に reason を書いてください`)
+      continue
+    }
+    console.log(`✅ ${formType}${knownCount ? `  (既知の差分 ${knownCount} 行: ${reason})` : ''}`)
     continue
   }
 
