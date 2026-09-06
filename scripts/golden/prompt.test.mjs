@@ -357,11 +357,24 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
     assert.equal(buildFhLine({ history: { fh: {} } }), '【FH】DM(-) HT(-) APO(-) IHD(-)')
   })
 
-  test('【眼科通院歴】: 受けている場合だけ 眼科名・網膜症・緑内障 を並べる', () => {
+  test('【眼科通院歴】: 4つの状態を書き分ける（未入力は空欄）', () => {
+    // 院長判断 2026-09-06: 未入力を「未受診」と書くと聞いていないことを断定してしまうので空欄
     assert.equal(
       buildEyeLine({ history: { eyeFundusCheck: '受けている', eye: '上尾こいけ眼科', retinopathy: '単純性網膜症', glaucoma: '緑内障なし' } }),
       '【眼科通院歴】上尾こいけ眼科・単純性網膜症・緑内障なし')
     assert.equal(buildEyeLine({ history: { eyeFundusCheck: '受けていない' } }), '【眼科通院歴】未受診')
+    assert.equal(buildEyeLine({ history: { eyeFundusCheck: '今後受ける予定' } }), '【眼科通院歴】今後受ける予定')
+    assert.equal(buildEyeLine({ history: {} }), '【眼科通院歴】')
+  })
+
+  test('【健診】: 未選択なら値なしの空欄（行は残す）', () => {
+    const karte = buildKarteTemplate('DM基本', { ...FIXTURES['DM基本'], history: { ...FIXTURES['DM基本'].history, checkup: [] } })
+    assert.ok(karte.split('\n').includes('【健診】'), '【健診】の空欄行が無い')
+  })
+
+  test('【FH】: DM基本は HL の枠を作らない（フォームで聞いていないため）', () => {
+    const line = buildFhLine({ history: { fh: { dm: true, dmWho: ['母'], ht: true, hl: true } } })
+    assert.ok(!line.includes('HL'), 'DM基本の【FH】に HL が出ている')
   })
 
   test('申し送り: 条件に該当する □ 行だけが出る', () => {
