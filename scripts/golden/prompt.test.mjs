@@ -24,6 +24,10 @@ import { formatEcho, buildEchoLine } from '../../lib/echo.js'
 import { buildDmDxNoteLine, buildPastValuesText, insertDmDxNote } from '../../lib/dmDxNote.js'
 import { buildStaffFlagLines, buildStaffFlagsBlock } from '../../lib/handoffNotes.js'
 import {
+  buildKarteTemplate, buildReasonSummary, buildImportantHistoryLines,
+  buildPastHistoryLines, buildFhLine, buildEyeLine, buildHandoffLines,
+} from '../../lib/buildKarteTemplate.js'
+import {
   FIXTURES, ENDOCRINE_WITH_CAREPLAN, THYROID_FIXTURE,
   SAS_WITH_DM_DIFF, HTHL_WITH_DM_DIFF, RH_WITH_DM_DIFF, ENDOCRINE_WITH_DM_DIFF,
 } from './fixtures.mjs'
@@ -252,6 +256,129 @@ describe('lib/dmDxNote', () => {
     const line = buildDmDxNoteLine({ decision: 'deferred', hba1c: '6.5' })
     const out = insertDmDxNote('□通院のご案内をお渡し済', line).split('\n')
     assert.equal(out[out.length - 1], line)
+  })
+})
+
+describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
+  const DM = FIXTURES['DM基本']
+
+  test('受診理由: 音声入力の AI 整形済みテキストがあればそれを使う', () => {
+    assert.equal(buildReasonSummary({ voiceMemo: { aiSummary: 'R6.4から口渇あり。' } }), 'R6.4から口渇あり。')
+  })
+
+  test('受診理由: 音声が無ければ構造化データから組み立てる', () => {
+    assert.equal(
+      buildReasonSummary({ reason: { type: '検診異常', checkupType: '市健診' } }),
+      '市健診で異常を指摘され受診。')
+    assert.equal(
+      buildReasonSummary({ reason: { type: '自主転院', transferFrom: '○○クリニック', transferDetail: '転居のため' } }),
+      '○○クリニックより自主転院。転居のため。')
+    assert.equal(
+      buildReasonSummary({ reason: { dmConcern: true, dmConcernReason: '家族に糖尿病の方がいる' } }),
+      '糖尿病が気になり受診（家族に糖尿病の方がいる）。')
+  })
+
+  test('受診理由: 何も無ければ空（行ごと省略できるように）', () => {
+    assert.equal(buildReasonSummary({}), '')
+  })
+
+  test('♯重要既往: 構造化入力から 治療内容・時期・病院→通院先・薬 を組み立てる', () => {
+    const lines = buildImportantHistoryLines({
+      disease: {
+        gastricCancer: {
+          selected: true, surgeryType: '手術で切除', resection: '2/3切除',
+          surgeryEra: '平成', surgeryYear: '28',
+          treatedHospital: '上尾中央総合病院', visitingHospital: 'その他', visitingHospitalOther: '鰐坂医院',
+          visitFreq: '半年に1回', meds: 'タケキャブ',
+        },
+      },
+    })
+    assert.deepEqual(lines, ['♯胃癌（手術で切除、2/3切除、平成28年、上尾中央総合病院→鰐坂医院（半年に1回）、タケキャブ 内服中）'])
+  })
+
+  test('♯重要既往: 選択されていなければ行を出さない / 時期不明も表現できる', () => {
+    assert.deepEqual(buildImportantHistoryLines({ disease: { ihd: { selected: false } } }), [])
+    assert.deepEqual(
+      buildImportantHistoryLines({ disease: { stroke: { selected: true, surgeryUnknown: true } } }),
+      ['♯脳梗塞後（時期不明）'])
+  })
+
+  test('♯既往: その他の病名は1疾患1行、音声の既往歴も行として足す', () => {
+    const lines = buildPastHistoryLines({
+      disease: { otherDiseases: [{ name: '子宮筋腫', hospital: 'その他', hospitalOther: '鰐坂医院' }] },
+      voicePastHistory: { aiSummary: '♯高血圧（H28から、○○内科でアムロジピン 5mg 内服中）' },
+    })
+    assert.deepEqual(lines, [
+      '♯子宮筋腫（鰐坂医院）',
+      '♯高血圧（H28から、○○内科でアムロジピン 5mg 内服中）',
+    ])
+  })
+
+  test('【FH】: DM ありは誰かも書く', () => {
+    assert.equal(buildFhLine({ history: { fh: { dm: true, dmWho: ['母'], ht: true } } }),
+      '【FH】DM(+：母) HT(+) APO(-) IHD(-)')
+    assert.equal(buildFhLine({ history: { fh: {} } }), '【FH】DM(-) HT(-) APO(-) IHD(-)')
+  })
+
+  test('【眼科通院歴】: 受けている場合だけ 眼科名・網膜症・緑内障 を並べる', () => {
+    assert.equal(
+      buildEyeLine({ history: { eyeFundusCheck: '受けている', eye: '上尾こいけ眼科', retinopathy: '単純性網膜症', glaucoma: '緑内障なし' } }),
+      '【眼科通院歴】上尾こいけ眼科・単純性網膜症・緑内障なし')
+    assert.equal(buildEyeLine({ history: { eyeFundusCheck: '受けていない' } }), '【眼科通院歴】未受診')
+  })
+
+  test('申し送り: 条件に該当する □ 行だけが出る', () => {
+    const lines = buildHandoffLines({
+      alert: { weightLoss: 'あり（3kg以上）' },
+      disease: { ht: true, hl: true, insulinUse: false },
+      history: { eyeNotebook: '持っていない' },
+      voicePastHistory: { needsDoctorReview: true },
+      body: { doubleSlot: true },
+    })
+    assert.deepEqual(lines, [
+      '□通院のご案内をお渡し済',
+      '□既往歴：要ドクター確認',
+      '□糖尿病-眼科連携手帳をお渡し',
+      '□体重減少あり（3ヶ月以内に3kg以上）インスリン導入要検討',
+      '□HTの確認のため、血圧手帳をお渡ししています。',
+      '□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。',
+      '□生活習慣病療養計画書を作成済',
+      '□新患2枠取得済み',
+    ])
+  })
+
+  test('申し送り: インスリン使用中なら療養計画書の行は出さない', () => {
+    const lines = buildHandoffLines({ disease: { insulinUse: true } })
+    assert.ok(!lines.includes('□生活習慣病療養計画書を作成済'))
+  })
+
+  test('空行ルール: ＃自院管理と♯他院管理の間だけ1行空け、【アレルギー歴】の前は空けない', () => {
+    const karte = buildKarteTemplate('DM基本', DM)
+    const lines = karte.split('\n')
+    const iHl = lines.findIndex(l => l.startsWith('＃HT') || l.startsWith('＃HL'))
+    const iFirstPast = lines.findIndex(l => l.startsWith('♯'))
+    assert.ok(iFirstPast > iHl, '♯既往が ＃自院管理より後にある')
+    assert.equal(lines[iFirstPast - 1], '', '自院管理ブロックと他院管理の間に1行空いていない')
+    const iAllergy = lines.findIndex(l => l.startsWith('【アレルギー歴】'))
+    assert.notEqual(lines[iAllergy - 1], '', '【アレルギー歴】の直前に空行が入っている')
+  })
+
+  test('空行ルール: 申し送りの最終□行と【診察にあたっての要望】の間は空けない', () => {
+    const lines = buildKarteTemplate('DM基本', DM).split('\n')
+    const i = lines.findIndex(l => l.startsWith('【診察にあたっての要望】'))
+    assert.ok(lines[i - 1].startsWith('□'), '要望の直前が □ 行でない: ' + JSON.stringify(lines[i - 1]))
+  })
+
+  test('AI に渡す指示文が本文に混入しない', () => {
+    const karte = buildKarteTemplate('DM基本', DM)
+    assert.ok(!karte.includes('（該当時のみ）'))
+    assert.ok(!karte.includes('整形済みテキスト'))
+    assert.ok(!karte.includes('undefined'))
+    assert.ok(!karte.includes('[object Object]'))
+  })
+
+  test('未対応の form_type は null', () => {
+    assert.equal(buildKarteTemplate('1型糖尿病', FIXTURES['1型糖尿病']), null)
   })
 })
 
@@ -501,6 +628,10 @@ describe('プロンプト全文スナップショット', () => {
   test('内分泌（生活習慣病あり）', () => {
     const { prompt } = buildKartePrompt('内分泌', ENDOCRINE_WITH_CAREPLAN)
     matchSnapshot('内分泌_生活習慣病あり', prompt)
+  })
+
+  test('DM基本_テンプレート版（AIフリー）', () => {
+    matchSnapshot('DM基本_テンプレート版', buildKarteTemplate('DM基本', FIXTURES['DM基本']))
   })
 
   // 甲状腺6フォーム（2026-09-06 に経路A と一本化したので B のスナップショットが主経路の証拠になる）

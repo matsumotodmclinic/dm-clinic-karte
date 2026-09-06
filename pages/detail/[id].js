@@ -4,6 +4,7 @@ import DmDiffEditor from '../../components/DmDiffEditor';
 import DmDxNoteEditor from '../../components/DmDxNoteEditor';
 import { copyKarteToClipboard } from '../../lib/copyKarte';
 import { insertDmDxNote } from '../../lib/dmDxNote';
+import { buildKarteTemplate } from '../../lib/buildKarteTemplate';
 import { UI } from '../../lib/uiTokens';
 
 // 確認中を削除：新規→完了の2ステップ
@@ -23,6 +24,12 @@ export default function DetailPage() {
   const [showDmDxNote, setShowDmDxNote] = useState(false);
   const [savingDmDiff, setSavingDmDiff] = useState(false);
   const [dmDiffMsg, setDmDiffMsg] = useState('');
+  const [showTemplate, setShowTemplate] = useState(false);
+
+  // AI を使わずに組み立てたカルテ（比較用・DM基本のみ）。保存はしない
+  const templateKarte = record?.form_data
+    ? buildKarteTemplate(record.form_type, record.form_data)
+    : null;
 
   useEffect(() => {
     if (!id) return;
@@ -279,6 +286,34 @@ export default function DetailPage() {
             </div>
           )}
         </div>
+
+        {/* テンプレート版（AIフリー・試作）: AI 版と見比べるための表示。保存はしない */}
+        {templateKarte && (
+          <div style={{ background:UI.surface, borderRadius:8, padding:'20px', marginBottom:12, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', border:`1px dashed ${UI.border}` }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, flexWrap:'wrap' }}>
+              <div style={{ fontSize:14, fontWeight:700, color:UI.text }}>テンプレート版（AI不使用・試作）</div>
+              <span style={{ fontSize:11, color:UI.textMuted, border:`1px solid ${UI.border}`, borderRadius:4, padding:'2px 6px' }}>比較用・保存されません</span>
+            </div>
+            <div style={{ fontSize:12, color:UI.textMuted, marginBottom:10, lineHeight:1.7 }}>
+              問診データから JS だけで組み立てたものです（音声入力ぶんは入力時点の AI 整形結果を使用）。
+              上の AI 版と見比べて、差が無くなれば生成を置き換えられます。
+            </div>
+            <button onClick={() => setShowTemplate(v => !v)}
+              style={{ padding:'8px 14px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.textMuted, fontWeight:700, fontSize:13, cursor:'pointer', marginBottom:showTemplate?12:0 }}>
+              {showTemplate ? '▲ 閉じる' : '▼ テンプレート版を表示'}
+            </button>
+            {showTemplate && (
+              <>
+                <textarea value={templateKarte} readOnly
+                  style={{ width:'100%', minHeight:320, background:'#fbfbfa', border:`1px solid ${UI.border}`, borderRadius:10, padding:'16px', fontSize:11, lineHeight:2, color:UI.text, fontFamily:'monospace', marginBottom:12, resize:'vertical', boxSizing:'border-box' }} />
+                <button onClick={() => copyToClipboard(templateKarte)}
+                  style={{ padding:'10px 16px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.textMuted, fontWeight:700, fontSize:13, cursor:'pointer' }}>
+                  📋 テンプレート版をコピー
+                </button>
+              </>
+            )}
+          </div>
+        )}
 
         {/* 削除ボタン */}
         <div style={{ textAlign:'right', marginBottom:32 }}>
