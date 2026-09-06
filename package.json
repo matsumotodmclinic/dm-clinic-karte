@@ -5,7 +5,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --test scripts/golden/prompt.test.mjs",
+    "test": "node --test scripts/golden/*.test.mjs",
     "test:update": "node scripts/golden/update-snapshots.mjs",
     "check": "npm run check:styles && npm test",
     "check:styles": "node scripts/verify-form-styles.mjs"

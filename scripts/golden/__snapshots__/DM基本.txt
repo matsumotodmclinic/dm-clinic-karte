@@ -95,38 +95,6 @@
     ]
   },
   "lifestyle": {
-    "age": "58",
-    "allergy": "あり",
-    "allergyDetail": "ペニシリン・金属",
-    "fh": {
-      "dm": true,
-      "dmWho": [
-        "母"
-      ],
-      "ht": true,
-      "hl": false,
-      "apo": false,
-      "ihd": false
-    },
-    "alcoholNone": false,
-    "alcoholItems": [
-      {
-        "type": "beer",
-        "amount": "2缶",
-        "freq": "毎日"
-      }
-    ],
-    "smoking": "禁煙済",
-    "smokingAmount": "20",
-    "smokingYears": "30",
-    "smokingStartAge": "20",
-    "smokingQuitEra": "令和",
-    "smokingQuitYear": "3",
-    "checkup": [
-      "市の健診"
-    ],
-    "vaccine65Prevena": "希望あり",
-    "vaccine65Herpes": "なし",
     "livingSpouse": "配偶者あり",
     "livingOther": [
       "息子と同居"
@@ -152,7 +120,6 @@
         "母"
       ],
       "ht": true,
-      "hl": false,
       "apo": false,
       "ihd": false
     },
@@ -175,20 +142,12 @@
     ],
     "vaccine65Prevena": "希望あり",
     "vaccine65Herpes": "なし",
-    "livingSpouse": "配偶者あり",
-    "livingOther": [
-      "息子と同居"
-    ],
-    "livingCustom": "",
-    "childInfo": "",
-    "childLocation": "",
-    "childGender": [],
-    "work": "している",
-    "job": [
-      "会社員（デスクワーク）"
-    ],
-    "jobNote": "週3日リモート",
-    "activity": "座っていることが多い"
+    "eye": "上尾こいけ眼科",
+    "eyeVisiting": "",
+    "eyeFundusCheck": "受けている",
+    "retinopathy": "単純性網膜症",
+    "glaucoma": "緑内障なし",
+    "eyeNotebook": "持っている"
   },
   "body": {
     "height": "168",

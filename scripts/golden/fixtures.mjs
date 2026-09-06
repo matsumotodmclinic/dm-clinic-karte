@@ -27,6 +27,11 @@ const commonHistory = {
   activity: '座っていることが多い',
 }
 
+// DM基本だけは生活情報を lifestyle、医療情報を history に分けて持つ（実フォームと同じ形にする）
+const LIFESTYLE_KEYS = ['livingSpouse', 'livingOther', 'livingCustom', 'childInfo', 'childLocation', 'childGender', 'work', 'job', 'jobNote', 'activity']
+const pick = (o, ks) => Object.fromEntries(ks.filter(k => k in o).map(k => [k, o[k]]))
+const omit = (o, ks) => Object.fromEntries(Object.entries(o).filter(([k]) => !ks.includes(k)))
+
 const commonBody = {
   height: '168', weightNow: '74', weight20: '60', weightMax: '80', weightMaxAge: '45',
   concern: '薬を減らしたい',
@@ -70,8 +75,15 @@ export const FIXTURES = {
       dmSymptoms: { selected: ['のどが渇く', '足のしびれ', 'その他'], otherText: '夜間頻尿' },
       otherDiseases,
     },
-    lifestyle: commonHistory,
-    history: commonHistory,
+    lifestyle: pick(commonHistory, LIFESTYLE_KEYS),
+    history: {
+      ...omit(commonHistory, LIFESTYLE_KEYS),
+      // DM基本の家族歴に HL は無い（HTHL/RH/内分泌 のみ）
+      fh: { dm: true, dmWho: ['母'], ht: true, apo: false, ihd: false },
+      // 眼底検査まわりは DM基本 固有
+      eye: '上尾こいけ眼科', eyeVisiting: '', eyeFundusCheck: '受けている',
+      retinopathy: '単純性網膜症', glaucoma: '緑内障なし', eyeNotebook: '持っている',
+    },
     body: commonBody,
   },
 
