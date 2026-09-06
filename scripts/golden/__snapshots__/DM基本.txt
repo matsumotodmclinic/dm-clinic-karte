@@ -62,7 +62,7 @@
     "dmOnsetUnknown": false,
     "ht": true,
     "hl": false,
-    "insulin": false,
+    "insulinUse": false,
     "echoNeck": "希望なし",
     "echoAbdomen": "他院で施行済",
     "dmSymptoms": {

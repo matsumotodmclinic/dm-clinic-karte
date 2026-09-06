@@ -4,7 +4,7 @@ import DmDiffEditor from '../../components/DmDiffEditor';
 import DmDxNoteEditor from '../../components/DmDxNoteEditor';
 import { copyKarteToClipboard } from '../../lib/copyKarte';
 import { insertDmDxNote } from '../../lib/dmDxNote';
-import { buildKarteTemplate } from '../../lib/buildKarteTemplate';
+import { buildKarteTemplate, buildMergePrompt, parseMergeResponse } from '../../lib/buildKarteTemplate';
 import { UI } from '../../lib/uiTokens';
 
 // 確認中を削除：新規→完了の2ステップ
@@ -25,11 +25,39 @@ export default function DetailPage() {
   const [savingDmDiff, setSavingDmDiff] = useState(false);
   const [dmDiffMsg, setDmDiffMsg] = useState('');
   const [showTemplate, setShowTemplate] = useState(false);
+  const [merged, setMerged] = useState(null);        // AI に統合させた結果（受診理由・♯既往）
+  const [merging, setMerging] = useState(false);
+  const [mergeMsg, setMergeMsg] = useState('');
 
-  // AI を使わずに組み立てたカルテ（比較用・DM基本のみ）。保存はしない
+  // テンプレート版のカルテ（比較用・DM基本のみ）。保存はしない。
+  // merged があれば「統合だけ AI」版、無ければ AI なし版
   const templateKarte = record?.form_data
-    ? buildKarteTemplate(record.form_type, record.form_data)
+    ? buildKarteTemplate(record.form_type, record.form_data, { merged })
     : null;
+
+  // 統合の2点だけを AI に頼む（プロンプトは全文生成の約1/10）
+  const handleMerge = async () => {
+    if (!record?.form_data) return;
+    const prompt = buildMergePrompt(record.form_type, record.form_data);
+    if (!prompt) return;
+    setMerging(true); setMergeMsg('');
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 600, messages: [{ role: 'user', content: prompt }] }),
+      });
+      const json = await res.json();
+      const parsed = parseMergeResponse(json.content?.[0]?.text);
+      if (parsed) { setMerged(parsed); setMergeMsg('✓ 統合しました'); }
+      else setMergeMsg('統合結果を読み取れませんでした（AIなし版を表示中）');
+    } catch (e) {
+      setMergeMsg('統合に失敗しました（AIなし版を表示中）');
+    } finally {
+      setMerging(false);
+      setTimeout(() => setMergeMsg(''), 4000);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -291,17 +319,29 @@ export default function DetailPage() {
         {templateKarte && (
           <div style={{ background:UI.surface, borderRadius:8, padding:'20px', marginBottom:12, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', border:`1px dashed ${UI.border}` }}>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, flexWrap:'wrap' }}>
-              <div style={{ fontSize:14, fontWeight:700, color:UI.text }}>テンプレート版（AI不使用・試作）</div>
+              <div style={{ fontSize:14, fontWeight:700, color:UI.text }}>
+                テンプレート版（試作・{merged ? '統合あり' : 'AI不使用'}）
+              </div>
               <span style={{ fontSize:11, color:UI.textMuted, border:`1px solid ${UI.border}`, borderRadius:4, padding:'2px 6px' }}>比較用・保存されません</span>
             </div>
             <div style={{ fontSize:12, color:UI.textMuted, marginBottom:10, lineHeight:1.7 }}>
-              問診データから JS だけで組み立てたものです（音声入力ぶんは入力時点の AI 整形結果を使用）。
-              上の AI 版と見比べて、差が無くなれば生成を置き換えられます。
+              書式・条件分岐・申し送りは JS が確定させています。
+              「🔗 統合」を押すと、<strong>受診理由サマリー</strong>と<strong>♯既往のマージ</strong>の2点だけを AI に頼みます
+              （プロンプトは全文生成の約 1/10）。押さなければ AI は一切呼びません。
             </div>
-            <button onClick={() => setShowTemplate(v => !v)}
-              style={{ padding:'8px 14px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.textMuted, fontWeight:700, fontSize:13, cursor:'pointer', marginBottom:showTemplate?12:0 }}>
-              {showTemplate ? '▲ 閉じる' : '▼ テンプレート版を表示'}
-            </button>
+            <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap', marginBottom:showTemplate?12:0 }}>
+              <button onClick={() => setShowTemplate(v => !v)}
+                style={{ padding:'8px 14px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.textMuted, fontWeight:700, fontSize:13, cursor:'pointer' }}>
+                {showTemplate ? '▲ 閉じる' : '▼ テンプレート版を表示'}
+              </button>
+              {showTemplate && (
+                <button onClick={handleMerge} disabled={merging}
+                  style={{ padding:'8px 14px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.textMuted, fontWeight:700, fontSize:13, cursor:merging?'not-allowed':'pointer' }}>
+                  {merging ? '統合中...' : '🔗 統合（受診理由・♯既往のみ AI）'}
+                </button>
+              )}
+              {mergeMsg && <span style={{ fontSize:12, fontWeight:700, color:mergeMsg.startsWith('✓')?'#0f9668':'#c53030' }}>{mergeMsg}</span>}
+            </div>
             {showTemplate && (
               <>
                 <textarea value={templateKarte} readOnly

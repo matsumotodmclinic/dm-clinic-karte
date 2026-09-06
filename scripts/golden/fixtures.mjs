@@ -64,7 +64,7 @@ export const FIXTURES = {
     reason: { ...commonReason, dmConcern: false },
     disease: {
       dmOnsetEra: '令和', dmOnset: '2', dmOnsetUnknown: false,
-      ht: true, hl: false, insulin: false,
+      ht: true, hl: false, insulinUse: false,
       // エコーは「希望なし」を入れる（2026-08-22 追加、当院で施行予定に化けないこと）
       echoNeck: '希望なし', echoAbdomen: '他院で施行済',
       dmSymptoms: { selected: ['のどが渇く', '足のしびれ', 'その他'], otherText: '夜間頻尿' },

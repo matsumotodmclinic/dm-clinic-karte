@@ -26,6 +26,7 @@ import { buildStaffFlagLines, buildStaffFlagsBlock } from '../../lib/handoffNote
 import {
   buildKarteTemplate, buildReasonSummary, buildImportantHistoryLines,
   buildPastHistoryLines, buildFhLine, buildEyeLine, buildHandoffLines,
+  buildReasonFacts, buildMergePrompt, parseMergeResponse,
 } from '../../lib/buildKarteTemplate.js'
 import {
   FIXTURES, ENDOCRINE_WITH_CAREPLAN, THYROID_FIXTURE,
@@ -379,6 +380,80 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
 
   test('未対応の form_type は null', () => {
     assert.equal(buildKarteTemplate('1型糖尿病', FIXTURES['1型糖尿病']), null)
+  })
+})
+
+describe('lib/buildKarteTemplate（案2: 統合だけ AI に頼む）', () => {
+  // 2026-09-06 の実測: 音声があると経路A/B とも「音声と構造化データを統合」と AI に指示していた。
+  // JS で置き換えると紹介元・自由記入が落ち、♯既往に重複が出る（実測済み）。
+  // ⇒ 統合の2点だけ AI に渡す。ここでは「渡す材料が落ちていないこと」を固定する。
+  const withVoice = {
+    reason: {
+      type: '紹介', referralFrom: '上尾中央総合病院', referralDept: '糖尿病内科',
+      referralDetail: '安定していたため当院へ', summary: '通院間隔を空けたい',
+    },
+    voiceMemo: { aiSummary: 'R4頃から口渇・多尿あり。' },
+    disease: { otherDiseases: [{ name: '高血圧', hospital: 'その他', hospitalOther: '○○内科' }] },
+    voicePastHistory: { aiSummary: '♯高血圧（H28から、○○内科でアムロジピン 5mg 内服中）' },
+  }
+
+  test('受診理由の材料: 構造化データを1件も落とさない', () => {
+    assert.deepEqual(buildReasonFacts(withVoice), [
+      ['受診区分', '紹介'],
+      ['紹介元', '上尾中央総合病院 糖尿病内科'],
+      ['紹介の経緯', '安定していたため当院へ'],
+      ['本人の自由記入', '通院間隔を空けたい'],
+    ])
+  })
+
+  test('統合プロンプト: 音声も構造化データも♯候補も全て載る', () => {
+    const prompt = buildMergePrompt('DM基本', withVoice)
+    assert.ok(prompt.includes('R4頃から口渇・多尿あり。'), '音声が載っていない')
+    assert.ok(prompt.includes('上尾中央総合病院 糖尿病内科'), '紹介元が載っていない')
+    assert.ok(prompt.includes('通院間隔を空けたい'), '自由記入が載っていない')
+    assert.ok(prompt.includes('♯高血圧（○○内科）'), '構造化の♯候補が載っていない')
+    assert.ok(prompt.includes('アムロジピン'), '音声由来の♯候補が載っていない')
+  })
+
+  test('統合プロンプトは今の全文プロンプトより桁違いに短い', () => {
+    const full = buildKartePrompt('DM基本', FIXTURES['DM基本']).prompt.length
+    const merge = buildMergePrompt('DM基本', withVoice).length
+    assert.ok(merge < full * 0.25, `統合プロンプトが長すぎる: ${merge} / ${full}`)
+  })
+
+  test('統合プロンプト: 出力フォーマットの雛形を含まない（カルテ全文を書かせない）', () => {
+    const prompt = buildMergePrompt('DM基本', withVoice)
+    assert.ok(!prompt.includes('【事前聴取時'))
+    assert.ok(!prompt.includes('LINE登録'))
+    assert.ok(!prompt.includes('目標HbA1c'))
+  })
+
+  test('AI の返答を差し込むと受診理由と♯既往が置き換わる', () => {
+    const merged = {
+      reasonSummary: '上尾中央総合病院 糖尿病内科より紹介。R4頃から口渇・多尿あり。',
+      pastHistory: ['♯高血圧（H28から、○○内科でアムロジピン 5mg 内服中）'],
+    }
+    const karte = buildKarteTemplate('DM基本', { ...FIXTURES['DM基本'], ...withVoice }, { merged })
+    assert.ok(karte.includes('上尾中央総合病院 糖尿病内科より紹介。R4頃から口渇・多尿あり。'))
+    assert.ok(karte.includes('♯高血圧（H28から、○○内科でアムロジピン 5mg 内服中）'))
+    assert.ok(!karte.includes('♯高血圧（○○内科）'), '統合前の重複行が残っている')
+  })
+
+  test('AI 返答が壊れていたら JS 素組みにフォールバックする', () => {
+    assert.equal(parseMergeResponse('こわれた'), null)
+    assert.equal(parseMergeResponse(''), null)
+    const karte = buildKarteTemplate('DM基本', FIXTURES['DM基本'], { merged: null })
+    assert.ok(karte.includes('【事前聴取時'), 'フォールバックで組み立てられていない')
+  })
+
+  test('AI 返答の取り出し: 前後に説明が付いていても JSON を拾う', () => {
+    const got = parseMergeResponse('はい。\n{"reasonSummary":"A","pastHistory":["♯B"]}\n以上です')
+    assert.deepEqual(got, { reasonSummary: 'A', pastHistory: ['♯B'] })
+  })
+
+  test('AI 返答に想定外の型が混ざっても落ちない', () => {
+    assert.deepEqual(parseMergeResponse('{"reasonSummary":123,"pastHistory":["♯A",null,5]}'),
+      { reasonSummary: '', pastHistory: ['♯A'] })
   })
 })
 
