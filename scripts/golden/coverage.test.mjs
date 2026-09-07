@@ -129,7 +129,6 @@ const ALLOWED = {
   '睡眠時無呼吸症候群': {
     'reason.knowSource': '当院を知ったきっかけ（集患の参考情報）。カルテには載せない',
     'reason.knowSourceOther': '同上',
-    'reason.purposeOther': '受診理由に「その他」がチェックされているときだけ使う',
     'symptom.sasSymptoms.otherText': '症状に「その他」がチェックされているときだけ使う',
     'disease.igt': 'SAS フォームは ＃IGT を出さない（DM は採血後の DM差分問診で扱う）',
   },

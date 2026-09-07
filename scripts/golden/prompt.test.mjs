@@ -905,17 +905,14 @@ describe('カルテ組立の実装は1つだけ（経路A/B の二重管理を�
   })
 })
 
-describe('AI を呼ぶのは音声入力があるときだけ', () => {
-  // 音声が無ければ統合する相手がいないので、カルテは form_data から決定論的に組み上がる。
-  // 当院の運用では音声はそこまで使われないため、実際は大半の初診が AI 呼び出しゼロで終わる。
-  test('音声なし → 統合プロンプトは null（AI を呼ばない）', () => {
+describe('AI を呼ぶのは「文章化が要る自由記述」があるときだけ', () => {
+  // 話し言葉が入りうるのは 音声入力 と キーボードの自由記述欄 の2つ。
+  // 選択式のボタン（紹介の経緯・転院理由など）は文言が固定なのでそのまま連結してよい。
+  test('全部選択式で完結した回 → 統合プロンプトは null（AI を呼ばない）', () => {
     for (const f of Object.keys(FIXTURES)) {
-      assert.equal(needsMerge(FIXTURES[f]), false, `${f}: フィクスチャに音声が入っている`)
-      assert.equal(buildMergePrompt(f, FIXTURES[f]), null, `${f}: 音声が無いのに統合プロンプトが出た`)
+      assert.equal(needsMerge(FIXTURES[f]), false, `${f}: フィクスチャに自由記述が入っている`)
+      assert.equal(buildMergePrompt(f, FIXTURES[f]), null, `${f}: 自由記述が無いのに統合プロンプトが出た`)
     }
-  })
-
-  test('甲状腺は音声入力を持たないので常に AI ゼロ', () => {
     for (const f of THYROID_FORMS) assert.equal(buildMergePrompt(f, THYROID_FIXTURE), null)
   })
 
@@ -923,6 +920,33 @@ describe('AI を呼ぶのは音声入力があるときだけ', () => {
     const base = FIXTURES['DM基本']
     assert.equal(needsMerge({ ...base, voiceMemo: { aiSummary: 'あ' } }), true)
     assert.equal(needsMerge({ ...base, voicePastHistory: { aiSummary: 'あ' } }), true)
+  })
+
+  // ★2026-09-07: 自由記入欄を素通しで連結していると、話し言葉のまま・
+  //   「3年前」が和暦に直らないままカルテに載る（旧方式では AI が文章化していた）
+  test('キーボードで打った自由記述でも統合する', () => {
+    const base = FIXTURES['DM基本']
+    const withText = { ...base, reason: { ...base.reason, summary: '3年くらい前から健診で血糖が高いと言われていた' } }
+    assert.equal(needsMerge(withText), true, '自由記入欄があるのに AI を呼んでいない')
+    const prompt = buildMergePrompt('DM基本', withText)
+    assert.ok(prompt.includes('3年くらい前から健診で血糖が高いと言われていた'), '自由記入が統合材料に載っていない')
+    assert.ok(prompt.includes('和暦のみ'), '和暦への換算を指示していない')
+
+    // DM「気になる理由」の詳細・SAS 受診理由の その他・甲状腺の補足 も同じ扱い
+    assert.equal(needsMerge({ ...base, reason: { ...base.reason, dmConcernNote: '母が糖尿病' } }), true)
+    const sas = FIXTURES['睡眠時無呼吸症候群']
+    assert.equal(needsMerge({ ...sas, reason: { ...sas.reason, purposeOther: '職場健診で指摘' } }), true)
+    assert.equal(needsMerge({ ...THYROID_FIXTURE, reason: { ...THYROID_FIXTURE.reason, summary: '半年前から動悸' } }), true)
+  })
+
+  test('甲状腺も統合結果を受け取る（自覚症状の一文は JS が必ず付ける）', () => {
+    const t = { ...THYROID_FIXTURE, reason: { ...THYROID_FIXTURE.reason, summary: '半年前から動悸' } }
+    const karte = buildKarteTemplate('甲状腺（バセドウ初診）', t, {
+      merged: { reasonSummary: '市健診にて甲状腺異常を指摘。R7頃より動悸あり' },
+    })
+    assert.ok(karte.startsWith('R'), 'カルテが月から始まっていない')
+    assert.ok(karte.includes('R7頃より動悸あり。'), '統合結果が反映されていない')
+    assert.ok(karte.includes('動悸・体重減少の訴えあり。'), '自覚症状の一文が落ちている')
   })
 })
 
