@@ -5,6 +5,7 @@ import DmDxNoteEditor from '../../components/DmDxNoteEditor';
 import { copyKarteToClipboard } from '../../lib/copyKarte';
 import { insertDmDxNote } from '../../lib/dmDxNote';
 import { UI } from '../../lib/uiTokens';
+import QrModal from '../../components/QrModal';
 
 // 確認中を削除：新規→完了の2ステップ
 const STATUS_LABEL = { new: '新規', done: '完了' };
@@ -24,6 +25,8 @@ export default function DetailPage() {
   const [savingDmDiff, setSavingDmDiff] = useState(false);
   const [dmDiffMsg, setDmDiffMsg] = useState('');
   const [generateMode, setGenerateMode] = useState('');  // '' | 'legacy'（どちらで作り直したか）
+  // ▦ QR で渡す (2026-09-07)。電カル端末が閉域の施設向け
+  const [qrText, setQrText] = useState(null);
 
   useEffect(() => {
     if (!id) return;
@@ -262,6 +265,11 @@ export default function DetailPage() {
                   style={{ flex:'1 1 140px', padding:'12px', borderRadius:6, border:'none', background:UI.success.fg, color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer' }}>
                   📋 コピー
                 </button>
+                <button onClick={() => setQrText(karte)}
+                  title="電子カルテがインターネットに繋がっていない場合に使います。QRリーダーで読み取ると入力欄にそのまま入ります"
+                  style={{ flex:'1 1 140px', padding:'12px', borderRadius:6, border:`1px solid ${UI.primary.fg}`, background:UI.surface, color:UI.primary.fg, fontWeight:700, fontSize:14, cursor:'pointer' }}>
+                  ▦ QRで渡す
+                </button>
                 <button onClick={handleSaveKarte}
                   style={{ flex:'1 1 140px', padding:'12px', borderRadius:6, border:`1px solid ${UI.success.fg}`, background:UI.surface, color:UI.success.fg, fontWeight:700, fontSize:14, cursor:'pointer' }}>
                   💾 編集を保存
@@ -301,6 +309,14 @@ export default function DetailPage() {
         </div>
 
       </div>
+
+      {qrText && (
+        <QrModal
+          text={qrText}
+          title={record ? `受付番号 ${record.visit_code}` : null}
+          onClose={() => setQrText(null)}
+        />
+      )}
     </div>
   );
 }

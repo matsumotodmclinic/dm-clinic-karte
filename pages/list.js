@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { UI } from '../lib/uiTokens';
+import QrModal from '../components/QrModal';
 
 const STATUS_LABEL = { new: '新規', done: '完了' };
 const STATUS_COLOR = { new: '#e53e3e', done: '#38a169' };
@@ -21,6 +22,8 @@ export default function ListPage() {
   const [dateFilter, setDateFilter] = useState('today');
   const [newCount, setNewCount]     = useState(0);
   const [user, setUser]             = useState(null);
+  // ▦ QR で渡す (2026-09-07)。{ text, code } を入れると表示
+  const [qr, setQr]                 = useState(null);
   const prevIdsRef                  = useRef(new Set());
   const router = useRouter();
 
@@ -240,6 +243,16 @@ export default function ListPage() {
                     {r.form_type || 'DM基本'}{r.age ? `　${r.age}歳` : ''}
                   </div>
                 </div>
+                {/* ▦ QR で渡す (2026-09-07)。カルテ文が生成済みの行だけ出す。
+                    行クリック = 詳細へ遷移 なので stopPropagation が必須 */}
+                {r.generated_karte && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setQr({ text: r.generated_karte, code: r.visit_code }); }}
+                    title="QRコードで電子カルテへ取り込む"
+                    style={{ padding:'6px 10px', borderRadius:4, border:`1px solid ${UI.primary.fg}`, background:UI.surface, color:UI.primary.fg, fontWeight:700, fontSize:12, cursor:'pointer', flexShrink:0 }}>
+                    ▦ QR
+                  </button>
+                )}
                 <div style={{ padding:'4px 10px', borderRadius:4, background:(STATUS_COLOR[r.status]||'#718096')+'20', color:STATUS_COLOR[r.status]||'#718096', fontWeight:700, fontSize:12, flexShrink:0 }}>
                   {STATUS_LABEL[r.status] || r.status}
                 </div>
@@ -252,6 +265,14 @@ export default function ListPage() {
           30秒ごとに自動更新
         </div>
       </div>
+
+      {qr && (
+        <QrModal
+          text={qr.text}
+          title={`受付番号 ${qr.code}`}
+          onClose={() => setQr(null)}
+        />
+      )}
     </div>
   );
 }
