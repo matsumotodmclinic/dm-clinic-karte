@@ -114,7 +114,7 @@ export default function QrModal({ text, title, onClose }) {
             {info && `${text.length.toLocaleString()}文字 / ${info.bytes.toLocaleString()}バイト / 誤り訂正 ${info.level} / バージョン ${info.version}`}
             {info && info.version >= 33 && (
               <span style={{ display: 'block', color: UI.warning.fg }}>
-                目が細かいコードです。読み取りにくい場合は画面の明るさを上げ、端末を近づけてください。
+                目が細かいコードです。スマホを縦のまま読み取れない場合は、<strong>端末を横向きにする</strong>か画面を拡大してください（横向きにすると 2 倍ほど大きく表示されます）。
               </span>
             )}
           </div>
