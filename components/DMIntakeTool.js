@@ -3,7 +3,7 @@ import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
-import { buildKartePrompt } from "../lib/buildKartePrompt";
+import { generateKarteText, callGenerateApi } from "../lib/generateKarte";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
@@ -284,21 +284,10 @@ export default function DMIntakeTool() {
 
   const generateKarte = async () => {
     setLoading(true);
-    // プロンプト組立は lib/buildKartePrompt.js に一本化（詳細画面の再生成と同じ関数）
-    const { prompt, max_tokens } = buildKartePrompt("DM基本", data);
     try {
-      // ① カルテ文生成
-      const res  = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-5",
-          max_tokens,
-          messages: [{ role: "user", content: prompt }]
-        })
-      });
-      const json = await res.json();
-      const generated = json.content?.[0]?.text || "生成に失敗しました";
+      // ① カルテ文生成（組み立ては lib/buildKarteTemplate.js。音声入力があるときだけ
+      //    統合＝受診理由サマリーと♯既往のマージ を AI に頼む。詳細画面の再生成と同じ関数）
+      const generated = await generateKarteText("DM基本", data, callGenerateApi);
       setResult(generated);
 
       // Supabaseに保存してvisit_codeを受け取る

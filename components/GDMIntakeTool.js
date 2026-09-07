@@ -3,7 +3,7 @@ import VoiceMemoSection from "./VoiceMemoSection";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
-import { buildKartePrompt } from "../lib/buildKartePrompt";
+import { generateKarteText, callGenerateApi } from "../lib/generateKarte";
 
 import { UI } from "../lib/uiTokens";
 
@@ -104,12 +104,10 @@ export default function GDMIntakeTool() {
 
   const generateKarte = async () => {
     setLoading(true);
-    // プロンプト組立は lib/buildKartePrompt.js に一本化（詳細画面の再生成と同じ関数）
-    const { prompt, max_tokens } = buildKartePrompt("妊娠糖尿病", data);
     try {
-      const res = await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens,messages:[{role:"user",content:prompt}]})});
-      const json = await res.json();
-      const generated = json.content?.[0]?.text||"生成に失敗しました";
+      // カルテ本文は lib/buildKarteTemplate.js が組み立て、音声入力があるときだけ
+      // 統合（受診理由サマリー・♯既往のマージ）を AI に頼む（詳細画面の再生成と同じ関数）
+      const generated = await generateKarteText("妊娠糖尿病", data, callGenerateApi);
       setResult(generated);
 
       try {

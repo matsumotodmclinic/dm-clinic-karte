@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
-import { buildKartePrompt } from "../lib/buildKartePrompt";
+import { generateKarteText, callGenerateApi } from "../lib/generateKarte";
 import { UI } from "../lib/uiTokens";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
@@ -169,68 +169,10 @@ export default function ThyroidIntakeTool({ formType }) {
 
   const generateKarte = async () => {
     setLoading(true);
-
-    let diagnosisName = "";
-    if (formType === 'basedow-new') diagnosisName = "＃バセドウ病疑い（エコー上の疑い）";
-    else if (formType === 'basedow-cont') {
-      const dYear = data.history.diagnosisYear
-        ? `${data.history.diagnosisEra}${data.history.diagnosisYear}年`
-        : "診断時期不明";
-      diagnosisName = `＃バセドウ病　甲状腺機能亢進症（診断時期：${dYear}）`;
-    }
-    else if (formType === 'hashimoto') diagnosisName = "＃橋本病疑い（エコー上の疑い）";
-    else if (formType === 'nodule-normal') diagnosisName = "＃甲状腺腫大（エコー上異常なし）";
-    else if (formType === 'adenoma') diagnosisName = "＃甲状腺腺腫（経過観察）疑い";
-    else if (formType === 'malignant') diagnosisName = "＃甲状腺腺腫（悪性疑い）";
-
-    let shinsokuLines = "";
-    if (formType === 'basedow-new' || formType === 'hashimoto') {
-      shinsokuLines = "□甲状腺3項目＋甲状腺抗体3項目の結果を後日確認\n□あくまでエコー上の疑いであり、確定診断は医師が行いカルテ記載を完了する";
-    } else if (formType === 'basedow-cont') {
-      shinsokuLines = "□甲状腺3項目＋甲状腺抗体3項目の結果を後日確認\n□あくまでエコー上の所見であり、確定診断は医師が行いカルテ記載を完了する";
-    } else if (formType === 'nodule-normal') {
-      shinsokuLines = "□甲状腺3項目＋抗Tg抗体＋抗TPO抗体の結果を後日確認\n□本日初診にて診察（終診の可能性あり）";
-    } else if (formType === 'adenoma') {
-      shinsokuLines = "□甲状腺3項目＋抗Tg抗体＋抗TPO抗体の結果を後日確認\n□あくまでエコー上の所見であり、確定診断は医師が行いカルテ記載を完了する";
-    } else if (formType === 'malignant') {
-      shinsokuLines = "□当日、初事前診察に変更し専門医療機関へ紹介\n□当院は終診";
-    }
-
-    let footerBloodTest = "";
-    if (formType === 'basedow-new') footerBloodTest = "甲状腺3項目：　TRAb：　TPO抗体：　抗Tg抗体：";
-    else if (formType === 'hashimoto') footerBloodTest = "甲状腺3項目＋甲状腺抗体3項目";
-    else if (formType === 'basedow-cont') footerBloodTest = "甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：";
-    else if (formType === 'nodule-normal') footerBloodTest = "甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：";
-    else if (formType === 'adenoma') footerBloodTest = "甲状腺3項目：　TRAb：　抗Tg抗体：　抗TPO抗体：";
-
-
-
-    // 全6フォーム共通: 甲状腺ベース所見 3軸（サイズ/血流/実質エコー）
-    // 「正常」は所見として記載しないので除外
-
-    // フォーム別: メイン「当院エコーにて...」結語行
-
-    // 結節フォーム（adenoma/malignant）でベース所見がある場合の補助行
-
-    // 結節所見1行（hasNodule==='あり'のときのみ）
-    // 例: 「両葉に最大15×8㎜大の結節あり、石灰化あり、血流豊富、充実性」
-
-    // プロンプト組立は lib/buildKartePrompt.js に一本化（詳細画面の再生成と同じ関数）
-    const { prompt, max_tokens } = buildKartePrompt(meta.dbLabel, data);
-
     try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-sonnet-4-5", max_tokens, messages: [{ role: "user", content: prompt }] }),
-      });
-      const json = await res.json();
-      const raw = json.content?.[0]?.text || "生成に失敗しました";
-      // 連続する空行を最大1行に圧縮（条件付き行が空展開された箇所のクリーンアップ）
-      const generated = raw
-        .split('\n').map(l => l.replace(/[ 　\t]+$/, '')).join('\n')  // 各行の末尾空白除去
-        .replace(/\n{3,}/g, '\n\n')                                     // 連続改行を2つに圧縮
-        .trim();
+      // カルテ本文は lib/buildKarteTemplate.js が組み立てる（詳細画面の再生成と同じ関数）。
+      // 甲状腺フォームは音声入力を持たないので、生成は AI を1回も呼ばずに完結する。
+      const generated = await generateKarteText(meta.dbLabel, data, callGenerateApi);
       setResult(generated);
 
       try {

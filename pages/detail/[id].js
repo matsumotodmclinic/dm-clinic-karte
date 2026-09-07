@@ -4,7 +4,6 @@ import DmDiffEditor from '../../components/DmDiffEditor';
 import DmDxNoteEditor from '../../components/DmDxNoteEditor';
 import { copyKarteToClipboard } from '../../lib/copyKarte';
 import { insertDmDxNote } from '../../lib/dmDxNote';
-import { buildKarteTemplate, buildMergePrompt, parseMergeResponse } from '../../lib/buildKarteTemplate';
 import { UI } from '../../lib/uiTokens';
 
 // 確認中を削除：新規→完了の2ステップ
@@ -24,48 +23,7 @@ export default function DetailPage() {
   const [showDmDxNote, setShowDmDxNote] = useState(false);
   const [savingDmDiff, setSavingDmDiff] = useState(false);
   const [dmDiffMsg, setDmDiffMsg] = useState('');
-  const [showTemplate, setShowTemplate] = useState(false);
-  const [merged, setMerged] = useState(null);        // AI に統合させた結果（受診理由・♯既往）
-  const [merging, setMerging] = useState(false);
-  const [mergeMsg, setMergeMsg] = useState('');
-
-  // テンプレート版のカルテ（比較用・DM基本のみ）。保存はしない。
-  // merged があれば「統合だけ AI」版、無ければ AI なし版
-  const templateKarte = record?.form_data
-    ? buildKarteTemplate(record.form_type, record.form_data, { merged })
-    : null;
-
-  // テンプレート版を開いたら一度だけ自動で統合する。
-  // 統合しない版は紹介元が落ちて ♯ が重複すると分かっているので、それを見せて比較させない
-  useEffect(() => {
-    if (showTemplate && !merged && !merging && record?.form_data) handleMerge();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showTemplate, record]);
-
-  // 統合の2点だけを AI に頼む（プロンプトは全文生成の約1/10）
-  const handleMerge = async () => {
-    if (!record?.form_data) return;
-    const prompt = buildMergePrompt(record.form_type, record.form_data);
-    if (!prompt) return;
-    setMerging(true); setMergeMsg('');
-    try {
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 600, messages: [{ role: 'user', content: prompt }] }),
-      });
-      const json = await res.json();
-      const parsed = parseMergeResponse(json.content?.[0]?.text);
-      if (parsed) { setMerged(parsed); setMergeMsg('✓ 統合しました'); }
-      else setMergeMsg('統合結果を読み取れませんでした（AIなし版を表示中）');
-    } catch (e) {
-      setMergeMsg('統合に失敗しました（AIなし版を表示中）');
-    } finally {
-      setMerging(false);
-      // 成功メッセージだけ消す。失敗は「AIなし版を見ている」と気付けるよう残す
-      setTimeout(() => setMergeMsg(m => (m.startsWith('✓') ? '' : m)), 4000);
-    }
-  };
+  const [generateMode, setGenerateMode] = useState('');  // '' | 'legacy'（どちらで作り直したか）
 
   useEffect(() => {
     if (!id) return;
@@ -141,10 +99,13 @@ export default function DetailPage() {
     }
   };
 
-  const handleGenerate = async () => {
+  // legacy=true は旧方式（AI に全文を書かせる）。テンプレート版の出力がおかしい患者が出たとき、
+  // デプロイを待たずにその場で戻せるようにしてある。通常は使わない。
+  const handleGenerate = async (legacy = false) => {
     setGenerating(true);
+    setGenerateMode(legacy ? 'legacy' : '');
     try {
-      const res = await fetch('/api/generate-karte', {
+      const res = await fetch(`/api/generate-karte${legacy ? '?legacy=1' : ''}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ form_data: record.form_data, form_type: record.form_type }),
@@ -305,64 +266,31 @@ export default function DetailPage() {
                   style={{ flex:'1 1 140px', padding:'12px', borderRadius:6, border:`1px solid ${UI.success.fg}`, background:UI.surface, color:UI.success.fg, fontWeight:700, fontSize:14, cursor:'pointer' }}>
                   💾 編集を保存
                 </button>
-                <button onClick={handleGenerate} disabled={generating}
+                <button onClick={() => handleGenerate(false)} disabled={generating}
                   style={{ padding:'12px 16px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.textMuted, fontWeight:700, fontSize:13, cursor:generating?'not-allowed':'pointer' }}>
                   {generating ? '生成中...' : '🔄 再生成'}
                 </button>
+                <button onClick={() => handleGenerate(true)} disabled={generating}
+                  title="テンプレート版の出力がおかしいときだけ使ってください（2026-09-06 以前の、AI が全文を書く方式）"
+                  style={{ padding:'12px 14px', borderRadius:6, border:`1px dashed ${UI.border}`, background:UI.surface, color:UI.textFaint, fontWeight:700, fontSize:12, cursor:generating?'not-allowed':'pointer' }}>
+                  🅰 旧AI版で作り直す
+                </button>
+                {!generating && generateMode === 'legacy' && (
+                  <span style={{ fontSize:12, fontWeight:700, color:UI.textMuted }}>旧AI版で生成しました</span>
+                )}
                 {saveMsg && <span style={{ fontSize:13, fontWeight:700, color:saveMsg.startsWith('✓')?'#0f9668':'#c53030' }}>{saveMsg}</span>}
               </div>
             </>
           ) : (
             <div style={{ textAlign:'center', padding:'20px 0' }}>
               <div style={{ color:UI.textDisabled, marginBottom:16, fontSize:13 }}>カルテ文がまだ生成されていません</div>
-              <button onClick={handleGenerate} disabled={generating}
+              <button onClick={() => handleGenerate(false)} disabled={generating}
                 style={{ padding:'12px 28px', borderRadius:6, border:'none', background:generating?UI.textDisabled:UI.primary.fg, color:'#fff', fontWeight:700, fontSize:14, cursor:generating?'not-allowed':'pointer' }}>
                 {generating ? '生成中...' : '✨ カルテ文を生成'}
               </button>
             </div>
           )}
         </div>
-
-        {/* テンプレート版（AIフリー・試作）: AI 版と見比べるための表示。保存はしない */}
-        {templateKarte && (
-          <div style={{ background:UI.surface, borderRadius:8, padding:'20px', marginBottom:12, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', border:`1px dashed ${UI.border}` }}>
-            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, flexWrap:'wrap' }}>
-              <div style={{ fontSize:14, fontWeight:700, color:UI.text }}>
-                テンプレート版（試作・{merged ? '統合あり' : 'AI不使用'}）
-              </div>
-              <span style={{ fontSize:11, color:UI.textMuted, border:`1px solid ${UI.border}`, borderRadius:4, padding:'2px 6px' }}>比較用・保存されません</span>
-            </div>
-            <div style={{ fontSize:12, color:UI.textMuted, marginBottom:10, lineHeight:1.7 }}>
-              書式・条件分岐・申し送りは JS が確定させ、<strong>受診理由サマリー</strong>と
-              <strong>♯既往のマージ</strong>の2点だけを AI が統合します（プロンプトは全文生成の約 1/10）。
-              開いたときに一度だけ統合し、閉じて開き直しても呼び直しません。
-            </div>
-            <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap', marginBottom:showTemplate?12:0 }}>
-              <button onClick={() => setShowTemplate(v => !v)}
-                style={{ padding:'8px 14px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.textMuted, fontWeight:700, fontSize:13, cursor:'pointer' }}>
-                {showTemplate ? '▲ 閉じる' : '▼ テンプレート版を表示'}
-              </button>
-              {showTemplate && merging && <span style={{ fontSize:12, color:UI.textMuted }}>統合中...</span>}
-              {showTemplate && !merging && mergeMsg && !mergeMsg.startsWith('✓') && (
-                <button onClick={handleMerge}
-                  style={{ padding:'8px 14px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.textMuted, fontWeight:700, fontSize:13, cursor:'pointer' }}>
-                  🔄 統合をやり直す
-                </button>
-              )}
-              {mergeMsg && <span style={{ fontSize:12, fontWeight:700, color:mergeMsg.startsWith('✓')?'#0f9668':'#c53030' }}>{mergeMsg}</span>}
-            </div>
-            {showTemplate && (
-              <>
-                <textarea value={templateKarte} readOnly
-                  style={{ width:'100%', minHeight:320, background:'#fbfbfa', border:`1px solid ${UI.border}`, borderRadius:10, padding:'16px', fontSize:11, lineHeight:2, color:UI.text, fontFamily:'monospace', marginBottom:12, resize:'vertical', boxSizing:'border-box' }} />
-                <button onClick={() => copyToClipboard(templateKarte)}
-                  style={{ padding:'10px 16px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.textMuted, fontWeight:700, fontSize:13, cursor:'pointer' }}>
-                  📋 テンプレート版をコピー
-                </button>
-              </>
-            )}
-          </div>
-        )}
 
         {/* 削除ボタン */}
         <div style={{ textAlign:'right', marginBottom:32 }}>
