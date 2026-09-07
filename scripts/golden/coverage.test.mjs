@@ -244,6 +244,7 @@ describe('form_data の取りこぼし検査（全14フォーム）', () => {
       'body.weightMaxAge': '⚠️ 同上',
       'body.doctorGender': '「指定なし」以外のときだけ申し送りに1行出る列挙値',
       'body.patientFlag': '「○患者疑い」「●患者疑い」のときだけ分岐する列挙値',
+      'symptom.otherText': '症状に「その他」がチェックされているときだけ使う（土台は動悸・体重減少）',
       'echo.hasNodule': '「あり」のときだけ結節所見行を出す列挙値',
       'echo.thyroidSize': '腫大／萎縮 のときだけ所見に出る列挙値（正常は所見にしない）',
       'echo.thyroidBloodFlow': '同上',

@@ -43,8 +43,13 @@ jobs:
         run: npm ci
 
       # 依存なしで走る検査を先に回す（速い & 失敗理由が読みやすい）
-      - name: ゴールデンテスト（プロンプト内容）
+      - name: ゴールデンテスト（カルテ本文・取りこぼし検査・eval ルール）
         run: npm test
+
+      # 14 フォーム × 5 例（最小 / 標準 / 複雑 / 難渋 / 分岐）を組み立てて機械判定する。
+      # AI を呼ばないので決定的・日付非依存・API キー不要。error が 1 件でも出たら落ちる。
+      - name: カルテ生成 eval（70 ケース）
+        run: npm run eval
 
       - name: Build
         run: npm run build

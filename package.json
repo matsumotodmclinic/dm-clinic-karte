@@ -7,8 +7,9 @@
     "start": "next start",
     "test": "node --test scripts/golden/*.test.mjs",
     "test:update": "node scripts/golden/update-snapshots.mjs",
-    "check": "npm run check:styles && npm test",
-    "check:styles": "node scripts/verify-form-styles.mjs"
+    "check": "npm run check:styles && npm test && npm run eval",
+    "check:styles": "node scripts/verify-form-styles.mjs",
+    "eval": "node scripts/eval/run.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

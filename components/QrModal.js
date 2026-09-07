@@ -33,11 +33,15 @@ export default function QrModal({ text, title, onClose }) {
       for (const level of ['M', 'L']) {
         if (bytes > CAPACITY[level]) continue;
         try {
-          // 高解像度で描画し、表示側は CSS で画面幅に合わせる (スマホでの表示を考慮)
+          // ★タブレット表示に最適化 (2026-09-07 院長確定)。
+          //   描画は 1000px の高解像度で作り、表示側で画面に合わせて縮める。
+          //   こうするとタブレット (短辺 768px) でも拡大ボケが出ない。
+          //   margin は QR 規格上の必須静穏帯 4 モジュール分を確保する
+          //   (2 だと規格未満で読み取り率が落ちる機種がある)。
           await QRCode.toCanvas(canvasRef.current, text, {
             errorCorrectionLevel: level,
-            width: 720,
-            margin: 2,
+            width: 1000,
+            margin: 4,
           });
           const qr = QRCode.create(text, { errorCorrectionLevel: level });
           if (!cancelled) {
@@ -75,22 +79,21 @@ export default function QrModal({ text, title, onClose }) {
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: UI.surface, borderRadius: 12, padding: 20,
-          maxWidth: 760, width: '100%', maxHeight: '100%', overflowY: 'auto',
+          background: UI.surface, borderRadius: 12, padding: 16,
+          maxWidth: 840, width: '100%', maxHeight: '100%', overflowY: 'auto',
           boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
         }}
       >
-        <div style={{ fontSize: 15, fontWeight: 700, color: UI.text, marginBottom: 6 }}>
-          QRコードで電子カルテへ取り込む
-        </div>
-        {title && (
-          <div style={{ fontSize: 12, color: UI.textMuted, marginBottom: 8 }}>{title}</div>
-        )}
-        <p style={{ fontSize: 12, color: UI.textMuted, lineHeight: 1.6, marginTop: 0, marginBottom: 10 }}>
-          電子カルテの入力欄に<strong>カーソルを置いてから</strong>読み取ってください。
-          <span style={{ display: 'block', color: UI.textFaint }}>
-            ★<strong>タブレットでの表示を推奨</strong>します（スマートフォンでは QR が小さくなり読み取れないことがあります）。読み取り機は QR（2次元コード）対応のものが必要です。
+        {/* ★縦の余白は QR の大きさに直結するので、説明は 2 行に抑える */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: UI.text }}>
+            QRコードで電子カルテへ取り込む
           </span>
+          {title && <span style={{ fontSize: 12, color: UI.textMuted }}>{title}</span>}
+        </div>
+        <p style={{ fontSize: 12, color: UI.textMuted, lineHeight: 1.5, marginTop: 0, marginBottom: 8 }}>
+          電子カルテの入力欄に<strong>カーソルを置いてから</strong>読み取ってください。
+          <span style={{ color: UI.textFaint }}>（タブレット推奨・QR対応リーダーが必要）</span>
         </p>
 
         {error ? (
@@ -102,16 +105,16 @@ export default function QrModal({ text, title, onClose }) {
           </div>
         ) : (
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            {/* QR は正方形なので **画面の短辺**で実効サイズが決まる。
-                幅だけ 100% にすると縦に溢れて全体が写らないため、高さ側の余白も引いて制限する
-                (2026-09-07 実機確認: スマホでは 1 画面に収まらなかった)。 */}
+            {/* ★QR は正方形なので **画面の短辺**で実効サイズが決まる。
+                幅だけ 100% にすると縦に溢れて全体が写らない (2026-09-07 実機確認)。
+                横 (100vw) と縦 (100vh - ヘッダ/フッタ分) の**両方**を見て、
+                タブレットでは 760px まで大きくする。 */}
             <canvas
               ref={canvasRef}
               style={{
                 width: '100%',
-                maxWidth: 'min(560px, calc(100vh - 230px))',
+                maxWidth: 'min(760px, calc(100vh - 190px))',
                 height: 'auto',
-                border: `1px solid ${UI.border}`,
                 borderRadius: 6,
               }}
             />
