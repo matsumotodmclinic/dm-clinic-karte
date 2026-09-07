@@ -10,7 +10,7 @@
 - 各項目間に空行を入れない
 
 【整形済みデータ】
-生活情報：夫婦2人暮らし＋息子と同居
+生活情報：夫婦2人暮らし
 職業：会社員（デスクワーク）・週3日リモート
 その他の病名・既往歴：子宮筋腫（鰐坂医院）、慢性腎臓病（上尾中央総合病院 腎臓内科）、うつ病（通院なし）
 希望曜日：火曜希望
@@ -21,8 +21,20 @@
 【患者情報JSON】
 {
   "disease": {
-    "dmType": "妊娠糖尿病",
-    "pastGDM": "なし",
+    "dmType": "妊娠糖尿病（GDM）",
+    "pastGDM": "あり",
+    "pastGDMChild": [
+      {
+        "era": "令和",
+        "year": "3",
+        "had": "あり"
+      },
+      {
+        "era": "令和",
+        "year": "",
+        "had": ""
+      }
+    ],
     "currentWeek": "26",
     "dueDateEra": "令和",
     "dueDateYear": "8",
@@ -31,12 +43,10 @@
     "obHospitalOther": "ナラヤマレディースクリニック",
     "ht": false,
     "hl": false,
-    "thyroidAdded": false,
     "echoNeck": "希望なし",
     "echoAbdomen": "希望なし"
   },
   "history": {
-    "age": "32",
     "allergy": "あり",
     "allergyDetail": "ペニシリン・金属",
     "fh": {
@@ -45,37 +55,22 @@
         "母"
       ],
       "ht": true,
-      "hl": false,
       "apo": false,
       "ihd": false
     },
-    "alcoholNone": false,
-    "alcoholItems": [
-      {
-        "type": "beer",
-        "amount": "2缶",
-        "freq": "毎日"
-      }
-    ],
     "smoking": "禁煙済",
-    "smokingAmount": "20",
-    "smokingYears": "30",
+    "smokingAmount": "10",
+    "smokingYears": "8",
     "smokingStartAge": "20",
     "smokingQuitEra": "令和",
-    "smokingQuitYear": "3",
-    "checkup": [
-      "市の健診"
-    ],
-    "vaccine65Prevena": "希望あり",
-    "vaccine65Herpes": "なし",
+    "smokingQuitYear": "5",
+    "eye": "",
+    "eyeVisiting": "",
+    "eyeFundusCheck": "受けていない",
+    "eyeNotebook": "持っていない",
     "livingSpouse": "配偶者あり",
-    "livingOther": [
-      "息子と同居"
-    ],
+    "livingOther": [],
     "livingCustom": "",
-    "childInfo": "",
-    "childLocation": "",
-    "childGender": [],
     "work": "している",
     "job": [
       "会社員（デスクワーク）"

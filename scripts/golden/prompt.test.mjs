@@ -25,13 +25,20 @@ import { buildDmDxNoteLine, buildPastValuesText, insertDmDxNote } from '../../li
 import { buildStaffFlagLines, buildStaffFlagsBlock } from '../../lib/handoffNotes.js'
 import {
   buildKarteTemplate, buildReasonSummary, buildImportantHistoryLines,
-  buildPastHistoryLines, buildFhLine, buildEyeLine, buildHandoffLines,
+  buildPastHistoryLines, buildFhLine, buildEyeLine, TEMPLATE_FORM_TYPES, needsMerge,
   buildReasonFacts, buildMergePrompt, parseMergeResponse, buildDrugAllergyWarning, buildJobLine,
 } from '../../lib/buildKarteTemplate.js'
+import { ALLOWED_FORM_TYPES } from '../../lib/buildKartePrompt.js'
 import {
-  FIXTURES, ENDOCRINE_WITH_CAREPLAN, THYROID_FIXTURE,
+  FIXTURES, ENDOCRINE_WITH_CAREPLAN, THYROID_FIXTURE, THYROID_NODULE_FIXTURE,
   SAS_WITH_DM_DIFF, HTHL_WITH_DM_DIFF, RH_WITH_DM_DIFF, ENDOCRINE_WITH_DM_DIFF,
 } from './fixtures.mjs'
+
+// 甲状腺6フォームのラベル（スナップショット名にも使う）
+const THYROID_FORMS = [
+  '甲状腺（バセドウ初診）', '甲状腺（バセドウ継続）', '甲状腺（橋本病）',
+  '甲状腺（腫大異常なし）', '甲状腺（腺腫経過観察）', '甲状腺（腺腫悪性疑い）',
+]
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SNAP_DIR = join(HERE, '__snapshots__')
@@ -390,15 +397,23 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
     assert.ok(!line.includes('HL'), 'DM基本の【FH】に HL が出ている')
   })
 
+  // 申し送りはカルテ本文から取り出して検証する（□行の順序と条件をまとめて固定できる）
+  const handoffOf = karte => {
+    const lines = karte.split('\n')
+    const i = lines.findIndex(l => l.startsWith('【事前聴取時'))
+    const j = lines.findIndex((l, k) => k > i && l.startsWith('【診察にあたっての要望】'))
+    return lines.slice(i + 1, j)
+  }
+
   test('申し送り: 条件に該当する □ 行だけが出る', () => {
-    const lines = buildHandoffLines({
-      alert: { weightLoss: 'あり（3kg以上）' },
+    const karte = buildKarteTemplate('DM基本', {
+      alert: { weightLoss: 'あり' },
       disease: { ht: true, hl: true, insulinUse: false },
       history: { eyeNotebook: '持っていない' },
       voicePastHistory: { needsDoctorReview: true },
       body: { doubleSlot: true },
     })
-    assert.deepEqual(lines, [
+    assert.deepEqual(handoffOf(karte), [
       '□通院のご案内をお渡し済',
       '□既往歴：要ドクター確認',
       '□糖尿病-眼科連携手帳をお渡し',
@@ -411,8 +426,22 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
   })
 
   test('申し送り: インスリン使用中なら療養計画書の行は出さない', () => {
-    const lines = buildHandoffLines({ disease: { insulinUse: true } })
-    assert.ok(!lines.includes('□生活習慣病療養計画書を作成済'))
+    const karte = buildKarteTemplate('DM基本', { disease: { insulinUse: true } })
+    assert.ok(!karte.includes('□生活習慣病療養計画書を作成済'))
+  })
+
+  // ★問診票の体重減少ボタンは「あり / なし / 不明」の3択で、
+  //   「あり（3kg以上）」という値は DM差分問診にしか存在しない。
+  //   2026-09-06 のテンプレート試作は「あり（3kg以上）」だけを見ていたため、
+  //   DM基本・1型で 体重減少の警告と申し送りが一度も出ない状態だった。
+  test('体重減少: 問診票の「あり」で警告と申し送りが出る', () => {
+    const karte = buildKarteTemplate('DM基本', { ...DM, alert: { weightLoss: 'あり' } })
+    assert.ok(karte.startsWith('【⚠️ 体重減少あり・早急なインスリン導入を検討】'))
+    assert.ok(karte.includes('□体重減少あり（3ヶ月以内に3kg以上）インスリン導入要検討'))
+    const none = buildKarteTemplate('DM基本', { ...DM, alert: { weightLoss: 'なし' } })
+    assert.ok(!none.includes('体重減少あり'))
+    const unknown = buildKarteTemplate('DM基本', { ...DM, alert: { weightLoss: '不明' } })
+    assert.ok(!unknown.includes('体重減少あり'))
   })
 
   test('空行ルール: ＃自院管理と♯他院管理の間だけ1行空け、【アレルギー歴】の前は空けない', () => {
@@ -441,7 +470,126 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
   })
 
   test('未対応の form_type は null', () => {
-    assert.equal(buildKarteTemplate('1型糖尿病', FIXTURES['1型糖尿病']), null)
+    assert.equal(buildKarteTemplate('存在しない問診', FIXTURES['DM基本']), null)
+  })
+})
+
+describe('lib/buildKarteTemplate（全14フォーム）', () => {
+  const ALL = [...Object.keys(FIXTURES), ...THYROID_FORMS]
+  const dataFor = f => (THYROID_FORMS.includes(f) ? THYROID_FIXTURE : FIXTURES[f])
+
+  test('14フォーム全てにテンプレートがある（ホワイトリストと一致）', () => {
+    assert.deepEqual([...TEMPLATE_FORM_TYPES].sort(), [...ALLOWED_FORM_TYPES].sort())
+    assert.equal(TEMPLATE_FORM_TYPES.size, 14)
+  })
+
+  for (const f of ALL) {
+    test(`${f}: AI への指示文がカルテ本文に混入しない`, () => {
+      const karte = buildKarteTemplate(f, dataFor(f))
+      assert.ok(karte, 'テンプレートが null')
+      for (const ng of ['（該当時のみ）', '整形済みテキスト', 'undefined', '[object Object]', '【患者情報JSON】', '（記載あれば']) {
+        assert.ok(!karte.includes(ng), `カルテ本文に "${ng}" が混入している`)
+      }
+    })
+
+    test(`${f}: 必ず出る行がそろっている`, () => {
+      const karte = buildKarteTemplate(f, dataFor(f))
+      assert.ok(karte.includes('【アレルギー歴】'), '【アレルギー歴】がない')
+      assert.ok(karte.includes('【事前聴取時　申し送り事項】'), '申し送りがない')
+      assert.ok(karte.includes('□通院のご案内をお渡し済') || f === '甲状腺（腺腫悪性疑い）',
+        '「□通院のご案内をお渡し済」がない（当日紹介の悪性疑いだけ例外）')
+      assert.ok(karte.includes('【診察にあたっての要望】'), '要望がない')
+    })
+
+    test(`${f}: 空行ルール（申し送り最終□行と要望の間は空けない・空行は連続しない）`, () => {
+      const lines = buildKarteTemplate(f, dataFor(f)).split('\n')
+      const i = lines.findIndex(l => l.startsWith('【診察にあたっての要望】'))
+      assert.ok(lines[i - 1].startsWith('□'), `要望の直前が □ 行でない: ${JSON.stringify(lines[i - 1])}`)
+      // フッターの記入欄（空行4つ）以外に連続した空行を作らない
+      const footerStart = lines.findIndex(l => /^R\d+\.\d+：($|HbA1c|甲状腺)/.test(l) && lines.indexOf(l) > i)
+      const body = footerStart > 0 ? lines.slice(0, footerStart) : lines
+      for (let k = 1; k < body.length; k++) {
+        assert.ok(!(body[k] === '' && body[k - 1] === ''), `${k + 1}行目に連続した空行がある`)
+      }
+    })
+  }
+
+  test('♯他院管理の前だけ1行空ける（＃自院管理・【アレルギー歴】の前は空けない）', () => {
+    for (const f of ['DM基本', '1型糖尿病', '高血圧・脂質異常症', '妊娠糖尿病', '反応性低血糖', '睡眠時無呼吸症候群', '内分泌']) {
+      const lines = buildKarteTemplate(f, FIXTURES[f]).split('\n')
+      const iFirstPast = lines.findIndex(l => l.startsWith('♯') && !l.startsWith('♯反応性低血糖疑い'))
+      assert.ok(iFirstPast > 0, `${f}: ♯既往が出ていない`)
+      assert.equal(lines[iFirstPast - 1], '', `${f}: 他院管理の前に1行空いていない`)
+      const iAllergy = lines.findIndex(l => l.startsWith('【アレルギー歴】'))
+      assert.notEqual(lines[iAllergy - 1], '', `${f}: 【アレルギー歴】の直前に空行が入っている`)
+    }
+  })
+
+  test('DM差分問診: ＃糖尿病 が追加され、採血セットが DM基本セット になる', () => {
+    for (const [f, data] of [
+      ['睡眠時無呼吸症候群', SAS_WITH_DM_DIFF],
+      ['高血圧・脂質異常症', HTHL_WITH_DM_DIFF],
+      ['反応性低血糖', RH_WITH_DM_DIFF],
+      ['内分泌', ENDOCRINE_WITH_DM_DIFF],
+    ]) {
+      const karte = buildKarteTemplate(f, data)
+      assert.ok(karte.includes('＃糖尿病'), `${f}: ＃糖尿病 が無い`)
+      assert.ok(karte.includes('□採血で DM判明 → DM初期評価追加実施済'), `${f}: DM判明の申し送りが無い`)
+      assert.ok(karte.includes('DM基本セット'), `${f}: 採血セットが DM基本セット でない`)
+      assert.ok(!karte.includes('基本採血なし'), `${f}: 基本採血なし が残っている`)
+      assert.ok(karte.includes('【糖尿病の症状】'), `${f}: 糖尿病の症状が無い`)
+    }
+  })
+
+  test('内分泌: 主病名（＃行）は出さない。ただし採血で判明した ＃糖尿病 は例外', () => {
+    const karte = buildKarteTemplate('内分泌', FIXTURES['内分泌'])
+    assert.ok(!karte.split('\n').some(l => l.startsWith('＃')), '＃行を推測して出力している')
+    assert.ok(karte.includes('□主病名：医師の診察時に確定・記載'))
+    assert.ok(!karte.includes('□初回療養計画書を作成済'), '生活習慣病なしなのに療養計画書が出ている')
+    const withCarePlan = buildKarteTemplate('内分泌', ENDOCRINE_WITH_CAREPLAN)
+    assert.ok(withCarePlan.includes('□初回療養計画書を作成済'))
+    const withDm = buildKarteTemplate('内分泌', ENDOCRINE_WITH_DM_DIFF)
+    assert.ok(withDm.includes('＃糖尿病'))
+    assert.ok(withDm.includes('□主病名：医師の診察時に確定・記載'), 'DM判明時も主病名の申し送りは残す')
+  })
+
+  test('反応性低血糖: ＃糖尿病 は ♯反応性低血糖疑い より前・自費CGMは全例必須', () => {
+    const karte = buildKarteTemplate('反応性低血糖', RH_WITH_DM_DIFF)
+    assert.ok(karte.indexOf('＃糖尿病') < karte.indexOf('♯反応性低血糖疑い'))
+    assert.ok(buildKarteTemplate('反応性低血糖', FIXTURES['反応性低血糖']).includes('□自費CGM（リブレ）装着済'))
+  })
+
+  test('SAS: 区分で ＃主病名 と申し送りが決まる', () => {
+    const base = FIXTURES['睡眠時無呼吸症候群']
+    const cpap = buildKarteTemplate('睡眠時無呼吸症候群', base)
+    assert.ok(cpap.includes('＃SAS（前医：あげお睡眠クリニック、CPAP継続）'))
+    assert.ok(cpap.includes('□CPAP継続：前医情報提供書 確認済'))
+    const unconfirmed = buildKarteTemplate('睡眠時無呼吸症候群',
+      { ...base, reason: { ...base.reason, cpapPriorRecordsConfirmed: false } })
+    assert.ok(unconfirmed.includes('□CPAP継続：前医情報提供書 確認要'))
+    const screening = buildKarteTemplate('睡眠時無呼吸症候群',
+      { ...base, reason: { ...base.reason, sasCategory: 'screening' } })
+    assert.ok(screening.includes('＃SAS疑い（簡易PSG予定）'))
+    assert.ok(screening.includes('□SAS 簡易PSG発送手配 要'))
+  })
+
+  test('甲状腺: 6フォームで ＃診断名・申し送り・フォロー間隔が切り替わる', () => {
+    const of = f => buildKarteTemplate(f, THYROID_FIXTURE)
+    assert.ok(of('甲状腺（バセドウ初診）').includes('＃バセドウ病疑い（エコー上の疑い）'))
+    assert.ok(of('甲状腺（バセドウ継続）').includes('＃バセドウ病　甲状腺機能亢進症（診断時期：令和3年）'))
+    assert.ok(of('甲状腺（橋本病）').includes('＃橋本病疑い（エコー上の疑い）'))
+    assert.ok(of('甲状腺（腫大異常なし）').includes('＃甲状腺腫大（エコー上異常なし）'))
+    assert.ok(of('甲状腺（腺腫経過観察）').includes('6か月follow'))
+    const mal = of('甲状腺（腺腫悪性疑い）')
+    assert.ok(mal.includes('□当院は終診') && mal.includes('（当日紹介、当院終診）'))
+    assert.ok(!mal.includes('□通院のご案内をお渡し済'), '当日紹介なのに通院案内が出ている')
+    // 2ステップの2フォームは 家族歴・喫煙・健診・仕事 を聴取しない
+    for (const f of ['甲状腺（腫大異常なし）', '甲状腺（腺腫悪性疑い）']) {
+      assert.ok(!of(f).includes('【FH】'), `${f}: 聴取していない【FH】が出ている`)
+    }
+    // 結節ありは所見行が出る
+    assert.ok(buildKarteTemplate('甲状腺（腺腫経過観察）', THYROID_NODULE_FIXTURE)
+      .includes('右葉に最大12×8㎜大の結節あり、石灰化あり、血流に乏しい、充実性'))
   })
 })
 
@@ -718,31 +866,63 @@ describe('buildKartePrompt: DM差分問診（採血で糖尿病判明）', () =>
   })
 })
 
-describe('プロンプトの実装は1つだけ（経路A/B の二重管理を復活させない）', () => {
+describe('カルテ組立の実装は1つだけ（経路A/B の二重管理を復活させない）', () => {
   // 2026-09-06 に経路A（コンポーネント）のプロンプト組立を廃止し、
-  // 初回生成も再生成も lib/buildKartePrompt.js を呼ぶ形に一本化した。
+  // 2026-09-07 に生成そのものを lib/buildKarteTemplate.js に一本化した。
   // 二重管理が復活すると「初回生成と再生成でカルテが違う」事故が戻るので、ここで固定する。
   // （これが以前の scripts/check-prompt-sync.mjs + allow-list 65行 の代わり）
   const COMPONENT_DIR = join(HERE, '..', '..', 'components')
+  const intakeFiles = () => readdirSync(COMPONENT_DIR).filter(f => f.endsWith('IntakeTool.js'))
 
   test('components/*IntakeTool.js はプロンプトを自前で組み立てない', () => {
     const offenders = []
-    for (const f of readdirSync(COMPONENT_DIR).filter(f => f.endsWith('IntakeTool.js'))) {
+    for (const f of intakeFiles()) {
       const src = readFileSync(join(COMPONENT_DIR, f), 'utf8')
       if (/const prompt\s*=\s*`/.test(src)) offenders.push(f)
     }
     assert.deepEqual(offenders, [],
       'コンポーネント内にプロンプトのテンプレートリテラルが復活している。' +
-      'buildKartePrompt() を呼ぶ形に戻すこと')
+      'generateKarteText() を呼ぶ形に戻すこと')
   })
 
-  test('全 IntakeTool が buildKartePrompt を呼んでいる', () => {
+  test('全 IntakeTool が generateKarteText を呼んでいる', () => {
     const missing = []
-    for (const f of readdirSync(COMPONENT_DIR).filter(f => f.endsWith('IntakeTool.js'))) {
+    for (const f of intakeFiles()) {
       const src = readFileSync(join(COMPONENT_DIR, f), 'utf8')
-      if (!src.includes('buildKartePrompt(')) missing.push(f)
+      if (!src.includes('generateKarteText(')) missing.push(f)
     }
-    assert.deepEqual(missing, [], 'buildKartePrompt を呼んでいないフォームがある')
+    assert.deepEqual(missing, [], 'generateKarteText を呼んでいないフォームがある')
+  })
+
+  test('コンポーネントは Anthropic を直接叩かない（統合の1回だけに絞る）', () => {
+    const offenders = []
+    for (const f of intakeFiles()) {
+      const src = readFileSync(join(COMPONENT_DIR, f), 'utf8')
+      if (src.includes('"/api/generate"') || src.includes("'/api/generate'")) offenders.push(f)
+    }
+    assert.deepEqual(offenders, [],
+      'コンポーネントが /api/generate を直接呼んでいる。lib/generateKarte.js 経由にすること')
+  })
+})
+
+describe('AI を呼ぶのは音声入力があるときだけ', () => {
+  // 音声が無ければ統合する相手がいないので、カルテは form_data から決定論的に組み上がる。
+  // 当院の運用では音声はそこまで使われないため、実際は大半の初診が AI 呼び出しゼロで終わる。
+  test('音声なし → 統合プロンプトは null（AI を呼ばない）', () => {
+    for (const f of Object.keys(FIXTURES)) {
+      assert.equal(needsMerge(FIXTURES[f]), false, `${f}: フィクスチャに音声が入っている`)
+      assert.equal(buildMergePrompt(f, FIXTURES[f]), null, `${f}: 音声が無いのに統合プロンプトが出た`)
+    }
+  })
+
+  test('甲状腺は音声入力を持たないので常に AI ゼロ', () => {
+    for (const f of THYROID_FORMS) assert.equal(buildMergePrompt(f, THYROID_FIXTURE), null)
+  })
+
+  test('現病歴・既往歴どちらか片方の音声でも統合する', () => {
+    const base = FIXTURES['DM基本']
+    assert.equal(needsMerge({ ...base, voiceMemo: { aiSummary: 'あ' } }), true)
+    assert.equal(needsMerge({ ...base, voicePastHistory: { aiSummary: 'あ' } }), true)
   })
 })
 
@@ -767,15 +947,8 @@ describe('プロンプト全文スナップショット', () => {
     matchSnapshot('内分泌_生活習慣病あり', prompt)
   })
 
-  test('DM基本_テンプレート版（AIフリー）', () => {
-    matchSnapshot('DM基本_テンプレート版', buildKarteTemplate('DM基本', FIXTURES['DM基本']))
-  })
-
   // 甲状腺6フォーム（2026-09-06 に経路A と一本化したので B のスナップショットが主経路の証拠になる）
-  for (const formType of [
-    '甲状腺（バセドウ初診）', '甲状腺（バセドウ継続）', '甲状腺（橋本病）',
-    '甲状腺（腫大異常なし）', '甲状腺（腺腫経過観察）', '甲状腺（腺腫悪性疑い）',
-  ]) {
+  for (const formType of THYROID_FORMS) {
     test(formType, () => {
       const { prompt } = buildKartePrompt(formType, THYROID_FIXTURE)
       matchSnapshot(formType.replace(/[（）]/g, '_').replace(/_$/, ''), prompt)
@@ -793,4 +966,50 @@ describe('プロンプト全文スナップショット', () => {
       matchSnapshot(name, prompt)
     })
   }
+})
+
+// ──────────────────────────────────────────────────────────
+// ④ カルテ本文のスナップショット（★これが本番の出力そのもの）
+//
+// ③ のプロンプトのスナップショットは「旧方式（?legacy=1）の逃げ道」を守るためのもの。
+// 2026-09-07 以降、実際に患者のカルテになるのはこちら。
+// ──────────────────────────────────────────────────────────
+describe('カルテ本文スナップショット（テンプレート版・本番の出力）', () => {
+  const snapName = f => `カルテ_${f.replace(/[（）]/g, '_').replace(/_$/, '')}`
+
+  for (const [formType, formData] of Object.entries(FIXTURES)) {
+    test(formType, () => matchSnapshot(snapName(formType), buildKarteTemplate(formType, formData)))
+  }
+
+  for (const formType of THYROID_FORMS) {
+    test(formType, () => matchSnapshot(snapName(formType), buildKarteTemplate(formType, THYROID_FIXTURE)))
+  }
+  test('甲状腺（腺腫経過観察）_結節あり', () =>
+    matchSnapshot('カルテ_甲状腺_腺腫経過観察_結節あり', buildKarteTemplate('甲状腺（腺腫経過観察）', THYROID_NODULE_FIXTURE)))
+
+  test('内分泌（生活習慣病あり）', () =>
+    matchSnapshot('カルテ_内分泌_生活習慣病あり', buildKarteTemplate('内分泌', ENDOCRINE_WITH_CAREPLAN)))
+
+  for (const [name, formType, formData] of [
+    ['カルテ_睡眠時無呼吸症候群_DM差分あり', '睡眠時無呼吸症候群', SAS_WITH_DM_DIFF],
+    ['カルテ_高血圧・脂質異常症_DM差分あり', '高血圧・脂質異常症', HTHL_WITH_DM_DIFF],
+    ['カルテ_反応性低血糖_DM差分あり',       '反応性低血糖',       RH_WITH_DM_DIFF],
+    ['カルテ_内分泌_DM差分あり',             '内分泌',             ENDOCRINE_WITH_DM_DIFF],
+  ]) {
+    test(name, () => matchSnapshot(name, buildKarteTemplate(formType, formData)))
+  }
+
+  // 音声入力あり（＝ AI の統合結果が差し込まれた状態）も固定する
+  test('DM基本_音声あり_統合済', () => {
+    const d = {
+      ...FIXTURES['DM基本'],
+      voiceMemo: { transcript: '', aiSummary: 'R4頃から口渇・多尿あり。', needsDoctorReview: false },
+      voicePastHistory: { transcript: '', aiSummary: '♯高血圧（H28から、○○内科でアムロジピン 5mg 内服中）', needsDoctorReview: true },
+    }
+    const merged = {
+      reasonSummary: '上尾中央総合病院 糖尿病内科より紹介。R4頃から口渇・多尿あり。',
+      pastHistory: ['♯高血圧（H28から、○○内科でアムロジピン 5mg 内服中）', '♯子宮筋腫（鰐坂医院）'],
+    }
+    matchSnapshot('カルテ_DM基本_音声あり_統合済', buildKarteTemplate('DM基本', d, { merged }))
+  })
 })

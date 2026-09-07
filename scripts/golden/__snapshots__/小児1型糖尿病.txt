@@ -24,8 +24,12 @@
     "dm1type": "急性発症",
     "dmOnsetEra": "令和",
     "dmOnset": "5",
+    "dmOnsetUnknown": false,
     "ht": false,
     "hl": false,
+    "thyroidChecked": false,
+    "bakusmi": "希望あり",
+    "insulinStatus": "インスリン使用中",
     "dmSymptoms": {
       "selected": [
         "のどが渇く"
@@ -34,7 +38,6 @@
     }
   },
   "history": {
-    "age": "11",
     "allergy": "あり",
     "allergyDetail": "ペニシリン・金属",
     "fh": {
@@ -42,44 +45,31 @@
       "dmWho": [
         "母"
       ],
-      "ht": true,
-      "hl": false,
+      "dm1": true,
+      "dm1Who": [
+        "兄"
+      ],
+      "collagen": true,
+      "collagenItems": [
+        {
+          "who": "母",
+          "disease": "橋本病"
+        }
+      ],
+      "ht": false,
       "apo": false,
       "ihd": false
     },
-    "alcoholNone": false,
-    "alcoholItems": [
-      {
-        "type": "beer",
-        "amount": "2缶",
-        "freq": "毎日"
-      }
-    ],
-    "smoking": "禁煙済",
-    "smokingAmount": "20",
-    "smokingYears": "30",
-    "smokingStartAge": "20",
-    "smokingQuitEra": "令和",
-    "smokingQuitYear": "3",
-    "checkup": [
-      "市の健診"
-    ],
-    "vaccine65Prevena": "希望あり",
-    "vaccine65Herpes": "なし",
+    "eye": "",
+    "eyeVisiting": "",
+    "eyeFundusCheck": "受けていない",
+    "eyeNotebook": "持っていない",
     "livingSpouse": "配偶者あり",
     "livingOther": [
       "息子と同居"
     ],
     "livingCustom": "",
-    "childInfo": "",
-    "childLocation": "",
-    "childGender": [],
-    "work": "している",
-    "job": [
-      "会社員（デスクワーク）"
-    ],
-    "jobNote": "週3日リモート",
-    "activity": "座っていることが多い",
+    "keyPerson": "母",
     "otherDiseases": [
       {
         "name": "子宮筋腫",
@@ -104,9 +94,6 @@
   "body": {
     "height": "140",
     "weightNow": "34",
-    "weight20": "60",
-    "weightMax": "80",
-    "weightMaxAge": "45",
     "concern": "薬を減らしたい",
     "preferredDays": [
       "火"
@@ -127,11 +114,52 @@
     "summary": ""
   },
   "support": {
-    "family": "母が主に管理",
-    "school": "担任と養護教諭が把握"
+    "familyMain": "母",
+    "familySubList": [
+      "父",
+      "祖母"
+    ],
+    "familyNote": "祖父母が近居でサポート",
+    "schoolStaff": [
+      "担任・養護教諭が連携",
+      "保健室で血糖測定可"
+    ],
+    "schoolSupportPerson": [
+      "担任",
+      "養護教諭"
+    ],
+    "schoolSupportNote": "",
+    "disclosedChild": "一部の友人のみ",
+    "disclosedTeacher": "担任＋養護教諭",
+    "childGrade": "小5",
+    "childActivities": [
+      "運動系部活"
+    ],
+    "childActivityNote": "週3回サッカー教室",
+    "parentWorkMain": [
+      "パート（午前）"
+    ],
+    "parentWorkMainNote": "週3日勤務",
+    "parentWorkSub": [
+      "会社員"
+    ],
+    "parentWorkSubNote": "",
+    "independenceLevel": "親の補助あり",
+    "independenceNote": "注射は自己、血糖測定は親が確認"
   },
   "chronic": {
-    "status": "申請済"
+    "status": "申請済",
+    "birthWeight": "",
+    "birthWeek": "",
+    "birthWeekDay": "",
+    "birthCity": "",
+    "booklets": [],
+    "documents": [
+      "学校生活管理指導表"
+    ],
+    "residenceCity": "上尾市",
+    "paymentConfirmed": "窓口負担なし（公費）",
+    "maternalHandbook": "忘れた"
   }
 }
 

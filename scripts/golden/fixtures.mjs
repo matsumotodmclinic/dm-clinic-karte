@@ -89,38 +89,77 @@ export const FIXTURES = {
 
   '1型糖尿病': {
     ...commonVoice,
-    alert: { weightLoss: 'あり', weightLossAmount: '5' },
-    reason: commonReason,
-    disease: {
-      dm1type: '急性発症', dmOnsetEra: '令和', dmOnset: '4',
-      thyroidChecked: true, pensionKosei: 'はい（加入していた）', pensionStatus: '未申請',
-      ht: false, hl: false,
-      dmSymptoms: { selected: ['体がだるい'], otherText: '' },
-      echoNeck: '希望なし', echoAbdomen: '希望なし',
+    // 問診票のボタンは「あり / なし / 不明」の3択（画面で3kg以上と定義している）
+    alert: { weightLoss: 'あり' },
+    reason: {
+      ...commonReason,
+      cgmCurrent: 'フリースタイルリブレ', cgmWish: 'Dexcom G7',
+      pumpCurrent: '使用していない', pumpWish: '希望なし',
+      deviceWish: [],
     },
-    history: { ...commonHistory, otherDiseases },
+    disease: {
+      dm1type: '急性発症', dmOnsetEra: '令和', dmOnset: '4', dmOnsetUnknown: false,
+      thyroidChecked: true, pensionKosei: 'はい（加入していた）', pensionStatus: '未申請',
+      insulinStatus: 'インスリン使用中',
+      ht: false, hl: false,
+      dmSymptoms: { selected: ['体がだるい', 'その他'], otherText: '夜間頻尿' },
+    },
+    // 1型のフォームは エコー項目 と 家族歴の HL を持たない（カルテのエコー行は定型文）
+    history: {
+      ...commonHistory,
+      fh: { dm: true, dmWho: ['母'], ht: true, apo: false, ihd: false },
+      eye: '', eyeVisiting: '', eyeFundusCheck: '受けていない', eyeNotebook: '持っていない',
+      otherDiseases,
+    },
     body: commonBody,
   },
 
+  // ★フィクスチャは initialData から起こすこと（2026-09-06 の教訓）。
+  //   support / chronic はフォームの実フィールド名で埋める。
   '小児1型糖尿病': {
     ...commonVoice,
     reason: commonReason,
     disease: {
-      dm1type: '急性発症', dmOnsetEra: '令和', dmOnset: '5',
-      ht: false, hl: false,
+      dm1type: '急性発症', dmOnsetEra: '令和', dmOnset: '5', dmOnsetUnknown: false,
+      ht: false, hl: false, thyroidChecked: false, bakusmi: '希望あり',
+      insulinStatus: 'インスリン使用中',
       dmSymptoms: { selected: ['のどが渇く'], otherText: '' },
     },
-    history: { ...commonHistory, age: '11', otherDiseases },
-    support: { family: '母が主に管理', school: '担任と養護教諭が把握' },
-    chronic: { status: '申請済' },
-    body: { ...commonBody, height: '140', weightNow: '34' },
+    // 小児1型は 飲酒・喫煙・健診・ワクチン・仕事・20歳時体重 を聴取しない
+    history: {
+      allergy: 'あり', allergyDetail: 'ペニシリン・金属',
+      fh: { dm: true, dmWho: ['母'], dm1: true, dm1Who: ['兄'], collagen: true, collagenItems: [{ who: '母', disease: '橋本病' }], ht: false, apo: false, ihd: false },
+      eye: '', eyeVisiting: '', eyeFundusCheck: '受けていない', eyeNotebook: '持っていない',
+      livingSpouse: '配偶者あり', livingOther: ['息子と同居'], livingCustom: '',
+      keyPerson: '母',
+      otherDiseases,
+    },
+    support: {
+      familyMain: '母', familySubList: ['父', '祖母'], familyNote: '祖父母が近居でサポート',
+      schoolStaff: ['担任・養護教諭が連携', '保健室で血糖測定可'],
+      schoolSupportPerson: ['担任', '養護教諭'], schoolSupportNote: '',
+      disclosedChild: '一部の友人のみ', disclosedTeacher: '担任＋養護教諭',
+      childGrade: '小5', childActivities: ['運動系部活'], childActivityNote: '週3回サッカー教室',
+      parentWorkMain: ['パート（午前）'], parentWorkMainNote: '週3日勤務',
+      parentWorkSub: ['会社員'], parentWorkSubNote: '',
+      independenceLevel: '親の補助あり', independenceNote: '注射は自己、血糖測定は親が確認',
+    },
+    chronic: {
+      status: '申請済', birthWeight: '', birthWeek: '', birthWeekDay: '', birthCity: '',
+      booklets: [], documents: ['学校生活管理指導表'], residenceCity: '上尾市',
+      paymentConfirmed: '窓口負担なし（公費）', maternalHandbook: '忘れた',
+    },
+    body: {
+      height: '140', weightNow: '34', concern: '薬を減らしたい',
+      preferredDays: ['火'], doctorGender: '女性医師希望', patientFlag: '通常', doubleSlot: false,
+    },
   },
 
   '高血圧・脂質異常症': {
     ...commonVoice,
     reason: { ...commonReason, concern: false, concernType: '' },
     disease: {
-      igt: false, ht: true, hl: true, thyroidAdded: true,
+      igt: false, ht: true, hl: true,
       echoNeck: '希望なし', echoAbdomen: '希望なし',
       otherDisease: '', otherDiseases,
     },
@@ -132,13 +171,24 @@ export const FIXTURES = {
     ...commonVoice,
     reason: commonReason,
     disease: {
-      dmType: '妊娠糖尿病', pastGDM: 'なし',
+      dmType: '妊娠糖尿病（GDM）', pastGDM: 'あり',
+      pastGDMChild: [{ era: '令和', year: '3', had: 'あり' }, { era: '令和', year: '', had: '' }],
       currentWeek: '26', dueDateEra: '令和', dueDateYear: '8', dueDateMonth: '12',
       obHospital: 'その他', obHospitalOther: 'ナラヤマレディースクリニック',
-      ht: false, hl: false, thyroidAdded: false,
+      ht: false, hl: false,
       echoNeck: '希望なし', echoAbdomen: '希望なし',
     },
-    history: { ...commonHistory, age: '32', otherDiseases },
+    // 妊娠糖尿病は 年齢・飲酒（妊娠中で固定）・健診・ワクチン・子供の状況 を聴取しない
+    history: {
+      allergy: 'あり', allergyDetail: 'ペニシリン・金属',
+      fh: { dm: true, dmWho: ['母'], ht: true, apo: false, ihd: false },
+      smoking: '禁煙済', smokingAmount: '10', smokingYears: '8', smokingStartAge: '20',
+      smokingQuitEra: '令和', smokingQuitYear: '5',
+      eye: '', eyeVisiting: '', eyeFundusCheck: '受けていない', eyeNotebook: '持っていない',
+      livingSpouse: '配偶者あり', livingOther: [], livingCustom: '',
+      work: 'している', job: ['会社員（デスクワーク）'], jobNote: '週3日リモート', activity: '座っていることが多い',
+      otherDiseases,
+    },
     body: { ...commonBody, weightPregnancy: '62' },
   },
 
@@ -155,16 +205,19 @@ export const FIXTURES = {
     body: commonBody,
   },
 
+  // ★SAS は sasCategory / cpapPriorRecordsConfirmed が reason 配下、症状は symptom 配下。
+  //   2026-09-07 まで disease 配下に置いていて、プロンプトの SAS区分が「未選択」のまま
+  //   テストが通っていた（フィクスチャが実データと違うと本番だけ壊れる典型）。
   '睡眠時無呼吸症候群': {
     ...commonVoice,
     reason: {
-      ...commonReason,
-      purposes: ['CPAP継続'], currentClinic: '前医クリニック',
-      knowSource: ['家族の紹介'], knowSourceOther: '',
+      purposes: ['現在通院中の医療機関から当院へ転院したい'], purposeOther: '', currentClinic: '前医クリニック',
+      sasCategory: 'cpap', cpapPriorRecordsConfirmed: true, cpapPriorClinic: 'あげお睡眠クリニック',
+      knowSource: ['家族の紹介'], knowSourceOther: '', summary: '',
     },
+    symptom: { sasSymptoms: { selected: ['いびき', '日中の眠気'], otherText: '' } },
     disease: {
-      sasCategory: 'cpap', cpapConfirmed: true,
-      sasSymptoms: { selected: ['いびき', '日中の眠気'], otherText: '' },
+      ht: true, hl: false, igt: false,
       echoNeck: '希望なし', echoAbdomen: '希望なし',
       otherDiseases,
     },
@@ -226,14 +279,35 @@ export const ENDOCRINE_WITH_CAREPLAN = {
 }
 
 // 甲状腺（代表1件、6タイプは formType prop で分岐）
+// 甲状腺フォームは音声入力を持たない（3〜4分フォーム）ので voiceMemo は入れない。
 export const THYROID_FIXTURE = {
-  ...commonVoice,
-  reason: { type: '検診異常', checkupType: '市健診', summary: '', thyroidConcern: false },
-  echo: { hasNodule: 'なし', ecg: '洞調律' },
+  reason: { type: '検診異常', checkupType: '市健診', summary: '', thyroidConcern: false, thyroidConcernReason: [], thyroidConcernNote: '' },
+  echo: {
+    thyroidSize: '腫大', thyroidBloodFlow: '豊富', thyroidParenchyma: '不均一',
+    ecg: '洞調律', hasNodule: 'なし',
+    noduleLocation: '', noduleSizeW: '', noduleSizeD: '', noduleCount: '',
+    calcification: '', noduleBloodFlow: '', noduleType: '', noduleOther: '',
+  },
+  symptom: { selected: ['動悸', '体重減少'], otherText: '' },
   history: {
-    ...commonHistory,
+    ...omit(commonHistory, ['alcoholNone', 'alcoholItems', 'livingSpouse', 'livingOther', 'livingCustom',
+      'childInfo', 'childLocation', 'childGender', 'vaccine65Prevena', 'vaccine65Herpes']),
     fh: { thyroid: true, thyroidWho: ['母'], dm: false, dmWho: [] },
-    diagnosisEra: '令和', diagnosisYear: '3',
+    surgeryHistory: false, surgeryYear: '', surgeryMonth: '', surgeryType: '',
+    isotopeHistory: false, sideEffectMmz: false, sideEffectPtz: false,
+    eyeHistory: false, eyeClinic: '', treatmentHistory: '',
+    diagnosisEra: '令和', diagnosisYear: '3', diagnosisMonth: '5', medications: ['メルカゾール'],
   },
   body: commonBody,
+}
+
+// 結節ありのバリエーション（腺腫・悪性疑いフォームの結節所見行を固定する）
+export const THYROID_NODULE_FIXTURE = {
+  ...THYROID_FIXTURE,
+  echo: {
+    ...THYROID_FIXTURE.echo,
+    hasNodule: 'あり', noduleLocation: '右葉', noduleSizeW: '12', noduleSizeD: '8',
+    noduleCount: '単発', calcification: 'あり', noduleBloodFlow: '乏しい',
+    noduleType: '充実性', noduleOther: '',
+  },
 }

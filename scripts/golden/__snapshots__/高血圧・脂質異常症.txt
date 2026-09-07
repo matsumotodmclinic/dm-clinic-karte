@@ -50,7 +50,6 @@
     "igt": false,
     "ht": true,
     "hl": true,
-    "thyroidAdded": true,
     "echoNeck": "希望なし",
     "echoAbdomen": "希望なし",
     "otherDisease": "",
