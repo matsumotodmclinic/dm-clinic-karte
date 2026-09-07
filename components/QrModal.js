@@ -86,10 +86,10 @@ export default function QrModal({ text, title, onClose }) {
         {title && (
           <div style={{ fontSize: 12, color: UI.textMuted, marginBottom: 8 }}>{title}</div>
         )}
-        <p style={{ fontSize: 12, color: UI.textMuted, lineHeight: 1.7, marginTop: 0, marginBottom: 14 }}>
-          電子カルテの入力欄に<strong>カーソルを置いてから</strong>、QRリーダーで読み取ってください。読み取った本文がそのまま入力されます。
+        <p style={{ fontSize: 12, color: UI.textMuted, lineHeight: 1.6, marginTop: 0, marginBottom: 10 }}>
+          電子カルテの入力欄に<strong>カーソルを置いてから</strong>読み取ってください。
           <span style={{ display: 'block', color: UI.textFaint }}>
-            ネットワーク接続は不要です。読み取り機は QR（2次元コード）対応のものをご利用ください。
+            ★<strong>タブレットでの表示を推奨</strong>します（スマートフォンでは QR が小さくなり読み取れないことがあります）。読み取り機は QR（2次元コード）対応のものが必要です。
           </span>
         </p>
 
@@ -102,9 +102,18 @@ export default function QrModal({ text, title, onClose }) {
           </div>
         ) : (
           <div style={{ display: 'flex', justifyContent: 'center' }}>
+            {/* QR は正方形なので **画面の短辺**で実効サイズが決まる。
+                幅だけ 100% にすると縦に溢れて全体が写らないため、高さ側の余白も引いて制限する
+                (2026-09-07 実機確認: スマホでは 1 画面に収まらなかった)。 */}
             <canvas
               ref={canvasRef}
-              style={{ width: '100%', maxWidth: 560, height: 'auto', border: `1px solid ${UI.border}`, borderRadius: 6 }}
+              style={{
+                width: '100%',
+                maxWidth: 'min(560px, calc(100vh - 230px))',
+                height: 'auto',
+                border: `1px solid ${UI.border}`,
+                borderRadius: 6,
+              }}
             />
           </div>
         )}
@@ -114,7 +123,7 @@ export default function QrModal({ text, title, onClose }) {
             {info && `${text.length.toLocaleString()}文字 / ${info.bytes.toLocaleString()}バイト / 誤り訂正 ${info.level} / バージョン ${info.version}`}
             {info && info.version >= 33 && (
               <span style={{ display: 'block', color: UI.warning.fg }}>
-                目が細かいコードです。スマホを縦のまま読み取れない場合は、<strong>端末を横向きにする</strong>か画面を拡大してください（横向きにすると 2 倍ほど大きく表示されます）。
+                目が細かいコードです。<strong>タブレットで開く</strong>と読み取りやすくなります（QR は正方形なので、端末を横向きにしても大きくはなりません）。
               </span>
             )}
           </div>
