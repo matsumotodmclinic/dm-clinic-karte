@@ -14,6 +14,7 @@
 
 import { useEffect, useState } from 'react';
 import { UI } from '../lib/uiTokens';
+import { toShiftJisBytes } from '../lib/shiftJis';
 
 const CAPACITY = { M: 2331, L: 2953 };
 
@@ -90,33 +91,42 @@ export default function QrModal({ text, title, onClose }) {
       //   改行にならず、カーソルが動くだけになる。CR なら Enter として入り、複数行欄で改行になる。
       //   (画面のコピーは text をそのまま使うので影響なし。QR 化の時だけ置換する)
       const payload = text.replace(/\r?\n/g, '\r');
-      const bytes = new TextEncoder().encode(payload).length;
-      // Shift-JIS (Kanji mode) は変換表を別ファイルで読む (通常利用のバンドルを膨らませない)
-      let toSJISFunc;
+      // QR に入れるデータ。utf8 = 文字列そのまま (byte mode UTF-8)。
+      // sjis = 本文全体を Shift-JIS バイト列にして byte mode 1 セグメント (2026-09-08)。
+      //   ※Kanji mode (toSJISFunc) は使わない: 英数字に挟まれた 1 文字の記号 (＃ → 、 ×) を
+      //     ライブラリが UTF-8 の byte mode に最適化してしまい、そこだけ化けた (実機で確認)。
+      let input = payload;
+      let bytes = new TextEncoder().encode(payload).length;
+      let note = '';
       if (enc === 'sjis') {
-        toSJISFunc = (await import('qrcode/helper/to-sjis')).default;
+        const toSJIS = (await import('qrcode/helper/to-sjis')).default;
+        const r = toShiftJisBytes(payload, toSJIS);
+        input = [{ data: r.bytes, mode: 'byte' }];
+        bytes = r.bytes.length;
+        const parts = [];
+        if (r.replaced.length > 0) parts.push(`Shift-JIS に無い文字を置換: ${r.replaced.map(([a, b]) => `${a}→${b}`).join(' ')}`);
+        if (r.dropped.length > 0) parts.push(`変換できない文字を 〓 に: ${r.dropped.join(' ')}`);
+        note = parts.join(' / ');
       }
       if (cancelled) return;
 
       for (const level of ['M', 'L']) {
-        // UTF-8 はバイト数で事前判定できる。Kanji mode は詰まり方が違うので create の例外で判定する
-        if (enc === 'utf8' && bytes > CAPACITY[level]) continue;
+        if (bytes > CAPACITY[level]) continue;
         try {
           // ★タブレット表示に最適化 (2026-09-07 院長確定)。
           //   描画は 1000px の高解像度で作り、表示側で画面に合わせて縮める。
           //   こうするとタブレット (短辺 768px) でも拡大ボケが出ない。
           //   margin は QR 規格上の必須静穏帯 4 モジュール分を確保する
           //   (2 だと規格未満で読み取り率が落ちる機種がある)。
-          const url = await QRCode.toDataURL(payload, {
+          const url = await QRCode.toDataURL(input, {
             errorCorrectionLevel: level,
             width: 1000,
             margin: 4,
-            toSJISFunc,
           });
-          const qr = QRCode.create(payload, { errorCorrectionLevel: level, toSJISFunc });
+          const qr = QRCode.create(input, { errorCorrectionLevel: level });
           if (!cancelled) {
             setDataUrl(url);
-            setInfo({ bytes, level, version: qr.version, modules: qr.modules.size });
+            setInfo({ bytes, level, version: qr.version, modules: qr.modules.size, note });
             setError(null);
           }
           return;
@@ -175,7 +185,7 @@ export default function QrModal({ text, title, onClose }) {
                 onClick={() => changeEnc(e)}
                 title={e === 'utf8'
                   ? '国際標準。リーダーの QR 文字コード設定を UTF-8 にして使う'
-                  : '日本語 QR (漢字モード)。リーダーが Shift-JIS 前提の場合はこちら。QR も小さくなる'}
+                  : '本文全体を Shift-JIS で入れる。リーダーが Shift-JIS 前提の場合はこちら (BC-NL3000UⅡ で実機確認済)。QR も小さくなる'}
                 style={{
                   padding: '2px 8px', borderRadius: 4, fontSize: 11, cursor: 'pointer',
                   border: `1px solid ${enc === e ? UI.neutral.fg : UI.border}`,
@@ -238,7 +248,8 @@ export default function QrModal({ text, title, onClose }) {
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 14, flexWrap: 'wrap' }}>
           <div style={{ fontSize: 11, color: UI.textFaint }}>
-            {info && `${text.length.toLocaleString()}文字 / ${info.bytes.toLocaleString()}バイト / 誤り訂正 ${info.level} / バージョン ${info.version} / ${ENC_LABEL[enc]}${enc === 'sjis' ? ' (漢字モード)' : ''}`}
+            {info && `${text.length.toLocaleString()}文字 / ${info.bytes.toLocaleString()}バイト / 誤り訂正 ${info.level} / バージョン ${info.version} / ${ENC_LABEL[enc]}`}
+            {info && info.note && <span style={{ display: 'block', color: UI.warning.fg }}>{info.note}</span>}
             {info && info.version >= 33 && (
               <span style={{ display: 'block', color: UI.warning.fg }}>
                 目が細かいコードです。<strong>タブレットで開く</strong>と読み取りやすくなります（QR は正方形なので、端末を横向きにしても大きくはなりません）。
