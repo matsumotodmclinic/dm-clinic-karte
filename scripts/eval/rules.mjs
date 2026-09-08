@@ -134,8 +134,9 @@ export const RULES = [
       const line = lines(k).find(l => l.startsWith('身長:'))
       if (!line) return []
       const out = []
-      // 0 以下・数値でないものは打ち間違いとして「○」に倒す仕様
-      const want = v => (parseFloat(v) > 0 ? v : '○')
+      // 0 以下・数値でないものは打ち間違いとして「○」に倒す仕様。
+      // 単位付き（DB 直編集で「170cm」等）は数値部分だけを取り出す（「170cmcm」を防ぐため）
+      const want = v => (parseFloat(v) > 0 ? String(parseFloat(v)) : '○')
       const h = line.match(/身長:([^c]*)cm/)?.[1]
       const w = line.match(/初診時:([^k]*)kg/)?.[1]
       if (h !== want(b.height)) out.push(`身長が一致しない: 入力 ${JSON.stringify(b.height)} / 出力 ${JSON.stringify(h)}`)

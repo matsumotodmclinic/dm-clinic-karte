@@ -11,7 +11,8 @@ import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import { judge } from '../eval/rules.mjs'
 import { CASES, EMPTY } from '../eval/cases.mjs'
-import { buildKarteTemplate } from '../../lib/buildKarteTemplate.js'
+import { buildKarteTemplate, buildMergePrompt, parseMergeResponse, TEMPLATE_FORM_TYPES } from '../../lib/buildKarteTemplate.js'
+const TEMPLATE_ALL = [...TEMPLATE_FORM_TYPES]
 import { buildAlcohol, buildSmoking, buildBmi } from '../../lib/karteFields.js'
 
 // 正常なカルテ（DM基本/標準）を土台に、1 箇所だけ壊して判定させる
@@ -260,5 +261,71 @@ describe('2026-09-08 検証2回目で見つかった不具合（回帰）', () =
     const k = buildKarteTemplate(c.form, c.data)
     assert.ok(!k.includes('えーと'), '生の音声がカルテに載っている')
     assert.ok(!k.includes('□AI統合に失敗'))
+  })
+})
+
+// ──────────────────────────────────────────────────────────
+// 2026-09-08 検証4回目（インジェクション・境界値・数値/日付の罠・壊れた入力）
+// ──────────────────────────────────────────────────────────
+describe('2026-09-08 検証4回目で見つかった不具合（回帰）', () => {
+  test('壊れた form_data でもカルテ生成が落ちない（配列に文字列 / null / 想定外の型）', () => {
+    // 旧: `.join is not a function` で例外 → 詳細画面の再生成が 500 になりカルテが作れない
+    const c = CASES.find(x => x.id === 'DM基本/壊れた入力')
+    const karte = buildKarteTemplate(c.form, c.data)
+    assert.ok(karte && karte.includes('【事前聴取時'), 'カルテが組み立てられていない')
+    // 全 14 フォームで、空・null・壊れた入力のどれでも落ちないこと
+    for (const f of TEMPLATE_ALL) {
+      assert.ok(buildKarteTemplate(f, {}), `${f}: 空の form_data で落ちる`)
+      assert.ok(buildKarteTemplate(f, { history: null, disease: 'x', body: [] }), `${f}: 壊れた form_data で落ちる`)
+    }
+  })
+
+  test('★真偽値を配列化しない（selected を取り違えない）', () => {
+    // dmSymptoms.selected は配列 / gastricCancer.selected は真偽値。
+    // false を [] にすると `!x.selected` が false になり、選択していない重要既往が全部出る
+    const d = { disease: { gastricCancer: { selected: false }, pancreasCancer: { selected: false }, ihd: { selected: false }, stroke: { selected: false } } }
+    const karte = buildKarteTemplate('DM基本', d)
+    for (const n of ['♯胃癌', '♯膵臓癌', '♯IHD', '♯脳梗塞後']) {
+      assert.ok(!karte.includes(n), `選択していない ${n} が出ている`)
+    }
+  })
+
+  test('HTML タグはカルテに出さない（「<140/90」のような医療表記は消さない）', () => {
+    const c = CASES.find(x => x.id === 'DM基本/注入-書式')
+    assert.ok(!buildKarteTemplate(c.form, c.data).includes('<script>'), 'HTMLタグが残っている')
+    const d = { reason: { dmConcern: true, dmConcernNote: '血圧は<140/90を目標と言われた' }, body: { concern: 'a<b' } }
+    const k = buildKarteTemplate('DM基本', d)
+    assert.ok(k.includes('<140/90'), '医療表記の「<」まで消している')
+    assert.ok(k.includes('a<b'), '通常の「<」まで消している')
+  })
+
+  test('身長・体重は数値部分だけ取り出す（「170cmcm」を出さない）', () => {
+    const line = v => buildKarteTemplate('DM基本', { body: v }).split('\n').find(l => l.startsWith('身長:'))
+    assert.equal(line({ height: '170cm', weightNow: '72.5kg', weight20: '80 kg', weightMax: '', weightMaxAge: '45歳' }),
+      '身長:170cm　初診時:72.5kg（BMI 25.1）　20歳時:80kg　max体重○kg(45歳)')
+  })
+
+  test('SAS 受診理由の「その他」は JS 側でも AI 側でも落とす', () => {
+    // 旧: buildReasonSummary だけ落としていて buildReasonFacts が落とし忘れ
+    //     → AI 経由のときだけ「受診理由：その他、…」と出ていた
+    const sas = CASES.find(x => x.id === '睡眠時無呼吸症候群/注入-無視')
+    const prompt = buildMergePrompt(sas.form, sas.data)
+    assert.ok(prompt, '統合プロンプトが出ていない')
+    const line = prompt.split('\n').find(l => l.startsWith('- 受診理由：'))
+    assert.ok(!line.includes('その他、'), `AI に渡す材料に「その他」が残っている: ${line}`)
+  })
+
+  test('境界値: 60歳でワクチン歴 / 70歳で子供の状況が出る', () => {
+    const of = age => buildKarteTemplate('DM基本', CASES.find(x => x.id === `DM基本/境界${age}歳`).data)
+    assert.ok(!of('59').includes('【ワクチン歴】'), '59歳でワクチン歴が出ている')
+    assert.ok(of('60').includes('【ワクチン歴】'), '60歳でワクチン歴が出ていない')
+    assert.ok(!of('69').includes('週1回来訪'), '69歳で子供の状況が出ている')
+    assert.ok(of('70').includes('週1回来訪'), '70歳で子供の状況が出ていない')
+  })
+
+  test('AI の返答の括弧を全角に揃える（3回に1回 半角で返ってくる）', () => {
+    const got = parseMergeResponse('{"reasonSummary":"紹介(安定していたため)","pastHistory":["♯慢性腎臓病(上尾中央総合病院 腎臓内科)"]}')
+    assert.equal(got.reasonSummary, '紹介（安定していたため）')
+    assert.deepEqual(got.pastHistory, ['♯慢性腎臓病（上尾中央総合病院 腎臓内科）'])
   })
 })
