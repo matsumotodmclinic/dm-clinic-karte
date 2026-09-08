@@ -25,6 +25,22 @@ const SIZE_PX = { S: 300, M: 480, L: 760 };
 const SIZE_LABEL = { S: '小', M: '中', L: '大' };
 const SIZE_KEY = 'kvp.qrSize';
 
+// QR に入れる文字コード (2026-09-08 院長の実機テストで日本語が化けたため追加)。
+//   utf8 = byte mode に UTF-8 バイト (国際標準・既定)。
+//   sjis = qrcode の Kanji mode (JIS X 0208 の文字を Shift-JIS 値で 13bit/字に詰める)。
+//     国内の「日本語 QR 対応」リーダーは Shift-JIS/漢字モード前提の機種が多く、受信側 (Code Page 932)
+//     との相性が良い可能性がある。副産物として QR が UTF-8 比で約 45% 小さくなる。
+//   選択はリーダーの設定に合わせて端末ごとに記憶する。
+const ENC_KEY = 'kvp.qrEncoding';
+const ENC_LABEL = { utf8: 'UTF-8', sjis: 'Shift-JIS' };
+function defaultEncoding() {
+  try {
+    const v = localStorage.getItem(ENC_KEY);
+    if (v === 'utf8' || v === 'sjis') return v;
+  } catch (e) { /* 既定で動く */ }
+  return 'utf8';
+}
+
 function defaultSize() {
   try {
     const saved = localStorage.getItem(SIZE_KEY);
@@ -55,6 +71,13 @@ export default function QrModal({ text, title, onClose }) {
     try { localStorage.setItem(SIZE_KEY, s); } catch (e) { /* 記憶できなくても表示は変わる */ }
   };
 
+  const [enc, setEnc] = useState('utf8');
+  useEffect(() => { setEnc(defaultEncoding()); }, []);
+  const changeEnc = (e) => {
+    setEnc(e);
+    try { localStorage.setItem(ENC_KEY, e); } catch (err) { /* noop */ }
+  };
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -68,9 +91,16 @@ export default function QrModal({ text, title, onClose }) {
       //   (画面のコピーは text をそのまま使うので影響なし。QR 化の時だけ置換する)
       const payload = text.replace(/\r?\n/g, '\r');
       const bytes = new TextEncoder().encode(payload).length;
+      // Shift-JIS (Kanji mode) は変換表を別ファイルで読む (通常利用のバンドルを膨らませない)
+      let toSJISFunc;
+      if (enc === 'sjis') {
+        toSJISFunc = (await import('qrcode/helper/to-sjis')).default;
+      }
+      if (cancelled) return;
 
       for (const level of ['M', 'L']) {
-        if (bytes > CAPACITY[level]) continue;
+        // UTF-8 はバイト数で事前判定できる。Kanji mode は詰まり方が違うので create の例外で判定する
+        if (enc === 'utf8' && bytes > CAPACITY[level]) continue;
         try {
           // ★タブレット表示に最適化 (2026-09-07 院長確定)。
           //   描画は 1000px の高解像度で作り、表示側で画面に合わせて縮める。
@@ -81,8 +111,9 @@ export default function QrModal({ text, title, onClose }) {
             errorCorrectionLevel: level,
             width: 1000,
             margin: 4,
+            toSJISFunc,
           });
-          const qr = QRCode.create(payload, { errorCorrectionLevel: level });
+          const qr = QRCode.create(payload, { errorCorrectionLevel: level, toSJISFunc });
           if (!cancelled) {
             setDataUrl(url);
             setInfo({ bytes, level, version: qr.version, modules: qr.modules.size });
@@ -100,7 +131,7 @@ export default function QrModal({ text, title, onClose }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [text]);
+  }, [text, enc]);
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -137,7 +168,25 @@ export default function QrModal({ text, title, onClose }) {
             <span style={{ color: UI.textFaint }}>（日本語出力対応のQRリーダーが必要。目が細かい時はタブレットが読みやすい）</span>
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: UI.textMuted }}>
-            <span style={{ marginRight: 4 }}>表示サイズ</span>
+            <span style={{ marginRight: 4 }}>文字コード</span>
+            {['utf8', 'sjis'].map((e) => (
+              <button
+                key={e}
+                onClick={() => changeEnc(e)}
+                title={e === 'utf8'
+                  ? '国際標準。リーダーの QR 文字コード設定を UTF-8 にして使う'
+                  : '日本語 QR (漢字モード)。リーダーが Shift-JIS 前提の場合はこちら。QR も小さくなる'}
+                style={{
+                  padding: '2px 8px', borderRadius: 4, fontSize: 11, cursor: 'pointer',
+                  border: `1px solid ${enc === e ? UI.neutral.fg : UI.border}`,
+                  background: enc === e ? UI.neutral.fg : UI.surface,
+                  color: enc === e ? '#fff' : UI.textMuted,
+                }}
+              >
+                {ENC_LABEL[e]}
+              </button>
+            ))}
+            <span style={{ marginLeft: 12, marginRight: 4 }}>表示サイズ</span>
             {['S', 'M', 'L'].map((s) => (
               <button
                 key={s}
@@ -189,7 +238,7 @@ export default function QrModal({ text, title, onClose }) {
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 14, flexWrap: 'wrap' }}>
           <div style={{ fontSize: 11, color: UI.textFaint }}>
-            {info && `${text.length.toLocaleString()}文字 / ${info.bytes.toLocaleString()}バイト / 誤り訂正 ${info.level} / バージョン ${info.version}`}
+            {info && `${text.length.toLocaleString()}文字 / ${info.bytes.toLocaleString()}バイト / 誤り訂正 ${info.level} / バージョン ${info.version} / ${ENC_LABEL[enc]}${enc === 'sjis' ? ' (漢字モード)' : ''}`}
             {info && info.version >= 33 && (
               <span style={{ display: 'block', color: UI.warning.fg }}>
                 目が細かいコードです。<strong>タブレットで開く</strong>と読み取りやすくなります（QR は正方形なので、端末を横向きにしても大きくはなりません）。
