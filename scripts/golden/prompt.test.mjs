@@ -612,7 +612,7 @@ describe('lib/buildKarteTemplate（案2: 統合だけ AI に頼む）', () => {
       ['受診区分', '紹介'],
       ['紹介元', '上尾中央総合病院 糖尿病内科'],
       ['紹介の経緯', '安定していたため当院へ'],
-      ['本人の自由記入', '通院間隔を空けたい'],
+      // ★自由記入欄はここに含めない（受診理由サマリーに混ぜず申し送りの「□補足：」に回す）
     ])
   })
 
@@ -620,7 +620,7 @@ describe('lib/buildKarteTemplate（案2: 統合だけ AI に頼む）', () => {
     const prompt = buildMergePrompt('DM基本', withVoice)
     assert.ok(prompt.includes('R4頃から口渇・多尿あり。'), '音声が載っていない')
     assert.ok(prompt.includes('上尾中央総合病院 糖尿病内科'), '紹介元が載っていない')
-    assert.ok(prompt.includes('通院間隔を空けたい'), '自由記入が載っていない')
+    assert.ok(!prompt.includes('通院間隔を空けたい'), '自由記入を AI に渡してしまっている')
     assert.ok(prompt.includes('♯高血圧（○○内科）'), '構造化の♯候補が載っていない')
     assert.ok(prompt.includes('アムロジピン'), '音声由来の♯候補が載っていない')
   })
@@ -924,19 +924,30 @@ describe('AI を呼ぶのは「文章化が要る自由記述」があるとき�
 
   // ★2026-09-07: 自由記入欄を素通しで連結していると、話し言葉のまま・
   //   「3年前」が和暦に直らないままカルテに載る（旧方式では AI が文章化していた）
-  test('キーボードで打った自由記述でも統合する', () => {
+  test('自由記入欄は AI に渡さず、申し送りに逐語で出す（院長判断 2026-09-08）', () => {
     const base = FIXTURES['DM基本']
-    const withText = { ...base, reason: { ...base.reason, summary: '3年くらい前から健診で血糖が高いと言われていた' } }
-    assert.equal(needsMerge(withText), true, '自由記入欄があるのに AI を呼んでいない')
-    const prompt = buildMergePrompt('DM基本', withText)
-    assert.ok(prompt.includes('3年くらい前から健診で血糖が高いと言われていた'), '自由記入が統合材料に載っていない')
-    assert.ok(prompt.includes('和暦のみ'), '和暦への換算を指示していない')
+    const note = '3年くらい前から健診で血糖が高いと言われていた'
+    const withText = { ...base, reason: { ...base.reason, summary: note } }
+    // AI を通さない = 生成のたびに載ったり落ちたりしない
+    // （通していた頃は「1〜2行にまとめて」の制限で 3 回中 1〜2 回落ちていた）
+    assert.equal(needsMerge(withText), false, '自由記入だけで AI を呼んでいる')
+    assert.equal(buildMergePrompt('DM基本', withText), null)
+    const karte = buildKarteTemplate('DM基本', withText)
+    assert.ok(karte.includes(`□補足：${note}`), '自由記入が申し送りに出ていない')
+    assert.ok(!karte.split('\n')[0].includes(note), '自由記入が受診理由サマリーに混ざっている')
+    // 甲状腺も同じ扱い
+    const thy = { ...THYROID_FIXTURE, reason: { ...THYROID_FIXTURE.reason, summary: '半年前から動悸' } }
+    assert.ok(buildKarteTemplate('甲状腺（バセドウ初診）', thy).includes('□補足：半年前から動悸'))
+  })
 
-    // DM「気になる理由」の詳細・SAS 受診理由の その他・甲状腺の補足 も同じ扱い
+  // 「気になる理由」の詳細・SAS 受診理由の その他 は受診理由サマリーの材料なので従来どおり AI に渡す
+  test('「気になる理由」の詳細・SASのその他 は引き続き統合する', () => {
+    const base = FIXTURES['DM基本']
     assert.equal(needsMerge({ ...base, reason: { ...base.reason, dmConcernNote: '母が糖尿病' } }), true)
     const sas = FIXTURES['睡眠時無呼吸症候群']
     assert.equal(needsMerge({ ...sas, reason: { ...sas.reason, purposeOther: '職場健診で指摘' } }), true)
-    assert.equal(needsMerge({ ...THYROID_FIXTURE, reason: { ...THYROID_FIXTURE.reason, summary: '半年前から動悸' } }), true)
+    const p = buildMergePrompt('DM基本', { ...base, reason: { ...base.reason, dmConcern: true, dmConcernNote: '母が糖尿病' } })
+    assert.ok(p.includes('母が糖尿病') && p.includes('和暦のみ'))
   })
 
   test('甲状腺も統合結果を受け取る（自覚症状の一文は JS が必ず付ける）', () => {

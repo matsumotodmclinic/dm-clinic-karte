@@ -87,13 +87,11 @@ describe('eval ルールが赤になることの確認（壊したカルテを�
     hit('concern-kept', k.replace('【診察にあたっての要望】注射の回数を減らしたい', '【診察にあたっての要望】なし'), c)
   })
 
-  test('free-text-kept: 自由記入がカルテにも統合材料にも無い', () => {
+  test('free-text-kept: 自由記入が申し送りから消えた', () => {
     const c = CASES.find(x => x.id === 'DM基本/難渋')
     const k = buildKarteTemplate(c.form, c.data)
-    const stripped = k.replace(c.data.reason.summary, '')
-    hit('free-text-kept', stripped, c, { mergePrompt: '' })
-    // 統合プロンプトに載っていれば OK
-    assert.ok(!fired(stripped, c, { mergePrompt: c.data.reason.summary }).includes('free-text-kept'))
+    assert.ok(k.includes(`□補足：${c.data.reason.summary}`), '土台に □補足 が出ていない')
+    hit('free-text-kept', k.replace(`□補足：${c.data.reason.summary}\n`, ''), c)
   })
 
   test('書式の warn: 連続空行 / 要望の直前 / 区切り線の連続 / 行末空白 / 空の括弧 / 継ぎ目', () => {

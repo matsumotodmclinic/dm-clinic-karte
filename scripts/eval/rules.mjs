@@ -193,24 +193,15 @@ export const RULES = [
   },
   {
     id: 'free-text-kept', level: 'error',
-    desc: '自由記述（受診理由の自由記入）がカルテか統合材料のどちらかに入っている',
-    check: (k, c, ctx) => {
+    desc: '自由記入欄が申し送りに「□補足：」として逐語で出ている',
+    // ★2026-09-08 院長判断: 自由記入は受診理由サマリーに混ぜず申し送りに回す。
+    //   AI を通さないので逐語で残る＝生成のたびに載ったり落ちたりしない
+    //   （それ以前は「1〜2行にまとめて」の制限で 3 回中 1〜2 回落ちていた）
+    check: (k, c) => {
       const t = (c.data.reason?.summary || '').trim()
       if (!t) return []
-      if (k.includes(t)) return []                    // 素組み（AI なし）で載っている
-      // ★AI が統合した場合は言い換えられるので逐語一致しない。
-      //   自由記入の中の 2 文字以上の漢字/カタカナ語が 1 つも残っていなければ「落ちた」と見る。
-      //   2026-09-08 の実測: 「足がつることが増えた」が 3 回中 1〜2 回落ちていた
-      //   （統合プロンプトが「1〜2行にまとめて」と長さを制限していたため）
-      if (ctx?.merged) {
-        // 「去年」等は和暦に換算される（＝逐語では残らない）ので照合語から外す
-        const RELATIVE = /^(?:去年|昨年|一昨年|今年|来年|半年|数年|先月|来月|今月)$/
-        const words = [...new Set(t.match(/[一-龥ァ-ヶ]{2,}/g) || [])].filter(w => !RELATIVE.test(w))
-        if (!words.length || words.some(w => k.includes(w))) return []
-        return [`自由記入が統合で落ちた: ${t.slice(0, 30)}…`]
-      }
-      if (ctx?.mergePrompt?.includes(t)) return []    // AI に渡している（統合前）
-      return [`自由記入がどこにも無い: ${t.slice(0, 30)}…`]
+      if (k.includes(`□補足：${t}`)) return []
+      return [`自由記入が申し送りに出ていない: ${t.slice(0, 30)}…`]
     },
   },
 
