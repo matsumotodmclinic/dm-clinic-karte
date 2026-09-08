@@ -61,7 +61,13 @@ export default function QrModal({ text, title, onClose }) {
       // 動的 import: QR を開いたときだけ読み込む
       const QRCode = (await import('qrcode')).default;
       if (cancelled) return;
-      const bytes = new TextEncoder().encode(text).length;
+      // ★改行は LF (\n) でなく CR (\r) で QR に入れる (2026-09-08・BC-NL3000UⅡ 取説 p.60 で判明)。
+      //   HID リーダーは制御文字をキーに写像して送る。工場出荷のマッピングでは
+      //   LF (0x0A) → 下矢印キー / CR (0x0D) → Enter キー。LF のままだと電カルの入力欄で
+      //   改行にならず、カーソルが動くだけになる。CR なら Enter として入り、複数行欄で改行になる。
+      //   (画面のコピーは text をそのまま使うので影響なし。QR 化の時だけ置換する)
+      const payload = text.replace(/\r?\n/g, '\r');
+      const bytes = new TextEncoder().encode(payload).length;
 
       for (const level of ['M', 'L']) {
         if (bytes > CAPACITY[level]) continue;
@@ -71,12 +77,12 @@ export default function QrModal({ text, title, onClose }) {
           //   こうするとタブレット (短辺 768px) でも拡大ボケが出ない。
           //   margin は QR 規格上の必須静穏帯 4 モジュール分を確保する
           //   (2 だと規格未満で読み取り率が落ちる機種がある)。
-          const url = await QRCode.toDataURL(text, {
+          const url = await QRCode.toDataURL(payload, {
             errorCorrectionLevel: level,
             width: 1000,
             margin: 4,
           });
-          const qr = QRCode.create(text, { errorCorrectionLevel: level });
+          const qr = QRCode.create(payload, { errorCorrectionLevel: level });
           if (!cancelled) {
             setDataUrl(url);
             setInfo({ bytes, level, version: qr.version, modules: qr.modules.size });
