@@ -128,7 +128,7 @@ export default function QrModal({ text, title, onClose }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
           <p style={{ fontSize: 12, color: UI.textMuted, lineHeight: 1.5, margin: 0 }}>
             電子カルテの入力欄に<strong>カーソルを置いてから</strong>読み取ってください。
-            <span style={{ color: UI.textFaint }}>（タブレット推奨・QR対応リーダーが必要）</span>
+            <span style={{ color: UI.textFaint }}>（QR対応リーダーが必要。目が細かい時はタブレットが読みやすい）</span>
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: UI.textMuted }}>
             <span style={{ marginRight: 4 }}>表示サイズ</span>
