@@ -12,7 +12,7 @@
 // 容量 (QR バージョン40・UTF-8): 誤り訂正 M = 2,331 バイト / L = 2,953 バイト。
 //   収まらない場合は分割せずエラーにする (分割は読み取りの手間が増えて現場で使われないため)。
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { UI } from '../lib/uiTokens';
 
 const CAPACITY = { M: 2331, L: 2953 };
@@ -38,7 +38,11 @@ function defaultSize() {
 }
 
 export default function QrModal({ text, title, onClose }) {
-  const canvasRef = useRef(null);
+  // ★canvas ではなく data URL → <img> で表示する (2026-09-08)。
+  //   qrcode の toCanvas は canvas の inline style に width/height = 1000px を直接書くため、
+  //   CSS で幅を縮めても高さが 1000px のまま残り**縦長に歪んだ** (院長スクショで発覚)。
+  //   <img> なら要素のスタイルはこちらの CSS だけで決まり、正方形が保たれる。
+  const [dataUrl, setDataUrl] = useState(null);
   const [error, setError] = useState(null);
   const [info, setInfo] = useState(null);
   const [size, setSize] = useState('M');
@@ -67,13 +71,14 @@ export default function QrModal({ text, title, onClose }) {
           //   こうするとタブレット (短辺 768px) でも拡大ボケが出ない。
           //   margin は QR 規格上の必須静穏帯 4 モジュール分を確保する
           //   (2 だと規格未満で読み取り率が落ちる機種がある)。
-          await QRCode.toCanvas(canvasRef.current, text, {
+          const url = await QRCode.toDataURL(text, {
             errorCorrectionLevel: level,
             width: 1000,
             margin: 4,
           });
           const qr = QRCode.create(text, { errorCorrectionLevel: level });
           if (!cancelled) {
+            setDataUrl(url);
             setInfo({ bytes, level, version: qr.version, modules: qr.modules.size });
             setError(null);
           }
@@ -158,17 +163,21 @@ export default function QrModal({ text, title, onClose }) {
                 幅だけ 100% にすると縦に溢れて全体が写らない (2026-09-07 実機確認)。
                 横 (100vw) と縦 (100vh - ヘッダ/フッタ分) の**両方**を見て、
                 上限は表示サイズ (小/中/大) で切り替える。
-                縦の控除 230px = ヘッダ+説明 (~90) + フッタ (~70) + モーダル内外の余白 (~64)。
-                190px だと PC (表示スケール 125%) で下がはみ出た (2026-09-08)。 */}
-            <canvas
-              ref={canvasRef}
-              style={{
-                width: '100%',
-                maxWidth: `min(${SIZE_PX[size]}px, calc(100vh - 230px))`,
-                height: 'auto',
-                borderRadius: 6,
-              }}
-            />
+                縦の控除 230px = ヘッダ+説明 (~90) + フッタ (~70) + モーダル内外の余白 (~64)。 */}
+            {dataUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={dataUrl}
+                alt="QRコード"
+                style={{
+                  width: '100%',
+                  maxWidth: `min(${SIZE_PX[size]}px, calc(100vh - 230px))`,
+                  height: 'auto',
+                  aspectRatio: '1 / 1',
+                  borderRadius: 6,
+                }}
+              />
+            )}
           </div>
         )}
 
