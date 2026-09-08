@@ -66,7 +66,19 @@ async function runCase(c) {
 
   const karte = buildKarteTemplate(c.form, c.data, { merged })
   if (karte == null) return { c, karte: '', findings: [{ rule: 'unsupported', level: 'error', msg: `未対応の form_type: ${c.form}` }], variants }
-  return { c, karte, mergePrompt, findings: judge(karte, c, { mergePrompt }), variants }
+
+  // ★3 回分を作ったなら 3 回分とも判定する（1 回目だけ見ていては揺れを測る意味が無い）
+  const findings = []
+  const seen = new Set()
+  for (const [i, v] of (variants.length ? variants : [karte]).entries()) {
+    for (const f of judge(v, c, { mergePrompt, merged: variants.length > 0 })) {
+      const key = `${f.rule}|${f.msg}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      findings.push(variants.length > 1 ? { ...f, msg: `[${i + 1}回目] ${f.msg}` } : f)
+    }
+  }
+  return { c, karte, mergePrompt, findings, variants }
 }
 
 // ── 実行 ──────────────────────────────────────────────────
@@ -134,9 +146,30 @@ for (const r of results) {
 
 // 揺れ（--ai のとき）
 if (USE_AI) {
+  // ★文言が毎回少し違うのは許容範囲。許容できないのは **情報が増減する**揺れ。
+  //   ♯既往の病名集合・本文に出る医療機関名・申し送りの □ 行 で判定する。
+  // ★施設名は正規表現で抜くと「紹介元は上尾中央総合病院」のような言い回しを拾ってしまう。
+  //   入力に実在する施設名のうち、カルテに出ているものの集合で見る（ノイズが原理的に入らない）
+  const hospNames = c => [...new Set(JSON.stringify(c.data)
+    .match(/[ぁ-んァ-ヶ一-龥A-Za-z0-9]{2,}(?:病院|クリニック|医院|センター|診療所)/g) || [])]
+  const facts = (k, c) => JSON.stringify({
+    past: k.split('\n').filter(l => /^♯/.test(l)).map(l => l.replace(/^♯/, '').split('（')[0]).sort(),
+    hosp: hospNames(c).filter(h => k.includes(h)).sort(),
+    handoff: k.split('\n').filter(l => l.startsWith('□')).sort(),
+  })
   const shaky = results.filter(r => r.variants.length > 1 && new Set(r.variants).size > 1)
+  const content = shaky.filter(r => new Set(r.variants.map(v => facts(v, r.c))).size > 1)
+  const wording = shaky.filter(r => new Set(r.variants.map(v => facts(v, r.c))).size === 1)
+  const total = results.filter(r => r.variants.length > 1).length
   console.log(`\n--- 揺れ（同じ入力を ${RUNS} 回）---`)
-  console.log(shaky.length ? shaky.map(r => `  ${r.c.id}: ${new Set(r.variants).size} 通り`).join('\n') : '  なし')
+  console.log(`  🔴 内容が変わった: ${content.length} / ${total} ケース`)
+  for (const r of content) {
+    console.log(`     ${r.c.id}`)
+    for (const [i, f] of [...new Set(r.variants.map(v => facts(v, r.c)))].entries()) {
+      console.log(`       (${i + 1}) ${f.slice(0, 240)}`)
+    }
+  }
+  console.log(`  🟡 文言だけ: ${wording.length} / ${total}   ✅ 完全一致: ${total - shaky.length} / ${total}`)
 }
 
 console.log(`\n--- ルール別（error / warn）---`)

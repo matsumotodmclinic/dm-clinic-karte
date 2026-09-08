@@ -820,7 +820,8 @@ for (const form of VOICE_FORMS) {
 
   // ③ 両方 + 要DR確認 + 自由記入（統合の材料が最も多い状態）
   add(form, '音声両方', '現病歴・既往歴とも音声＋要DR確認＋自由記入', merge(std.data, {
-    reason: { summary: 'あと、去年から足がつることが増えたと言っていました' },
+    // 「去年」は和暦に換算される。統合で落ちていないかを照合できるよう内容語（下肢）を入れる
+    reason: { summary: 'あと、去年から下肢のこむら返りが増えたと言っていました' },
     voiceMemo: { transcript: '生の音声', aiSummary: VOICE_NOW, needsDoctorReview: true },
     voicePastHistory: { transcript: '生の音声', aiSummary: VOICE_PAST, needsDoctorReview: true },
   }))
