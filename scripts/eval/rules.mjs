@@ -81,6 +81,16 @@ export const RULES = [
     },
   },
 
+  {
+    id: 'no-literal-sonota', level: 'error',
+    desc: '選択肢の「その他」がそのまま出ていない（自由入力とセットの「その他: ○○」だけ可）',
+    // 2026-09-08 の実例: 「上尾中央総合病院 その他」「○○病院・その他より紹介」
+    //   「【仕事】その他」「・居住地：その他」。書いても情報がゼロで、読み手を迷わせる
+    check: (k) => lines(k)
+      .filter(l => l.replace(/その他:\s*/g, '').includes('その他'))
+      .map(l => `選択値の「その他」が出ている: ${l}`),
+  },
+
   // ── error: 和暦統一 ────────────────────────────────
   {
     id: 'wareki-only', level: 'error',
@@ -123,10 +133,12 @@ export const RULES = [
       const line = lines(k).find(l => l.startsWith('身長:'))
       if (!line) return []
       const out = []
+      // 0 以下・数値でないものは打ち間違いとして「○」に倒す仕様
+      const want = v => (parseFloat(v) > 0 ? v : '○')
       const h = line.match(/身長:([^c]*)cm/)?.[1]
       const w = line.match(/初診時:([^k]*)kg/)?.[1]
-      if (h !== (b.height || '○')) out.push(`身長が一致しない: 入力 ${JSON.stringify(b.height)} / 出力 ${JSON.stringify(h)}`)
-      if (w !== (b.weightNow || '○')) out.push(`体重が一致しない: 入力 ${JSON.stringify(b.weightNow)} / 出力 ${JSON.stringify(w)}`)
+      if (h !== want(b.height)) out.push(`身長が一致しない: 入力 ${JSON.stringify(b.height)} / 出力 ${JSON.stringify(h)}`)
+      if (w !== want(b.weightNow)) out.push(`体重が一致しない: 入力 ${JSON.stringify(b.weightNow)} / 出力 ${JSON.stringify(w)}`)
       // BMI は入力から計算し直して照合
       const bmi = line.match(/（BMI ([\d.]+)）/)?.[1]
       if (bmi) {

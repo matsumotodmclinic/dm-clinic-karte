@@ -194,3 +194,73 @@ describe('2026-09-08 eval で見つかった不具合（回帰）', () => {
     assert.ok(!karte.includes('・症状：（'), '括弧が浮いている')
   })
 })
+
+// ──────────────────────────────────────────────────────────
+// 2026-09-08 の 2 回目の検証（音声ケース追加 + 未読の出力を全部読む）で見つかった不具合
+// ──────────────────────────────────────────────────────────
+describe('2026-09-08 検証2回目で見つかった不具合（回帰）', () => {
+  test('選択肢の「その他」がそのままカルテに出ない', () => {
+    // 「上尾中央総合病院 その他」「○○病院・その他より紹介」「【仕事】その他」「・居住地：その他」
+    for (const c of CASES.filter(x => x.kind === 'その他漏れ')) {
+      const karte = buildKarteTemplate(c.form, c.data)
+      const bad = karte.split('\n').filter(l => l.replace(/その他:\s*/g, '').includes('その他'))
+      assert.deepEqual(bad, [], `${c.id}: 選択値の「その他」が残っている`)
+    }
+    // 情報のある方（病院名・補足）は残す
+    const c = CASES.find(x => x.id === 'DM基本/その他漏れ')
+    const k = buildKarteTemplate(c.form, c.data)
+    assert.ok(k.includes('♯関節リウマチ（上尾中央総合病院）'), '病院名まで消えている')
+    assert.ok(k.includes('【仕事】夜勤あり／週4'), '職業の補足まで消えている')
+    assert.ok(k.includes('上尾中央総合病院より紹介にて受診'), '紹介元まで消えている')
+  })
+
+  test('甲状腺: 診断時期が不明のとき「診断時期：診断時期不明」と二重にならない', () => {
+    const c = CASES.find(x => x.id === '甲状腺（バセドウ継続）/その他漏れ')
+    const k = buildKarteTemplate(c.form, c.data)
+    assert.ok(k.includes('＃バセドウ病　甲状腺機能亢進症（診断時期不明）'), k.split('\n')[1])
+    assert.ok(!k.includes('診断時期：診断時期不明'))
+  })
+
+  test('身長・体重の 0 は「○」に倒す（身長:0cm を出さない）', () => {
+    const d = EMPTY['DM基本']()
+    d.body = { ...d.body, height: '0', weightNow: '60', weight20: '0' }
+    const line = buildKarteTemplate('DM基本', d).split('\n').find(l => l.startsWith('身長:'))
+    assert.equal(line, '身長:○cm　初診時:60kg　20歳時:○kg　max体重○kg(○歳)')
+  })
+
+  test('1型: 現在使用中と希望が同じデバイスは「A（継続）」', () => {
+    const d = EMPTY['1型糖尿病']()
+    d.reason = { ...d.reason, cgmCurrent: 'フリースタイルリブレ', cgmWish: 'フリースタイルリブレ' }
+    assert.ok(buildKarteTemplate('1型糖尿病', d).includes('□CGM：フリースタイルリブレ（継続）'))
+    d.reason.cgmWish = 'Dexcom G7'
+    assert.ok(buildKarteTemplate('1型糖尿病', d).includes('□CGM：フリースタイルリブレ使用中→Dexcom G7'))
+  })
+
+  // ★AI が落ちたときに「黙って質が落ちたカルテ」が保存されないこと
+  test('AI 統合に失敗しても ♯既往が重複しない（素組み側でも重複排除する）', () => {
+    const c = CASES.find(x => x.id === 'DM基本/音声両方')
+    const lines = buildKarteTemplate(c.form, c.data).split('\n').filter(l => l.startsWith('♯'))
+    const names = lines.map(l => l.replace(/^♯/, '').split('（')[0])
+    assert.equal(new Set(names).size, names.length, `♯が重複している: ${JSON.stringify(lines)}`)
+    // 情報量の多い方（音声側）が残る
+    assert.ok(lines.some(l => l.includes('経過観察中')), '情報量の少ない方が残っている')
+  })
+
+  test('AI 統合に失敗したら申し送りで気付ける', () => {
+    const c = CASES.find(x => x.id === 'DM基本/音声両方')
+    const failed = buildKarteTemplate(c.form, c.data, { mergeFailed: true })
+    assert.ok(failed.includes('□AI統合に失敗：受診理由サマリーと♯既往歴を確認してください'))
+    // 成功時は出ない
+    assert.ok(!buildKarteTemplate(c.form, c.data).includes('□AI統合に失敗'))
+    // 反応性低血糖（申し送りを自前で並べているフォーム）でも出る
+    const rh = CASES.find(x => x.id === '反応性低血糖/音声両方')
+    assert.ok(buildKarteTemplate(rh.form, rh.data, { mergeFailed: true }).includes('□AI統合に失敗'))
+  })
+
+  test('録音しただけで AI 整形を押していない回は統合を呼ばない（生音声はカルテに載せない）', () => {
+    const c = CASES.find(x => x.id === 'DM基本/音声未整形')
+    const k = buildKarteTemplate(c.form, c.data)
+    assert.ok(!k.includes('えーと'), '生の音声がカルテに載っている')
+    assert.ok(!k.includes('□AI統合に失敗'))
+  })
+})

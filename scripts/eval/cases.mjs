@@ -541,7 +541,8 @@ add('内分泌', '分岐', '採血で糖尿病判明（＃糖尿病だけは例�
 // ── 妊娠糖尿病 ────────────────────────────────────────────
 add('妊娠糖尿病', '最小', 'ほぼ未入力', build('妊娠糖尿病', {}))
 add('妊娠糖尿病', '標準', 'GDM・26週・産科は「その他」', build('妊娠糖尿病', {
-  reason: { type: '紹介', referralFrom: 'その他', referralDept: '', referralDetail: '専門的管理のため' },
+  // referralFrom は自由入力欄（「その他の病院名」がそのまま入る）。実在名を入れる
+  reason: { type: '紹介', referralFrom: 'ナラヤマレディースクリニック', referralDept: '', referralDetail: '専門的管理のため' },
   disease: { dmType: '妊娠糖尿病（GDM）', pastGDM: '初めての妊娠', currentWeek: '26', dueDateEra: '令和', dueDateYear: '8', dueDateMonth: '12', obHospital: 'その他', obHospitalOther: 'ナラヤマレディースクリニック', echoNeck: '希望なし', echoAbdomen: '希望なし' },
   history: { allergy: 'なし', fh: { dm: true, dmWho: ['母'], ht: false, apo: false, ihd: false }, smoking: 'なし', eyeFundusCheck: '', livingSpouse: '配偶者あり', livingOther: [], work: 'している', job: ['会社員（デスクワーク）'], activity: '座っていることが多い', otherDiseases: [emptyOther()] },
   body: { height: '158', weightNow: '62', weightPregnancy: '54', weight20: '50', weightMax: '62', weightMaxAge: '32', concern: '食事のことが不安', preferredDays: ['火'], doctorGender: '女性医師希望' },
@@ -781,3 +782,81 @@ for (const form of THY_FORMS) {
     add(form, kind, title, kind === '最小' ? build('甲状腺', patch) : thy(patch))
   }
 }
+
+// ══════════════════════════════════════════════════════════
+// 音声入力ありのケース（2026-09-08 の 2 回目の検証で追加）
+//
+// ★1 回目の 70 ケースには音声入力が 1 件も無かった。
+//   AI が触るのはそこだけなのに、そこを検証していなかった。
+//
+// aiSummary は「入力時に lib/voiceSummary.js が整形した後」の文字列。
+// merged は「統合を頼んだ AI が返した結果」。--ai を付けなければ merged は
+// null のままなので、**AI が落ちたときのフォールバック**の検証にもなる。
+// ══════════════════════════════════════════════════════════
+const VOICE_FORMS = ['DM基本', '1型糖尿病', '小児1型糖尿病', '高血圧・脂質異常症', '内分泌', '妊娠糖尿病', '反応性低血糖', '睡眠時無呼吸症候群']
+
+// 現病歴の音声（整形済み）
+const VOICE_NOW = 'R3頃より健診でHbA1c高値を指摘されていたが放置。R6.10より口渇・多尿を自覚し当院受診。'
+// 既往歴の音声（整形済み・♯形式）。★構造化データと**同じ疾患**を1つ含める（重複排除の検証）
+const VOICE_PAST = [
+  '♯高血圧（H28から、あげお内科クリニックでアムロジピン 5mg 内服中）',
+  '♯慢性腎臓病（上尾中央総合病院 腎臓内科で経過観察中）',
+  '♯虫垂炎術後（H10、上尾中央総合病院）',
+].join('\n')
+
+for (const form of VOICE_FORMS) {
+  const std = CASES.find(c => c.form === form && c.kind === '標準')
+  if (!std) continue
+
+  // ① 現病歴の音声だけ
+  add(form, '音声現病歴', '現病歴の音声あり（統合が要る）', merge(std.data, {
+    voiceMemo: { transcript: '生の音声', aiSummary: VOICE_NOW, needsDoctorReview: false },
+  }))
+
+  // ② 既往歴の音声だけ（構造化と重複する疾患を含む）
+  add(form, '音声既往歴', '既往歴の音声あり（♯の重複排除が要る）', merge(std.data, {
+    voicePastHistory: { transcript: '生の音声', aiSummary: VOICE_PAST, needsDoctorReview: true },
+  }))
+
+  // ③ 両方 + 要DR確認 + 自由記入（統合の材料が最も多い状態）
+  add(form, '音声両方', '現病歴・既往歴とも音声＋要DR確認＋自由記入', merge(std.data, {
+    reason: { summary: 'あと、去年から足がつることが増えたと言っていました' },
+    voiceMemo: { transcript: '生の音声', aiSummary: VOICE_NOW, needsDoctorReview: true },
+    voicePastHistory: { transcript: '生の音声', aiSummary: VOICE_PAST, needsDoctorReview: true },
+  }))
+
+  // ④ 録音したが AI 整形を押していない（transcript だけある）
+  //    → 統合は走らず、生の音声はカルテに載らない（仕様）。壊れないことを見る
+  add(form, '音声未整形', '録音したが AI 整形を押していない', merge(std.data, {
+    voiceMemo: { transcript: 'えーと、3年くらい前から…', aiSummary: '', needsDoctorReview: false },
+  }))
+}
+
+// ── 「その他」漏れ専用ケース（2026-09-08 の 2 回目で見つかった型）──────
+add('DM基本', 'その他漏れ', '科・職業・通院先が全部「その他」', build('DM基本', {
+  reason: { type: '紹介', referralFrom: '上尾中央総合病院', referralDept: 'その他', referralDetail: '専門的管理のため' },
+  disease: {
+    dmOnsetEra: '令和', dmOnset: '3', echoNeck: '行っていない', echoAbdomen: '行っていない',
+    otherDiseases: [
+      { name: '関節リウマチ', hospital: '上尾中央総合病院', hospitalOther: '', dept: 'その他' },
+      { name: '副腎腫瘍', hospital: '自治医大さいたま医療センター', hospitalOther: '', dept: 'その他' },
+    ],
+  },
+  history: { ...HIST_STD, fh: { dm: false, dmWho: [], ht: false, apo: false, ihd: false } },
+  lifestyle: { ...LIFE_STD, job: ['その他'], jobNote: '夜勤あり／週4' },
+  body: BODY_STD,
+}))
+add('小児1型糖尿病', 'その他漏れ', '協力体制・居住地が「その他」', build('小児1型糖尿病', {
+  reason: { type: '紹介', referralFrom: 'さいたま赤十字病院', referralDept: 'その他' },
+  disease: { dm1type: '急性発症', dmOnsetEra: '令和', dmOnset: '6', bakusmi: '希望なし', insulinStatus: 'インスリン使用中' },
+  support: { familyMain: 'その他', familySubList: ['その他'], familyNote: '叔母が同居', schoolStaff: [], schoolSupportPerson: ['その他'], schoolSupportNote: 'スクールカウンセラー', childGrade: '小4', childActivities: ['その他'], childActivityNote: '週2回ピアノ', parentWorkMain: ['その他'], parentWorkMainNote: '在宅で自営', parentWorkSub: ['その他'], parentWorkSubNote: '', independenceLevel: '親の補助あり' },
+  chronic: { status: '申請済', residenceCity: 'その他', maternalHandbook: '持ってきた', documents: [] },
+  history: { allergy: 'なし', fh: { dm: false, dmWho: [], dm1: false, dm1Who: [], collagen: false, collagenItems: [{ who: '', disease: '' }], ht: false, apo: false, ihd: false }, eyeFundusCheck: '今後受ける予定', eyeNotebook: '持っている', livingSpouse: '配偶者あり', livingOther: [], keyPerson: '母', otherDiseases: [emptyOther()] },
+  body: { height: '132', weightNow: '29', concern: 'なし', preferredDays: ['水'], doctorGender: '指定なし' },
+}))
+add('甲状腺（バセドウ継続）', 'その他漏れ', '紹介科が「その他」・診断時期不明', thy({
+  reason: { type: '紹介', referralFrom: '上尾中央総合病院', referralDept: 'その他', referralDetail: '専門的管理のため' },
+  echo: { thyroidSize: '腫大', thyroidBloodFlow: '正常', thyroidParenchyma: '不均一', hasNodule: 'なし' },
+  symptom: { selected: [], otherText: '' },
+  history: { diagnosisEra: '令和', diagnosisYear: '', diagnosisMonth: '', medications: [], surgeryHistory: false, isotopeHistory: false, eyeHistory: false },
+}))
