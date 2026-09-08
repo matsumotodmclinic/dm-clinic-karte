@@ -174,7 +174,7 @@ export default function QrModal({ text, title, onClose }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
           <p style={{ fontSize: 12, color: UI.textMuted, lineHeight: 1.5, margin: 0 }}>
-            電子カルテの入力欄に<strong>カーソルを置いてから</strong>読み取ってください。
+            電子カルテ PC の <strong>Word にカーソルを置いて</strong>読み取り、Ctrl+A → Ctrl+C → 電子カルテに Ctrl+V。
             <span style={{ color: UI.textFaint }}>（日本語出力対応のQRリーダーが必要。目が細かい時はタブレットが読みやすい）</span>
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: UI.textMuted }}>
