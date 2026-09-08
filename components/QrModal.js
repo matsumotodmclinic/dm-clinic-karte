@@ -17,10 +17,39 @@ import { UI } from '../lib/uiTokens';
 
 const CAPACITY = { M: 2331, L: 2953 };
 
+// 表示サイズ (2026-09-08 院長「PC で開くと QR が大きすぎる」)。
+//   ハンディ型 QR リーダーは数 cm〜十数 cm の距離で読むため、大きすぎると視野に収まらない。
+//   物理サイズの目安 (96dpi): S=300px≈8cm / M=480px≈13cm / L=760px≈20cm。
+//   環境 (端末・リーダー) で正解が変わるので切替にし、選択は端末に記憶する。
+const SIZE_PX = { S: 300, M: 480, L: 760 };
+const SIZE_LABEL = { S: '小', M: '中', L: '大' };
+const SIZE_KEY = 'kvp.qrSize';
+
+function defaultSize() {
+  try {
+    const saved = localStorage.getItem(SIZE_KEY);
+    if (saved === 'S' || saved === 'M' || saved === 'L') return saved;
+  } catch (e) {
+    /* localStorage 不可でも既定で動く */
+  }
+  // PC (幅広) は中、タブレット/スマホは大
+  if (typeof window !== 'undefined' && window.innerWidth >= 1024) return 'M';
+  return 'L';
+}
+
 export default function QrModal({ text, title, onClose }) {
   const canvasRef = useRef(null);
   const [error, setError] = useState(null);
   const [info, setInfo] = useState(null);
+  const [size, setSize] = useState('M');
+
+  // 初期サイズは端末の記憶 > 画面幅 (SSR では判定できないので mount 後に決める)
+  useEffect(() => { setSize(defaultSize()); }, []);
+
+  const changeSize = (s) => {
+    setSize(s);
+    try { localStorage.setItem(SIZE_KEY, s); } catch (e) { /* 記憶できなくても表示は変わる */ }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -91,10 +120,30 @@ export default function QrModal({ text, title, onClose }) {
           </span>
           {title && <span style={{ fontSize: 12, color: UI.textMuted }}>{title}</span>}
         </div>
-        <p style={{ fontSize: 12, color: UI.textMuted, lineHeight: 1.5, marginTop: 0, marginBottom: 8 }}>
-          電子カルテの入力欄に<strong>カーソルを置いてから</strong>読み取ってください。
-          <span style={{ color: UI.textFaint }}>（タブレット推奨・QR対応リーダーが必要）</span>
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
+          <p style={{ fontSize: 12, color: UI.textMuted, lineHeight: 1.5, margin: 0 }}>
+            電子カルテの入力欄に<strong>カーソルを置いてから</strong>読み取ってください。
+            <span style={{ color: UI.textFaint }}>（タブレット推奨・QR対応リーダーが必要）</span>
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: UI.textMuted }}>
+            <span style={{ marginRight: 4 }}>表示サイズ</span>
+            {['S', 'M', 'L'].map((s) => (
+              <button
+                key={s}
+                onClick={() => changeSize(s)}
+                title={`${SIZE_PX[s]}px。リーダーの視野に収まらない時は小さく、読み取れない時は大きく`}
+                style={{
+                  padding: '2px 8px', borderRadius: 4, fontSize: 11, cursor: 'pointer',
+                  border: `1px solid ${size === s ? UI.neutral.fg : UI.border}`,
+                  background: size === s ? UI.neutral.fg : UI.surface,
+                  color: size === s ? '#fff' : UI.textMuted,
+                }}
+              >
+                {SIZE_LABEL[s]}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {error ? (
           <div style={{
@@ -108,12 +157,14 @@ export default function QrModal({ text, title, onClose }) {
             {/* ★QR は正方形なので **画面の短辺**で実効サイズが決まる。
                 幅だけ 100% にすると縦に溢れて全体が写らない (2026-09-07 実機確認)。
                 横 (100vw) と縦 (100vh - ヘッダ/フッタ分) の**両方**を見て、
-                タブレットでは 760px まで大きくする。 */}
+                上限は表示サイズ (小/中/大) で切り替える。
+                縦の控除 230px = ヘッダ+説明 (~90) + フッタ (~70) + モーダル内外の余白 (~64)。
+                190px だと PC (表示スケール 125%) で下がはみ出た (2026-09-08)。 */}
             <canvas
               ref={canvasRef}
               style={{
                 width: '100%',
-                maxWidth: 'min(760px, calc(100vh - 190px))',
+                maxWidth: `min(${SIZE_PX[size]}px, calc(100vh - 230px))`,
                 height: 'auto',
                 borderRadius: 6,
               }}
