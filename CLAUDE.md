@@ -29,8 +29,13 @@
 ## ファイル構成
 
 ```
-├── middleware.js                  # 認証（cookie チェック、/auth,/api/auth スキップ）
+├── middleware.js                  # 認証（cookie チェック、/auth,/api/auth スキップ。PWA の manifest/アイコンも素通り）
+├── public/
+│   ├── icon.svg                   # アプリアイコン（勤怠と同じ作法: 紺地 #0E4C92 + 白線画 + ティールのチェック）
+│   ├── apple-touch-icon.png       # iOS 用 180px（SVG 不可のため。icon.svg から生成）
+│   └── icons/icon-{192,512}.png   # Android 用（同上）
 ├── lib/
+│   ├── appMeta.js                 # アプリ名 'KartePlus 問診' / theme_color / スプラッシュ背景の正本
 │   ├── config.js                  # CLAUDE_MODEL / MAX_TOKENS 定数（※現在未参照、各所ハードコード）
 │   └── supabase.js                # Supabase クライアント（service_role）
 ├── lib/
@@ -508,6 +513,30 @@ dmDiff フォームで聞く項目（DM基本との差分のみ）:
 ## タスク履歴
 
 （ここに完了タスクを追記していく）
+
+### 2026-09-11 携帯にインストールできるようにした（PWA）+ アイコンを勤怠と同じ作法に
+
+院長「携帯でインストールできるようになっていましたっけ？そうでなければお願いします。
+携帯に表示されるデザイン（＝アイコン）も勤怠アプリにあわせて」。
+これまで manifest・アイコン・**viewport meta のいずれも無く**、携帯では PC 幅 (980px) で縮小描画されていた。
+
+| 追加 | 役割 |
+|---|---|
+| `pages/_document.js` | `<html lang="ja">`・manifest/icon の link・apple-mobile-web-app 系 meta・body margin リセット・safe-area |
+| `pages/_app.js` | `<title>` と **viewport meta**（勤怠と同値: maximum-scale=1 / viewport-fit=cover） |
+| `pages/api/pwa-manifest.js` | manifest を API で配信（静的 JSON だと middleware のゲートに掛かり HTML が返って PWA が壊れる。勤怠と同じ手） |
+| `public/icon.svg` + PNG 3 枚 | アイコン。勤怠の「リング+チェック」と同じ家族で「問診票+チェック」 |
+| `lib/appMeta.js` | 名前 'KartePlus 問診'・theme_color #1976d2・スプラッシュ背景 #0E4C92（全部勤怠と同値） |
+| `middleware.js` | `/api/pwa-manifest` を早期 return、`icon.svg` / `icons/` / `apple-touch-icon.png` を matcher から除外 |
+
+- `pages/auth.js` のロゴを絵文字 🏥 → `icon.svg`（ホーム画面のアイコンと同じ絵柄）に
+- display は勤怠と同じ `fullscreen`（スプラッシュにアプリ名が出ない・アイコン 1 枚 → そのままアプリ）
+- start_url は `/`。未ログインは middleware が /gate → /auth に振る
+- Service Worker は置いていない（勤怠も無し。middleware が全応答 no-store なのでオフライン化は対象外）
+- ⚠️ **viewport を入れたので携帯の問診フォームは実寸で描画される**。幅 375px ではフォーム上部のヘッダー
+  （← トップ / 完全ガイド / タイトル / フォーム名チップ）が折り返す。フォームは iPad 前提なので据え置き。
+  携帯でフォームまで使うなら 9 フォーム共通のヘッダーを wrap 対応にする（別タスク）
+- ローカルで動作確認するには `.claude/launch.json`（git 管理外）に `SECRET_COOKIE_PASSWORD` のダミーを入れて dev を起動する
 
 ### 2026-09-07 テンプレート版を全14フォームに展開し、生成経路を切り替えた
 

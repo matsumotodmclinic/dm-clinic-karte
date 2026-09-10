@@ -70,12 +70,15 @@ export default function AuthPage() {
         boxShadow: '0 4px 32px rgba(26,95,168,0.12)',
         width: '100%', maxWidth: 400, textAlign: 'center',
       }}>
-        <div style={{
-          width: 52, height: 52, borderRadius: 8,
-          background: UI.primary.bg,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 32, margin: '0 auto 20px',
-        }}>🏥</div>
+        {/* アプリアイコン（public/icon.svg = ホーム画面に置かれるものと同じ絵柄）。
+            2026-09-10: 絵文字 🏥 をやめ、勤怠と同じ作法の線画アイコンに */}
+        <img
+          src="/icon.svg"
+          alt=""
+          width={56}
+          height={56}
+          style={{ display: 'block', borderRadius: 12, margin: '0 auto 20px' }}
+        />
         <div style={{ fontSize: 13, color: '#6b9fd4', fontWeight: 700, marginBottom: 6 }}>
           まつもと糖尿病クリニック
         </div>

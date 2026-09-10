@@ -88,6 +88,13 @@ export async function middleware(request) {
     return withNoCache(NextResponse.next())
   }
 
+  // PWA manifest はゲート/認証の前に素通り（2026-09-10 携帯インストール対応）。
+  // ここで HTML(ゲート画面) を返すとブラウザが manifest を読めず「ホーム画面に追加」が壊れる。
+  // 中身は公開情報（アプリ名・色・アイコンのパス）のみ。アイコン画像は matcher 側で除外している。
+  if (pathname === '/api/pwa-manifest') {
+    return NextResponse.next()
+  }
+
   // APP_GATE_PASSWORD 未設定ならゲートは無効（後方互換）
   const gateEnabled = !!process.env.APP_GATE_PASSWORD
   if (gateEnabled) {
@@ -129,5 +136,7 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  // icon.svg / icons/ / apple-touch-icon.png は PWA のアイコン（public/ 配下・公開情報）。
+  // ゲート前に OS が取りに来るので認証の外に出す（2026-09-10）。
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.svg|icons/|apple-touch-icon.png).*)'],
 }
