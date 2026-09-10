@@ -4,6 +4,7 @@ import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
 import { generateKarteText, callGenerateApi } from "../lib/generateKarte";
 import { UI } from "../lib/uiTokens";
+import FormHeader from "./FormHeader";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
 // TONE = このフォームのカテゴリ色
@@ -754,16 +755,7 @@ export default function ThyroidIntakeTool({ formType }) {
       )}
 
       <div style={{ maxWidth: 680, margin: "0 auto 18px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={() => router.push("/")} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #a7f3d0", background: "#fff", color: TC, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>← トップへ戻る</button>
-          <div>
-            <div style={{ fontSize:11,color:UI.textFaint,fontWeight:700,letterSpacing:"0.08em" }}>まつもと糖尿病クリニック</div>
-            <div style={{ fontSize:19,fontWeight:700,color:UI.text }}>甲状腺 初診事前問診</div>
-          </div>
-          <div style={{ marginLeft: "auto" }}>
-            <span style={{ fontSize: 12, background: "#e6fff8", color: TC, padding: "4px 14px", borderRadius: 4, fontWeight: 700 }}>{meta.label}</span>
-          </div>
-        </div>
+        <FormHeader tone={TONE} label={meta.label} title="甲状腺 初診事前問診" backLabel="← トップへ戻る" />
       </div>
 
       <div style={{ maxWidth: 680, margin: "0 auto" }}>

@@ -6,6 +6,7 @@ import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
 import { generateKarteText, callGenerateApi } from "../lib/generateKarte";
 
 import { UI } from "../lib/uiTokens";
+import FormHeader from "./FormHeader";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
 // TONE = このフォームのカテゴリ色。糖尿病関連なので青
@@ -535,16 +536,7 @@ export default function GDMIntakeTool() {
         </div>
       )}
       <div style={{maxWidth:680,margin:"0 auto 16px"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <button onClick={()=>router.push("/")} style={{padding:"6px 11px",borderRadius:6,border:`1px solid ${UI.border}`,background:UI.surface,color:UI.textMuted,fontWeight:700,fontSize:12,cursor:"pointer"}}>← トップ</button>
-          <div>
-            <div style={{fontSize:11,color:UI.textFaint,fontWeight:700,letterSpacing:"0.08em"}}>まつもと糖尿病クリニック</div>
-            <div style={{fontSize:19,fontWeight:700,color:UI.text}}>初診事前問診</div>
-          </div>
-          <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:12,background:TONE.bg,color:TONE.fg,padding:"4px 12px",borderRadius:4,fontWeight:700}}>妊娠糖尿病</span>
-          </div>
-        </div>
+        <FormHeader tone={TONE} label="妊娠糖尿病" />
 
       </div>
 

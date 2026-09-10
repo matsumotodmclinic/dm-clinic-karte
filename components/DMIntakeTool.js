@@ -5,6 +5,7 @@ import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
 import { generateKarteText, callGenerateApi } from "../lib/generateKarte";
 import { UI } from "../lib/uiTokens";
+import FormHeader from "./FormHeader";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
 // TONE = このフォームのカテゴリ色
@@ -1005,18 +1006,7 @@ export default function DMIntakeTool() {
             🚨 体重減少あり ― インスリン導入を要検討・医師へ至急申し送り
           </div>
         )}
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={() => router.push("/")} style={{ padding:"6px 11px",borderRadius:6,border:`1px solid ${UI.border}`,background:UI.surface,color:UI.textMuted,fontWeight:700,fontSize:12, cursor: "pointer" }}>← トップ</button>
-          {/* 📖 完全ガイド (スタッフ用、 2026-05-31 追加): 別タブで開くので患者の問診入力を中断しない */}
-          <a href="/help/dm" target="_blank" rel="noopener noreferrer" style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #d0dff5", background: "#fff", color: "#5580a8", fontWeight: 700, fontSize: 11, cursor: "pointer", textDecoration: "none" }} title="完全ガイドを別タブで開く (スタッフ用)">📖 完全ガイド</a>
-          <div>
-            <div style={{ fontSize:11,color:UI.textFaint,fontWeight:700,letterSpacing:"0.08em" }}>まつもと糖尿病クリニック</div>
-            <div style={{ fontSize:19,fontWeight:700,color:UI.text }}>初診事前問診</div>
-          </div>
-          <div style={{ marginLeft: "auto" }}>
-            <span style={{ fontSize:12,background:TONE.bg,color:TONE.fg,padding:"4px 12px",borderRadius:4,fontWeight:700 }}>DM基本</span>
-          </div>
-        </div>
+        <FormHeader tone={TONE} label="DM基本" helpHref="/help/dm" />
       </div>
 
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
