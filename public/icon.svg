@@ -1,31 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- KartePlus 問診 アプリアイコン。ホーム画面ランチャー / PWA アイコン / favicon 兼用。
-       勤怠 (apps/kinkan/public/icon.svg) と同じ作法で揃えている:
-         - 背景は manifest の background_color と同じ紺 (#0E4C92) の単色
-           → ネイティブ PWA スプラッシュ (同じ紺地) と地続きに見える
-         - 白の線画 + ティールのグラデーション (#3DE7C6 → #14B8A6) をアクセントに 1 点だけ
-         - 文字は入れない (アプリ名は OS 側が出す)
-       モチーフ: 問診票 (クリップボード) にチェック。勤怠の「リング + チェック」と同じ家族。
+  <!-- KartePlus 問診 アプリアイコン — 2026-09-11 院長確定「案B」(3 アプリ共通の枠 + アプリ別の弧の色と中央の絵)。
+       枠は勤怠 (apps/kinkan/public/icon.svg 案D) と同一: 紺の単色背景 (#0E4C92 = manifest background_color)
+       / リングのトラック / 3/4 周の進捗アーク / 12 時の白ドット。文字なし。
+       アプリ別: 勤怠 = ティールの弧 + チェック / 紹介状 = 琥珀の弧 + 書類 / 問診 = 若草の弧 + チェックリスト (問診票)。
+       仕様の正本 = memory Reference/reference_app_icons.md。
+       (旧 2026-09-10 版「クリップボード + ティールのチェック」は案B 確定前のもので置換)
        maskable: 背景フル塗り、主要要素は中心 (256,256) 半径 205 の safe zone 内。 -->
   <defs>
-    <linearGradient id="teal" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#3DE7C6"/>
-      <stop offset="1" stop-color="#14B8A6"/>
+    <linearGradient id="arc" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#B9F6CA"/>
+      <stop offset="1" stop-color="#43A047"/>
     </linearGradient>
   </defs>
 
   <!-- 背景 (maskable: 角は OS がマスク) -->
   <rect width="512" height="512" fill="#0E4C92"/>
 
-  <!-- 問診票の台紙 -->
-  <rect x="140" y="128" width="232" height="292" rx="28" fill="none" stroke="#ffffff" stroke-width="30"/>
-  <!-- クリップ -->
-  <rect x="204" y="98" width="104" height="60" rx="18" fill="#0E4C92" stroke="#ffffff" stroke-width="26"/>
+  <!-- リング (トラック) -->
+  <circle cx="256" cy="256" r="160" fill="none" stroke="#0c3d6e" stroke-width="40"/>
+  <!-- 進捗アーク (3 アプリ共通の 3/4 周・色だけアプリ別) -->
+  <circle cx="256" cy="256" r="160" fill="none" stroke="url(#arc)" stroke-width="40"
+          stroke-linecap="round" stroke-dasharray="735 1005" transform="rotate(-90 256 256)"/>
 
-  <!-- 記入行 -->
-  <path d="M196 226 h120" fill="none" stroke="#ffffff" stroke-width="26" stroke-linecap="round"/>
-  <path d="M196 282 h84" fill="none" stroke="#ffffff" stroke-width="26" stroke-linecap="round"/>
+  <!-- チェックリスト (問診票) -->
+  <rect x="176" y="192" width="44" height="44" rx="8" fill="none" stroke="#ffffff" stroke-width="20"/>
+  <path d="M244 214 h94" fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round"/>
+  <rect x="176" y="276" width="44" height="44" rx="8" fill="none" stroke="#ffffff" stroke-width="20"/>
+  <path d="M244 298 h94" fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round"/>
 
-  <!-- チェック (ティール = 勤怠のアクセントと同じ) -->
-  <path d="M206 352 l38 38 l72 -84" fill="none" stroke="url(#teal)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- 12時アクセントドット -->
+  <circle cx="256" cy="96" r="22" fill="#ffffff"/>
 </svg>

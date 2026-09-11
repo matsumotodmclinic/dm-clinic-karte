@@ -526,7 +526,7 @@ dmDiff フォームで聞く項目（DM基本との差分のみ）:
 | `pages/_document.js` | `<html lang="ja">`・manifest/icon の link・apple-mobile-web-app 系 meta・body margin リセット・safe-area |
 | `pages/_app.js` | `<title>` と **viewport meta**（勤怠と同値: maximum-scale=1 / viewport-fit=cover） |
 | `pages/api/pwa-manifest.js` | manifest を API で配信（静的 JSON だと middleware のゲートに掛かり HTML が返って PWA が壊れる。勤怠と同じ手） |
-| `public/icon.svg` + PNG 3 枚 | アイコン。勤怠の「リング+チェック」と同じ家族で「問診票+チェック」 |
+| `public/icon.svg` + PNG 3 枚 | アイコン。★2026-09-11 院長確定「案B」: 3 アプリ共通の紺リング枠 + アプリ別の弧の色と中央の絵 (勤怠=ティール+チェック / 紹介状=琥珀+書類 / **問診=若草+チェックリスト**)。仕様の正本 = memory `Reference/reference_app_icons.md`。PNG は SVG から再描画 (tmp/icon-server.mjs 方式) |
 | `lib/appMeta.js` | 名前 'KartePlus 問診'・theme_color #1976d2・スプラッシュ背景 #0E4C92（全部勤怠と同値） |
 | `middleware.js` | `/api/pwa-manifest` を早期 return、`icon.svg` / `icons/` / `apple-touch-icon.png` を matcher から除外 |
 

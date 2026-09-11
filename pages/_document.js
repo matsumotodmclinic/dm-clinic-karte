@@ -4,7 +4,8 @@
 //   - manifest は静的ファイルでなく /api/pwa-manifest から配信する
 //     （静的 /manifest.json は middleware のゲート/認証に引っかかり HTML が返って PWA が壊れるため。
 //       middleware 側で /api/pwa-manifest と /icon.svg 等を素通りにしている）
-//   - アイコンは public/icon.svg（勤怠と同じ紺地 + 白線画 + ティール）。
+//   - アイコンは public/icon.svg（★2026-09-11 案B: 3 アプリ共通の紺リング枠 + 問診は若草の弧 + チェックリスト。
+//     正本 = memory Reference/reference_app_icons.md）。
 //     iOS の apple-touch-icon は SVG を受け付けないので PNG（public/apple-touch-icon.png）も置く
 //   - viewport は Next の作法どおり pages/_app.js 側で出す（_document に書くと警告が出る）
 //
