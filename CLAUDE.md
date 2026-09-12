@@ -31,7 +31,7 @@
 ```
 ├── middleware.js                  # 認証（cookie チェック、/auth,/api/auth スキップ。PWA の manifest/アイコンも素通り）
 ├── public/
-│   ├── icon.svg                   # アプリアイコン（勤怠と同じ作法: 紺地 #0E4C92 + 白線画 + ティールのチェック）
+│   ├── icon.svg                   # アプリアイコン（2026-09-11 案B: 3 アプリ共通の紺リング枠 + 問診は若草の弧 + チェックリスト。正本 = memory Reference/reference_app_icons.md）
 │   ├── apple-touch-icon.png       # iOS 用 180px（SVG 不可のため。icon.svg から生成）
 │   └── icons/icon-{192,512}.png   # Android 用（同上）
 ├── lib/
