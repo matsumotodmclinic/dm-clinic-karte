@@ -6,7 +6,7 @@
           {
             "type": "command",
             "shell": "bash",
-            "command": "echo '=== [session開始] repo を pull ==='; git pull --autostash origin main 2>&1 | tail -3 || true; echo ''; echo '=== 直近の HANDOFF (冒頭) ==='; R=$(ls -t HANDOFF_*.md 2>/dev/null | head -1); if [ -n \"$R\" ]; then echo \"📋 $R\"; sed -n '1,40p' \"$R\"; else echo '(HANDOFF 無し)'; fi; echo ''; echo '=== git 状態 ==='; git status --short; git log --oneline -5; echo ''; echo '⚠️ コミット前に必ず: npm run check (スタイル + ゴールデン151件) と npx next build'; echo '⚠️ プロンプト(カルテの書式・表記)を変える判断は院長が行う。実装だけを先に進めない'; echo '⚠️ プロンプトの実装は lib/buildKartePrompt.js の1箇所のみ。components 側に書き戻さない (テストが落ちる)'"
+            "command": "MEMDIR=~/.claude/projects/C--Users-smats-Documents-projects-dm-clinic-karte/memory; echo '=== [session開始] repo + memory を pull ==='; git pull --autostash origin main 2>&1 | tail -3 || true; git -C $MEMDIR pull --autostash origin main 2>&1 | tail -3 || true; echo ''; echo '=== 問診の索引 (INDEX_monshin.md) ==='; cat $MEMDIR/INDEX_monshin.md 2>/dev/null || echo '(INDEX_monshin.md 無し)'; echo ''; echo '=== 直近の HANDOFF (冒頭) ==='; R=$(ls -t HANDOFF_*.md 2>/dev/null | head -1); if [ -n \"$R\" ]; then echo \"📋 $R\"; sed -n '1,40p' \"$R\"; else echo '(HANDOFF 無し)'; fi; echo ''; echo '=== git 状態 ==='; git status --short; git log --oneline -5; echo ''; echo '⚠️ コミット前に必ず: npm run check (スタイル + ゴールデン + eval) と npx next build'; echo '⚠️ プロンプト(カルテの書式・表記)を変える判断は院長が行う。実装だけを先に進めない'; echo '⚠️ カルテ本文を直す場所は lib/buildKarteTemplate.js の1箇所のみ。components 側にプロンプトを書き戻さない (テストが落ちる)'"
           }
         ]
       }
