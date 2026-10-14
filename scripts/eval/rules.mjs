@@ -229,7 +229,7 @@ export const RULES = [
   },
   {
     id: 'past-history-blank', level: 'warn',
-    desc: '♯他院管理の前だけ1行空ける・【アレルギー歴】の直前は空けない（空行ルール②④）',
+    desc: '自院／他院を分ける空行はちょうど1つ・【アレルギー歴】の直前は空けない（空行ルール②④）',
     check: (k, c) => {
       const ls = lines(k)
       const out = []
@@ -237,9 +237,24 @@ export const RULES = [
       const isThyroid = c.form.startsWith('甲状腺')
       const iAllergy = ls.findIndex(l => l.startsWith('【アレルギー歴】'))
       if (!isThyroid && iAllergy > 0 && ls[iAllergy - 1] === '') out.push('【アレルギー歴】の直前に空行がある')
-      const iPast = ls.findIndex(l => /^♯/.test(l) && !l.startsWith('♯反応性低血糖疑い'))
-      if (iPast > 0 && ls[iPast - 1] !== '' && !/^[♯＃・]/.test(ls[iPast - 1])) {
-        out.push(`♯他院管理の前に1行空いていない: ${JSON.stringify(ls[iPast - 1])}`)
+
+      // ★2026-10-14 記号統一: ♯ は自院にも他院にも付く。区別は「空行より前か後か」だけになった。
+      //   そこで記号でなく「♯ブロックの中の空行はちょうど1つ（内分泌のように自院が空なら0）」を見る。
+      //   内訳行は「・」（1型の GAD抗体 等）と「　」字下げ（妊娠糖尿病の妊娠歴 等）の 2 種類。
+      const iFirst = ls.findIndex(l => l.startsWith('♯'))
+      if (!isThyroid && iFirst > 0 && iAllergy > iFirst) {
+        const block = ls.slice(iFirst, iAllergy)
+        const blanks = block.filter(l => l === '').length
+        if (blanks > 1) {
+          out.push(`♯ブロックの中に空行が ${blanks} 個ある（自院／他院の区切りは1つだけ）`)
+        } else if (blanks === 1) {
+          const i = iFirst + block.indexOf('')
+          if (!/^[♯・　]/.test(ls[i - 1])) out.push(`区切りの空行の前が ♯行でも内訳行でもない: ${JSON.stringify(ls[i - 1])}`)
+          if (!/^♯/.test(ls[i + 1])) out.push(`区切りの空行の後が ♯行でない: ${JSON.stringify(ls[i + 1])}`)
+        }
+        // 空行 0 個は正しい場合がある（他院管理の病名が 1 つも無い回・内分泌で自院が空の回）。
+        // カルテ本文だけでは「区切り忘れ」と区別できないので、ここでは咎めない。
+        // 「他院があるのに区切られていない」は golden のフィクスチャ側で固定している。
       }
       return out
     },

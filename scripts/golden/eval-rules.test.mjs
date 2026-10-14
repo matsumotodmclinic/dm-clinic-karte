@@ -57,8 +57,8 @@ describe('eval ルールが赤になることの確認（壊したカルテを�
   })
 
   test('wareki-only: 西暦・「○年前」', () => {
-    hit('wareki-only', OK_KARTE.replace('＃糖尿病（令和3年）', '＃糖尿病（2021年）'))
-    hit('wareki-only', OK_KARTE.replace('＃糖尿病（令和3年）', '＃糖尿病（5年前）'))
+    hit('wareki-only', OK_KARTE.replace('♯糖尿病（令和3年）', '♯糖尿病（2021年）'))
+    hit('wareki-only', OK_KARTE.replace('♯糖尿病（令和3年）', '♯糖尿病（5年前）'))
   })
 
   test('no-invented-hospital: 入力に無い医療機関名', () => {
@@ -96,7 +96,7 @@ describe('eval ルールが赤になることの確認（壊したカルテを�
   })
 
   test('書式の warn: 連続空行 / 要望の直前 / 区切り線の連続 / 行末空白 / 空の括弧 / 継ぎ目', () => {
-    hit('no-double-blank', OK_KARTE.replace('＃HT\n', '＃HT\n\n\n'))
+    hit('no-double-blank', OK_KARTE.replace('♯HT\n', '♯HT\n\n\n'))
     hit('handoff-adjacent', OK_KARTE.replace('【診察にあたっての要望】', '\n【診察にあたっての要望】'))
     hit('divider-not-adjacent', OK_KARTE.replace('【健診】市の健診', '---------------------------------------------\n---------------------------------------------'))
     hit('no-trailing-space', OK_KARTE.replace('【健診】市の健診', '【健診】市の健診   '))
@@ -150,11 +150,11 @@ describe('2026-09-08 eval で見つかった不具合（回帰）', () => {
 
   test('妊娠糖尿病: 病名未選択のときに「妊娠糖尿病」と断定しない', () => {
     const d = EMPTY['妊娠糖尿病']()
-    assert.ok(buildKarteTemplate('妊娠糖尿病', d).includes('＃妊娠糖尿病 or 糖尿病合併妊娠'))
+    assert.ok(buildKarteTemplate('妊娠糖尿病', d).includes('♯妊娠糖尿病 or 糖尿病合併妊娠'))
     d.disease.dmType = '妊娠糖尿病（GDM）'
-    assert.ok(buildKarteTemplate('妊娠糖尿病', d).includes('\n＃妊娠糖尿病\n'))
+    assert.ok(buildKarteTemplate('妊娠糖尿病', d).includes('\n♯妊娠糖尿病\n'))
     d.disease.dmType = '糖尿病合併妊娠'
-    assert.ok(buildKarteTemplate('妊娠糖尿病', d).includes('\n＃糖尿病合併妊娠\n'))
+    assert.ok(buildKarteTemplate('妊娠糖尿病', d).includes('\n♯糖尿病合併妊娠\n'))
   })
 
   test('妊娠糖尿病: 産科通院先を自由入力だけした場合も落とさない', () => {
@@ -216,7 +216,7 @@ describe('2026-09-08 検証2回目で見つかった不具合（回帰）', () =
   test('甲状腺: 診断時期が不明のとき「診断時期：診断時期不明」と二重にならない', () => {
     const c = CASES.find(x => x.id === '甲状腺（バセドウ継続）/その他漏れ')
     const k = buildKarteTemplate(c.form, c.data)
-    assert.ok(k.includes('＃バセドウ病　甲状腺機能亢進症（診断時期不明）'), k.split('\n')[1])
+    assert.ok(k.includes('♯バセドウ病　甲状腺機能亢進症（診断時期不明）'), k.split('\n')[1])
     assert.ok(!k.includes('診断時期：診断時期不明'))
   })
 

@@ -444,14 +444,20 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
     assert.ok(!unknown.includes('体重減少あり'))
   })
 
-  test('空行ルール: ＃自院管理と♯他院管理の間だけ1行空け、【アレルギー歴】の前は空けない', () => {
-    const karte = buildKarteTemplate('DM基本', DM)
-    const lines = karte.split('\n')
-    const iHl = lines.findIndex(l => l.startsWith('＃HT') || l.startsWith('＃HL'))
-    const iFirstPast = lines.findIndex(l => l.startsWith('♯'))
-    assert.ok(iFirstPast > iHl, '♯既往が ＃自院管理より後にある')
-    assert.equal(lines[iFirstPast - 1], '', '自院管理ブロックと他院管理の間に1行空いていない')
+  // 2026-10-14 記号統一後。自院／他院の区別は記号でなく「空行の前か後か」だけが持つ。
+  test('空行ルール: 自院（♯糖尿病・♯HT）は空行の前、他院は空行の後', () => {
+    const lines = buildKarteTemplate('DM基本', DM).split('\n')
+    const iBlank = lines.findIndex((l, i) => l === '' && i > 0 && lines[i - 1].startsWith('♯'))
+    assert.ok(iBlank > 0, '自院／他院を分ける空行が無い')
+
+    const own = lines.slice(lines.findIndex(l => l.startsWith('♯')), iBlank)
+    assert.ok(own.some(l => l.startsWith('♯糖尿病')), '♯糖尿病 が空行より前に無い')
+    assert.ok(own.some(l => l.startsWith('♯HT')), '♯HT が空行より前に無い')
+    assert.ok(own.every(l => l.startsWith('♯')), '自院ブロックに ♯以外の行が混ざっている')
+
     const iAllergy = lines.findIndex(l => l.startsWith('【アレルギー歴】'))
+    const other = lines.slice(iBlank + 1, iAllergy)
+    assert.ok(other.length > 0 && other.every(l => l.startsWith('♯')), '他院ブロックが ♯行だけでない')
     assert.notEqual(lines[iAllergy - 1], '', '【アレルギー歴】の直前に空行が入っている')
   })
 
@@ -514,18 +520,37 @@ describe('lib/buildKarteTemplate（全14フォーム）', () => {
     })
   }
 
-  test('♯他院管理の前だけ1行空ける（＃自院管理・【アレルギー歴】の前は空けない）', () => {
+  // 2026-10-14 記号統一: 自院と他院は記号でなく「位置」で分ける（ラボテック側の確定ルールに合わせた）。
+  // どちらも ♯ なので、検査も記号でなく「♯ブロックの中にある空行が区切り」という形で見る。
+  test('♯ブロックは空行1つで自院／他院に分かれる・【アレルギー歴】の前は空けない', () => {
     for (const f of ['DM基本', '1型糖尿病', '高血圧・脂質異常症', '妊娠糖尿病', '反応性低血糖', '睡眠時無呼吸症候群', '内分泌']) {
       const lines = buildKarteTemplate(f, FIXTURES[f]).split('\n')
-      const iFirstPast = lines.findIndex(l => l.startsWith('♯') && !l.startsWith('♯反応性低血糖疑い'))
-      assert.ok(iFirstPast > 0, `${f}: ♯既往が出ていない`)
-      assert.equal(lines[iFirstPast - 1], '', `${f}: 他院管理の前に1行空いていない`)
+      const iFirst = lines.findIndex(l => l.startsWith('♯'))
       const iAllergy = lines.findIndex(l => l.startsWith('【アレルギー歴】'))
+      assert.ok(iFirst > 0, `${f}: ♯行が出ていない`)
+      assert.ok(iAllergy > iFirst, `${f}: 【アレルギー歴】が ♯ブロックより前にある`)
+
+      // ♯ブロック = 最初の ♯ 〜 【アレルギー歴】の手前。中身は ♯行 と 区切りの空行だけ
+      // ブロックの中身は ♯行 と、その内訳の「・」行（1型の GAD抗体・CPR 等）と、区切りの空行1つだけ。
+      // ★内分泌だけは自院の主病名を医師が確定する設計なので自院ブロックが空で、
+      //   区切りの空行が ♯ブロックの「前」に来る（＝最初の ♯ がもう他院）。
+      const block = lines.slice(iFirst, iAllergy)
+      const blanks = block.filter(l => l === '').length
+      if (lines[iFirst - 1] === '') {
+        assert.equal(blanks, 0, `${f}: 自院ブロックが空なのに ♯ブロックの中にも空行がある`)
+        assert.ok(block.every(l => l.startsWith('♯')), `${f}: 他院ブロックが ♯行だけでない`)
+      } else {
+        assert.equal(blanks, 1, `${f}: 自院／他院を分ける空行がちょうど1つでない（${blanks}個）`)
+        const iBlank = iFirst + block.indexOf('')
+        // 内訳行は「・」（1型の GAD抗体 等）と「　」字下げ（妊娠糖尿病の妊娠歴 等）の 2 種類がある
+        assert.ok(/^[♯・　]/.test(lines[iBlank - 1]), `${f}: 区切りの空行の前が ♯行でも内訳行でもない: ${JSON.stringify(lines[iBlank - 1])}`)
+        assert.ok(lines[iBlank + 1].startsWith('♯'), `${f}: 区切りの空行の後が ♯行でない`)
+      }
       assert.notEqual(lines[iAllergy - 1], '', `${f}: 【アレルギー歴】の直前に空行が入っている`)
     }
   })
 
-  test('DM差分問診: ＃糖尿病 が追加され、採血セットが DM基本セット になる', () => {
+  test('DM差分問診: ♯糖尿病 が追加され、採血セットが DM基本セット になる', () => {
     for (const [f, data] of [
       ['睡眠時無呼吸症候群', SAS_WITH_DM_DIFF],
       ['高血圧・脂質異常症', HTHL_WITH_DM_DIFF],
@@ -533,7 +558,7 @@ describe('lib/buildKarteTemplate（全14フォーム）', () => {
       ['内分泌', ENDOCRINE_WITH_DM_DIFF],
     ]) {
       const karte = buildKarteTemplate(f, data)
-      assert.ok(karte.includes('＃糖尿病'), `${f}: ＃糖尿病 が無い`)
+      assert.ok(karte.includes('♯糖尿病'), `${f}: ♯糖尿病 が無い`)
       assert.ok(karte.includes('□採血で DM判明 → DM初期評価追加実施済'), `${f}: DM判明の申し送りが無い`)
       assert.ok(karte.includes('DM基本セット'), `${f}: 採血セットが DM基本セット でない`)
       assert.ok(!karte.includes('基本採血なし'), `${f}: 基本採血なし が残っている`)
@@ -541,44 +566,49 @@ describe('lib/buildKarteTemplate（全14フォーム）', () => {
     }
   })
 
-  test('内分泌: 主病名（＃行）は出さない。ただし採血で判明した ＃糖尿病 は例外', () => {
+  test('内分泌: 主病名（♯行）は出さない。ただし採血で判明した ♯糖尿病 は例外', () => {
     const karte = buildKarteTemplate('内分泌', FIXTURES['内分泌'])
-    assert.ok(!karte.split('\n').some(l => l.startsWith('＃')), '＃行を推測して出力している')
+    // 2026-10-14 記号統一後は ♯ の有無では判定できない（その他の病名も ♯ になったため）。
+    // 「自院ブロックが空」＝ 受診理由の直後が空行で、最初の ♯ はもう他院、で判定する。
+    const ls = karte.split('\n')
+    const iFirst = ls.findIndex(l => l.startsWith('♯'))
+    assert.ok(iFirst > 0, '他院管理の ♯行まで消えている')
+    assert.equal(ls[iFirst - 1], '', '自院ブロックが空でない＝主病名を推測して出力している')
     assert.ok(karte.includes('□主病名：医師の診察時に確定・記載'))
     assert.ok(!karte.includes('□初回療養計画書を作成済'), '生活習慣病なしなのに療養計画書が出ている')
     const withCarePlan = buildKarteTemplate('内分泌', ENDOCRINE_WITH_CAREPLAN)
     assert.ok(withCarePlan.includes('□初回療養計画書を作成済'))
     const withDm = buildKarteTemplate('内分泌', ENDOCRINE_WITH_DM_DIFF)
-    assert.ok(withDm.includes('＃糖尿病'))
+    assert.ok(withDm.includes('♯糖尿病'))
     assert.ok(withDm.includes('□主病名：医師の診察時に確定・記載'), 'DM判明時も主病名の申し送りは残す')
   })
 
-  test('反応性低血糖: ＃糖尿病 は ♯反応性低血糖疑い より前・自費CGMは全例必須', () => {
+  test('反応性低血糖: ♯糖尿病 は ♯反応性低血糖疑い より前・自費CGMは全例必須', () => {
     const karte = buildKarteTemplate('反応性低血糖', RH_WITH_DM_DIFF)
-    assert.ok(karte.indexOf('＃糖尿病') < karte.indexOf('♯反応性低血糖疑い'))
+    assert.ok(karte.indexOf('♯糖尿病') < karte.indexOf('♯反応性低血糖疑い'))
     assert.ok(buildKarteTemplate('反応性低血糖', FIXTURES['反応性低血糖']).includes('□自費CGM（リブレ）装着済'))
   })
 
-  test('SAS: 区分で ＃主病名 と申し送りが決まる', () => {
+  test('SAS: 区分で ♯主病名 と申し送りが決まる', () => {
     const base = FIXTURES['睡眠時無呼吸症候群']
     const cpap = buildKarteTemplate('睡眠時無呼吸症候群', base)
-    assert.ok(cpap.includes('＃SAS（前医：あげお睡眠クリニック、CPAP継続）'))
+    assert.ok(cpap.includes('♯SAS（前医：あげお睡眠クリニック、CPAP継続）'))
     assert.ok(cpap.includes('□CPAP継続：前医情報提供書 確認済'))
     const unconfirmed = buildKarteTemplate('睡眠時無呼吸症候群',
       { ...base, reason: { ...base.reason, cpapPriorRecordsConfirmed: false } })
     assert.ok(unconfirmed.includes('□CPAP継続：前医情報提供書 確認要'))
     const screening = buildKarteTemplate('睡眠時無呼吸症候群',
       { ...base, reason: { ...base.reason, sasCategory: 'screening' } })
-    assert.ok(screening.includes('＃SAS疑い（簡易PSG予定）'))
+    assert.ok(screening.includes('♯SAS疑い（簡易PSG予定）'))
     assert.ok(screening.includes('□SAS 簡易PSG発送手配 要'))
   })
 
-  test('甲状腺: 6フォームで ＃診断名・申し送り・フォロー間隔が切り替わる', () => {
+  test('甲状腺: 6フォームで ♯診断名・申し送り・フォロー間隔が切り替わる', () => {
     const of = f => buildKarteTemplate(f, THYROID_FIXTURE)
-    assert.ok(of('甲状腺（バセドウ初診）').includes('＃バセドウ病疑い（エコー上の疑い）'))
-    assert.ok(of('甲状腺（バセドウ継続）').includes('＃バセドウ病　甲状腺機能亢進症（診断時期：令和3年）'))
-    assert.ok(of('甲状腺（橋本病）').includes('＃橋本病疑い（エコー上の疑い）'))
-    assert.ok(of('甲状腺（腫大異常なし）').includes('＃甲状腺腫大（エコー上異常なし）'))
+    assert.ok(of('甲状腺（バセドウ初診）').includes('♯バセドウ病疑い（エコー上の疑い）'))
+    assert.ok(of('甲状腺（バセドウ継続）').includes('♯バセドウ病　甲状腺機能亢進症（診断時期：令和3年）'))
+    assert.ok(of('甲状腺（橋本病）').includes('♯橋本病疑い（エコー上の疑い）'))
+    assert.ok(of('甲状腺（腫大異常なし）').includes('♯甲状腺腫大（エコー上異常なし）'))
     assert.ok(of('甲状腺（腺腫経過観察）').includes('6か月follow'))
     const mal = of('甲状腺（腺腫悪性疑い）')
     assert.ok(mal.includes('□当院は終診') && mal.includes('（当日紹介、当院終診）'))
