@@ -10,7 +10,7 @@
 //   7. /list (一覧、 30 秒自動更新、 検索、 新規→完了)
 //   8. /detail/[id] (詳細、 再生成、 削除、 ステータス変更)
 //   9. SAS フォームの DM 差分問診 (採血で DM 確定時)
-//   10. プロンプト二重管理の注意 (9 ファイル同期、 修正時の落とし穴)
+//   10. (削除) プロンプト二重管理 — 2026-09-06 に一本化して無くなった負債
 //   11. 個人情報の取扱い (PII の境界、 audit_logs ルール)
 //   12. シナリオ別 対応集 / トラブルシューティング
 //
@@ -19,14 +19,45 @@
 //   - 事務スタッフ・リーダー: 問診運用の手順、 再生成の判断、 受付コード受け渡し
 //   - 採用直後のスタッフ: マニュアル代わり (各 step の意味と入力例)
 //
+// ★このページに「事実」を書かない（2026-10-14 院長「ガイドから事実の部分を早見表に寄せる形で整理して」）
+//   ガイドは **手順と理由** を書く場所。古くなって困るのは次の 2 つで、どちらもここが正本ではない:
+//     ・選択肢・画面に出ている文言  → 画面そのものが正本（書き写すと必ずずれる）
+//     ・申し送りに何が出るか        → lib/handoffCatalog.js と /help/handoff が正本
+//                                    （scripts/golden/handoff-catalog.test.mjs が実際の出力と突き合わせている）
+//   scripts/golden/help-guide.test.mjs が、このページに □ の行や件数の直書きが戻ってきたら落とす。
+//
 // 同じ HelpGuide 部品で T1D / GDM / RH / HTHL / 甲状腺 / SAS のガイドも順次追加予定 (2026-06 以降)
 
 import {
-  BackLink, GuideHeader, Toc, Section, Subh, Box, Code, Table, Tr, Td, Step, Scenario, Trouble, GuideFooter,
+  BackLink, GuideHeader, Toc, Section, Subh, Box, Code, Table, Tr, Td, Step, Scenario, Trouble, GuideFooter, GUIDE,
 } from '../../components/HelpGuide'
 import { UI } from '../../lib/uiTokens'
+import Link from 'next/link'
+import {
+  COMMON_HOSPITALS, COMMON_DISEASES, COMMON_MEDICATIONS, COMMON_LAB_TESTS, HOSPITAL_DEPARTMENTS,
+} from '../../lib/voiceVocabulary'
 
 const THEME = UI.primary.fg  // 糖尿病関連カテゴリの色 (問診フォームと同じ青)
+
+// 語彙リストの件数は実物を数える（手で書くとずれる）
+const VOCAB = {
+  hospitals: COMMON_HOSPITALS.length,
+  diseases: COMMON_DISEASES.length,
+  medications: COMMON_MEDICATIONS.length,
+  labTests: COMMON_LAB_TESTS.length,
+  hospitalDepartments: Object.keys(HOSPITAL_DEPARTMENTS).length,
+}
+
+// 「入力の結果、医師に何が出るか」は早見表が正本。ガイドからはそこへ送る。
+function HandoffRef({ note }) {
+  return (
+    <p style={{ fontSize: GUIDE.caption, color: UI.textMuted, lineHeight: 1.8, marginTop: 8 }}>
+      📋 {note || 'ここでの入力が医師への申し送りにどう出るかは'}{' '}
+      <Link href="/help/handoff" legacyBehavior><a style={{ color: UI.primary.fg, fontWeight: 700 }}>運用の流れと 申し送り早見表</a></Link>
+      {' '}にまとめてあります（出力と突き合わせて検査しているので、こちらが正本です）。
+    </p>
+  )
+}
 
 const TOC = [
   { id: 'overview',       icon: '🗺️', title: 'DM 問診の全体像 (患者 → スタッフ → 医師の動線)' },
@@ -44,7 +75,6 @@ const TOC = [
   { id: 'list',           icon: '📋', title: '/list 問診一覧 (30 秒自動更新・検索・完了化)' },
   { id: 'detail',         icon: '🔍', title: '/detail/[id] 詳細 (カルテ表示・再生成・削除)' },
   { id: 'sas-dmdiff',     icon: '💤', title: 'SAS フォームの DM 差分問診 (採血で DM 判明時)' },
-  { id: 'prompt-sync',    icon: '🔁', title: 'プロンプト二重管理 (9 ファイル同期の注意)' },
   { id: 'pii',            icon: '🔒', title: '個人情報 (PII) の取扱い と audit_logs ルール' },
   { id: 'scenarios',      icon: '💡', title: 'シナリオ別 対応集' },
   { id: 'troubleshoot',   icon: '🩹', title: 'トラブルシューティング' },
@@ -87,7 +117,7 @@ export default function DmGuidePage() {
           <Step n={3} title="🎙️ スタッフ: 必要なら音声入力で現病歴・既往歴を補強" themeColor={THEME}>
             Step 6 (病歴・経緯の聴取) で、 患者の発話を <strong>音声入力</strong> でテキスト化 →
             AI が自動整形 (現病歴サマリー / ♯既往疾患リスト)。 既往歴で曖昧さが残れば
-            「要 DR 確認」 チェックを入れると申し送り欄に <Code>□ 既往歴: 要ドクター確認</Code> が自動付与。
+            「要 DR 確認」 チェックを入れると、 医師への申し送りにその旨が出ます。
           </Step>
 
           <Step n={4} title="🤖 送信: Claude (sonnet-4-5) がカルテ記載文を生成" themeColor={THEME}>
@@ -196,18 +226,17 @@ export default function DmGuidePage() {
         {/* ========== Step 1: 重要確認 ========== */}
         <Section id="step-alert" icon="⚠️" title="Step 1: 重要確認 (体重減少のスクリーニング)" themeColor={THEME}>
           <p>
-            「<strong>最近 半年で 5 kg 以上の体重減少がありますか?</strong>」 の 1 問のみ。 「あり」 を選ぶと
-            <strong>悪性疾患スクリーニングの追加問診</strong> がカルテ申し送りに自動付与されます。
-            DM 単独で半年 5 kg 減るのは高度の高血糖時のみで、 悪性疾患合併の警告フラグとして機能します。
+            <strong>体重減少の有無だけを聞く 1 問</strong>。 判定の目安は画面に書いてあるので、 そのまま読み上げて
+            「あり / なし / 不明」 を選んでください。 <strong>聞けなかったときは「不明」</strong> です
+            — 空欄と「なし」 は医師への伝わり方が違います。
           </p>
 
-          <Subh>カルテへの反映</Subh>
           <Box color="warning">
-            「あり」 選択時のカルテ生成プロンプトで、 申し送り欄に
-            「<Code>□ 体重減少 (半年 5 kg 以上): 悪性疾患スクリーニングを医師判断にて検討</Code>」
-            が自動付与されます。 医師は診察時にこのチェック欄を見て、 胸部 X 線・腹部エコー・上下部内視鏡
-            の追加判断をします。
+            <strong>なぜ 1 問目に置いてあるか</strong>: 糖尿病だけでこれだけ体重が落ちるのは高度の高血糖のときだけで、
+            <strong>悪性疾患が隠れている警告</strong>として働くためです。 「あり」 のときはインスリン導入の検討と
+            画像検査の予約が医師に伝わります。
           </Box>
+          <HandoffRef />
         </Section>
 
         {/* ========== Step 2: 受診理由 ========== */}
@@ -235,6 +264,7 @@ export default function DmGuidePage() {
             Step 2 を簡潔に埋めて、 詳細を Step 6 の <strong>現病歴 音声入力</strong> で補強する運用が推奨です。
             Claude が受診理由サマリーに自動統合します。
           </Box>
+          <HandoffRef />
         </Section>
 
         {/* ========== Step 3: 医療背景・家族歴 ========== */}
@@ -247,16 +277,17 @@ export default function DmGuidePage() {
           <Subh>糖尿病既往</Subh>
           <ul>
             <li><strong>DM 発症時期</strong>: 和暦 (昭和 / 平成 / 令和) + 年 を選択、 不明チェックも可</li>
-            <li><strong>インスリン治療中</strong>: 該当時は申し送りに「<Code>□インスリン使用中</Code>」が入り、<strong>療養計画書の依頼は出なくなります</strong> (対象外のため・2026-10-14 改訂)</li>
+            <li><strong>インスリン治療中</strong>: 使っている方はここにチェック。 治療方針にも療養計画書の要否にも効きます</li>
             <li><strong>エコー検査</strong>: 頸動脈エコー / 腹部エコー の最終受診時期 (健康投資の評価)</li>
           </ul>
 
           <Subh>合併する慢性疾患 (チェックボックス)</Subh>
-          <Table headers={['疾患', 'カルテ表記', '備考']} themeColor={THEME}>
-            <Tr><Td>HT (高血圧)</Td><Td>♯高血圧</Td><Td>申し送りに「血圧手帳をお渡ししています」が入る</Td></Tr>
-            <Tr><Td>HL (脂質異常症)</Td><Td>♯脂質異常症</Td><Td>申し送りに「甲状腺3項目を追加しました」が入る</Td></Tr>
-            <Tr><Td>インスリン治療中</Td><Td>(病名行は変わらない)</Td><Td>申し送りに「□インスリン使用中」。療養計画書の依頼は出ない</Td></Tr>
+          <Table headers={['疾患', 'カルテの病名の行']} themeColor={THEME}>
+            <Tr><Td>HT (高血圧)</Td><Td>♯高血圧</Td></Tr>
+            <Tr><Td>HL (脂質異常症)</Td><Td>♯脂質異常症</Td></Tr>
+            <Tr><Td>インスリン治療中</Td><Td>(病名の行は変わらない)</Td></Tr>
           </Table>
+          <HandoffRef note="チェックの結果どの申し送りが出るかは早見表で見てください。" />
 
           <Subh>重要既往 (詳細展開、 4 項目)</Subh>
           <p>
@@ -389,7 +420,7 @@ export default function DmGuidePage() {
           <Step n={2} title="🩺 既往歴 音声入力 (mode=pastHistory)" themeColor={THEME}>
             「<strong>これまで治療された病気や、 通院中の医院はありますか?</strong>」 と促し、 録音 →
             AI が <Code>♯病名 (時期・病院・薬)</Code> 形式に整形 → カルテの ♯既往疾患セクションに追記。
-            <strong>必要なら「要 DR 確認」 チェックを入れる</strong> (申し送り欄に <Code>□ 既往歴: 要ドクター確認</Code> 自動付与)。
+            <strong>必要なら「要 DR 確認」 チェックを入れる</strong> (医師への申し送りに出ます)。
           </Step>
 
           <Box color="info">
@@ -402,6 +433,7 @@ export default function DmGuidePage() {
             文字起こし → 整形 → 文字データのみ Supabase に保存。 録音 (音声 binary) は端末を離れません
             (PII 防止)。
           </Box>
+          <HandoffRef />
         </Section>
 
         {/* ========== 音声入力 詳細 ========== */}
@@ -423,7 +455,7 @@ export default function DmGuidePage() {
 
           <Step n={4} title="📝 (任意) 「要 DR 確認」 にチェック" themeColor={THEME}>
             既往歴で「<strong>薬剤名が曖昧</strong>」「<strong>手術時期が不明</strong>」 等で医師確認が必要なら
-            チェック。 申し送り欄に <Code>□ 既往歴: 要ドクター確認</Code> が自動付与され、 医師が診察時に
+            チェック。 医師への申し送りに <strong>確認が要る既往がある</strong>ことが出て、 医師が診察時に
             視覚的に気付けます。
           </Step>
 
@@ -433,12 +465,15 @@ export default function DmGuidePage() {
             Claude が整形時に参照して誤認識を補正します。
           </p>
           <Table headers={['定数', '件数', '内容']} themeColor={THEME}>
-            <Tr><Td><Code>COMMON_HOSPITALS</Code></Td><Td>109</Td><Td>上尾市医師会 89 件 + 周辺市町村 20 件</Td></Tr>
-            <Tr><Td><Code>COMMON_DISEASES</Code></Td><Td>99</Td><Td>既往歴 + 糖尿病合併症 + DM 合併疾患</Td></Tr>
-            <Tr><Td><Code>COMMON_MEDICATIONS</Code></Td><Td>309</Td><Td>糖尿病 / 循環器 / 脂質 / 抗血栓 / 狭心症 / CGM / CSII 機器</Td></Tr>
-            <Tr><Td><Code>COMMON_LAB_TESTS</Code></Td><Td>30</Td><Td>HbA1c / eGFR / BNP / CPR / CPI 等</Td></Tr>
-            <Tr><Td><Code>HOSPITAL_DEPARTMENTS</Code></Td><Td>3 病院</Td><Td>上尾中央総合・自治医大さいたま・さいたま赤十字 の正式診療科リスト</Td></Tr>
+            <Tr><Td><Code>COMMON_HOSPITALS</Code></Td><Td>{VOCAB.hospitals}</Td><Td>上尾市医師会 + 周辺市町村</Td></Tr>
+            <Tr><Td><Code>COMMON_DISEASES</Code></Td><Td>{VOCAB.diseases}</Td><Td>既往歴 + 糖尿病合併症 + DM 合併疾患</Td></Tr>
+            <Tr><Td><Code>COMMON_MEDICATIONS</Code></Td><Td>{VOCAB.medications}</Td><Td>糖尿病 / 循環器 / 脂質 / 抗血栓 / 狭心症 / CGM / CSII 機器</Td></Tr>
+            <Tr><Td><Code>COMMON_LAB_TESTS</Code></Td><Td>{VOCAB.labTests}</Td><Td>HbA1c / eGFR / BNP / CPR / CPI 等</Td></Tr>
+            <Tr><Td><Code>HOSPITAL_DEPARTMENTS</Code></Td><Td>{VOCAB.hospitalDepartments} 病院</Td><Td>上尾中央総合・自治医大さいたま・さいたま赤十字 の正式診療科リスト</Td></Tr>
           </Table>
+          <p style={{ fontSize: GUIDE.caption, color: UI.textMuted }}>
+            ※ 件数は <Code>lib/voiceVocabulary.js</Code> を数えて出しています (手で書くとずれるため)。
+          </p>
 
           <Subh>補正ルール (buildVocabularyHint 内に明示)</Subh>
           <ol>
@@ -459,10 +494,12 @@ export default function DmGuidePage() {
         <Section id="generate" icon="🤖" title="カルテ自動生成と受付コード (4 桁英数字)" themeColor={THEME}>
           <Subh>生成エンジン</Subh>
           <ul>
-            <li><strong>モデル</strong>: <Code>claude-sonnet-4-5</Code> (Anthropic API、 経路 A = 初回送信)</li>
-            <li><strong>入力</strong>: 6 ステップの全データ + 音声整形結果 (現病歴 / 既往歴)</li>
-            <li><strong>出力</strong>: 当院フォーマットのカルテ記載文 (♯病名リスト + 現病歴 + 既往歴 + 申し送り)</li>
-            <li><strong>所要</strong>: 5〜15 秒 (内容量による)</li>
+            <li><strong>本文を組むのは JS</strong>: 選択した内容からカルテ記載文を組み立てます。
+              <strong>選択だけで終わった回は AI を呼びません</strong> (その場で出ます)</li>
+            <li><strong>AI を呼ぶのは自由記述があるときだけ</strong>: 音声入力と自由記入欄を文章にして、
+              構造化した内容と突き合わせる部分だけを <Code>claude-sonnet-4-5</Code> に頼みます</li>
+            <li><strong>AI が落ちても</strong> カルテは出ます (JS が組んだ版が保存され、 申し送りにその旨が出ます)</li>
+            <li><strong>所要</strong>: 選択のみなら即時、 音声ありで 5〜15 秒</li>
           </ul>
 
           <Subh>受付コード (visit_code)</Subh>
@@ -493,6 +530,7 @@ export default function DmGuidePage() {
             iPad に大きく受付コードが表示され、 患者に「<strong>受付に戻ってこのコードをお伝えください</strong>」
             と案内が出ます。 スタッフはこのコードを受付ノートに転記 (or 口頭で受付に伝達)。
           </Step>
+          <HandoffRef note="どんな申し送りが出るかの一覧は" />
         </Section>
 
         {/* ========== /list ========== */}
@@ -576,42 +614,6 @@ export default function DmGuidePage() {
           </Box>
         </Section>
 
-        {/* ========== プロンプト同期 ========== */}
-        <Section id="prompt-sync" icon="🔁" title="プロンプト二重管理 (9 ファイル同期の注意)" themeColor={THEME}>
-          <Box color="danger">
-            <strong>⚠️ プロンプト修正時は 9 ファイル全てを同期してください</strong>。 片方だけ修正すると
-            初回生成 (経路 A) と再生成 (経路 B) で<strong>カルテの出力が一致しなくなり</strong>、
-            医師がカルテを見返した時に「あれ、 前回と書式が違う」 という事故が起きます。
-          </Box>
-
-          <Subh>修正対象 9 ファイル</Subh>
-          <Table headers={['経路', 'ファイル', '対象 form_type']} themeColor={THEME}>
-            <Tr><Td>A</Td><Td><Code>components/DMIntakeTool.js</Code></Td><Td>DM 基本</Td></Tr>
-            <Tr><Td>A</Td><Td><Code>components/T1DIntakeTool.js</Code></Td><Td>1 型糖尿病</Td></Tr>
-            <Tr><Td>A</Td><Td><Code>components/PedT1DIntakeTool.js</Code></Td><Td>小児 1 型糖尿病</Td></Tr>
-            <Tr><Td>A</Td><Td><Code>components/HTHLIntakeTool.js</Code></Td><Td>高血圧・脂質異常症</Td></Tr>
-            <Tr><Td>A</Td><Td><Code>components/GDMIntakeTool.js</Code></Td><Td>妊娠糖尿病</Td></Tr>
-            <Tr><Td>A</Td><Td><Code>components/RHIntakeTool.js</Code></Td><Td>反応性低血糖</Td></Tr>
-            <Tr><Td>A</Td><Td><Code>components/SASIntakeTool.js</Code></Td><Td>睡眠時無呼吸症候群</Td></Tr>
-            <Tr><Td>A</Td><Td><Code>components/EndocrineIntakeTool.js</Code></Td><Td>内分泌</Td></Tr>
-            <Tr highlight><Td>B</Td><Td><Code>pages/api/generate-karte.js</Code></Td><Td><strong>全 8 form_type を 1 ファイルに集約</strong></Td></Tr>
-          </Table>
-
-          <Subh>修正の手順 (推奨)</Subh>
-          <Step n={1} title="該当 IntakeTool.js のプロンプトを修正" themeColor={THEME}>
-            例: DM 基本のプロンプト変更 → <Code>components/DMIntakeTool.js</Code> の <Code>generateKarte()</Code>
-            内のテンプレートリテラルを編集。
-          </Step>
-          <Step n={2} title="generate-karte.js の同 form_type 分岐を 同じ内容に更新" themeColor={THEME}>
-            <Code>pages/api/generate-karte.js</Code> 内で <Code>form_type === 'DM 基本'</Code> の分岐を
-            探し、 同じ修正を反映。 <strong>diff を取って完全一致を確認</strong>。
-          </Step>
-          <Step n={3} title="動作確認: 既存レコードを 再生成 して 出力比較" themeColor={THEME}>
-            <Code>/detail/[id]</Code> で「🔄 再生成」 → 初回生成済みカルテと <strong>意図した差分のみ</strong>
-            になっているか確認。
-          </Step>
-        </Section>
-
         {/* ========== PII ========== */}
         <Section id="pii" icon="🔒" title="個人情報 (PII) の取扱い と audit_logs ルール" themeColor={THEME}>
           <Box color="warning">
@@ -656,7 +658,7 @@ export default function DmGuidePage() {
 
           <Scenario q="既往歴の入力中に「薬の名前が分からない」 と言われた" themeColor={THEME}>
             患者に「飲んでる薬の見た目 (色・形)」 を聞いて音声入力 → <strong>「要 DR 確認」 チェックを ON</strong>
-            にして送信。 申し送り欄に <Code>□ 既往歴: 要ドクター確認</Code> が自動付与され、 医師が診察時に
+            にして送信。 医師への申し送りに <strong>確認が要る既往がある</strong>ことが出て、 医師が診察時に
             お薬手帳を確認して補完します。
           </Scenario>
 
@@ -724,9 +726,10 @@ export default function DmGuidePage() {
           </Trouble>
 
           <Trouble symptom="再生成すると元のカルテと書式が変わる (♯ の順番、 申し送り欄の文言)">
-            プロンプト二重管理の不整合の可能性。 「🔁 プロンプト二重管理」 セクションの 8 ファイル
-            (経路 A 7 ファイル + 経路 B 1 ファイル) の同期を確認してください。 直近のプロンプト変更コミットを
-            git log で追って、 経路 A / 経路 B の両方に同じ修正が入っているか diff で確認。
+            <strong>いまは起きない構造になっています</strong>。 初回生成も再生成も同じ 1 つの組立
+            (<Code>lib/buildKarteTemplate.js</Code>) を通るためです (2026-09-07〜)。
+            それでも変わる場合は、 <strong>詳細画面で内容を編集して保存した</strong> か、
+            <Code>🅰 旧AI版で作り直す</Code> を押した可能性があります。
           </Trouble>
 
           <Trouble symptom="kinkan-app でパスワード変えたのに dm-clinic-karte でログインできない">

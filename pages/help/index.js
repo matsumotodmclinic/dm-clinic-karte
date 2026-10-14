@@ -48,7 +48,6 @@ const OPS_TOPICS = [
   { id: 'ops-list',   label: '/list (問診一覧) の運用',  emoji: '📋', ready: false, desc: '30 秒自動更新、 検索、 完了化、 一括処理 (準備中、 DM ガイド内に簡易版あり)' },
   { id: 'ops-detail', label: '/detail/[id] (詳細) の運用', emoji: '🔍', ready: false, desc: 'カルテ表示、 編集、 再生成、 削除、 SAS DM 差分 (準備中、 DM ガイド内に簡易版あり)' },
   { id: 'ops-voice',  label: '音声入力 サブシステム',    emoji: '🎤', ready: false, desc: '語彙リスト、 誤認識補正、 要 DR 確認 (準備中、 DM ガイド内に簡易版あり)' },
-  { id: 'ops-prompt', label: 'プロンプト 二重管理',      emoji: '🔁', ready: false, desc: '経路 A / 経路 B 8 ファイル同期 (準備中、 DM ガイド内に簡易版あり)' },
 ]
 
 export default function HelpIndex() {
@@ -144,7 +143,7 @@ export default function HelpIndex() {
         <div style={{ background: UI.surface, border: `1px solid ${UI.border}`, borderRadius: 12, padding: 18, marginTop: 18, fontSize: GUIDE.bodySmall, color: UI.text, lineHeight: 1.9, boxShadow: GUIDE.card }}>
           <strong>💡 まずは DM 基本ガイドから</strong>:<br />
           DM (2 型糖尿病) が最も使用頻度が高いので、 完全ガイドを真っ先に整備しました。
-          音声入力サブシステム / プロンプト二重管理 / 受付コード運用 / SAS の DM 差分問診 など、
+          音声入力サブシステム / 受付コード運用 / SAS の DM 差分問診 など、
           他フォームにも共通する重要トピックを 1 本にまとめています。<br /><br />
           他フォームのガイドは順次追加予定です (2026-06 以降)。 急ぎ必要な項目があれば
           院長 or KartePlus 本部 (<a href="mailto:karteplus2026@gmail.com" style={{ color: UI.primary.fg }}>karteplus2026@gmail.com</a>) までご相談ください。
