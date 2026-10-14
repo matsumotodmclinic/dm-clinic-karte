@@ -602,7 +602,19 @@ describe('lib/buildKarteTemplate（全14フォーム）', () => {
   test('反応性低血糖: ♯糖尿病 は ♯反応性低血糖疑い より前・自費CGMは全例必須', () => {
     const karte = buildKarteTemplate('反応性低血糖', RH_WITH_DM_DIFF)
     assert.ok(karte.indexOf('♯糖尿病') < karte.indexOf('♯反応性低血糖疑い'))
-    assert.ok(buildKarteTemplate('反応性低血糖', FIXTURES['反応性低血糖']).includes('□自費CGM（リブレ）装着済'))
+    // 2026-10-14: 装着の時点（初事前）を文言に入れた。GDM は初診時で時点が違う
+    assert.ok(buildKarteTemplate('反応性低血糖', FIXTURES['反応性低血糖']).includes('□自費CGM（リブレ）初事前で装着済'))
+  })
+
+  // 紙の運用「小児1型 → 小児慢性の申請確認」。以前は申請済のときしか申し送りに出ず、
+  // 未申請・申請中・聞き漏らしが医師に伝わらなかった（2026-10-14 院長）。
+  test('小児1型: 小児慢性の申請状況は 4 状態すべて申し送りに出る', () => {
+    const base = FIXTURES['小児1型糖尿病']
+    const of = (status) => buildKarteTemplate('小児1型糖尿病', { ...base, chronic: { ...base.chronic, status } })
+    assert.ok(of('申請済').includes('□小児慢性申請済・窓口負担を確認し算定へ連絡'), '申請済')
+    assert.ok(of('申請中').includes('□小児慢性：申請中・経過を確認'), '申請中')
+    assert.ok(of('申請未').includes('□小児慢性：未申請・制度の説明と申請の案内が必要'), '申請未')
+    assert.ok(of('').includes('□小児慢性：申請状況を未確認（確認してください）'), '未選択は断定せず未確認と書く')
   })
 
   test('SAS: 区分で ♯主病名 と申し送りが決まる', () => {
