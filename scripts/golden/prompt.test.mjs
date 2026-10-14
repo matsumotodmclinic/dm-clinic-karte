@@ -379,6 +379,20 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
     assert.ok(karte.split('\n').includes('【健診】'), '【健診】の空欄行が無い')
   })
 
+  // 2026-10-14 院長 OK: ラボテック取り出しアプリが「下部にたまるワクチン接種の行を上部 1 行にまとめ直す」
+  // 運用なので、書き込み先の行が常に無いと行き場が無くなる。値の有無で行が消えてはいけない。
+  test('【ワクチン歴】: 60歳以上なら値が空でも行を残す・60歳未満は出さない', () => {
+    const base = FIXTURES['DM基本']
+    const withAge = (age, vac = {}) => buildKarteTemplate('DM基本', {
+      ...base,
+      history: { ...base.history, age: String(age), vaccine65Prevena: '', vaccine65Herpes: '', ...vac },
+    })
+    assert.ok(withAge(65).split('\n').includes('【ワクチン歴】'), '60歳以上で空欄行が出ていない')
+    assert.ok(withAge(65, { vaccine65Prevena: '済' }).includes('【ワクチン歴】プレベナー20：済'), '値が入らない')
+    // 60歳未満は対象ワクチン（プレベナー20・帯状疱疹）が適応外なので従来どおり出さない
+    assert.ok(!withAge(50).includes('【ワクチン歴】'), '60歳未満なのに行が出ている')
+  })
+
   test('【仕事】: 「していない」は就労なしと明記、未入力は空欄', () => {
     // 院長判断 2026-09-06: 空欄だと「無職」と「聞き漏らし」が区別できない
     assert.equal(buildJobLine({ lifestyle: { work: 'していない', job: [], activity: '' } }), '【仕事】就労なし')
