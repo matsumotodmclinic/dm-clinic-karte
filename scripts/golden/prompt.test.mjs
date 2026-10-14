@@ -582,12 +582,14 @@ describe('lib/buildKarteTemplate（全14フォーム）', () => {
 
   test('内分泌: 主病名（♯行）は出さない。ただし採血で判明した ♯糖尿病 は例外', () => {
     const karte = buildKarteTemplate('内分泌', FIXTURES['内分泌'])
-    // 2026-10-14 記号統一後は ♯ の有無では判定できない（その他の病名も ♯ になったため）。
-    // 「自院ブロックが空」＝ 受診理由の直後が空行で、最初の ♯ はもう他院、で判定する。
+    // 2026-10-14（院長）: 行を出さないのではなく、医師の記入待ちプレースホルダを置く。
+    // 記号統一で自院/他院が「位置」でしか分からなくなったため、自院ブロックを空にしない。
     const ls = karte.split('\n')
     const iFirst = ls.findIndex(l => l.startsWith('♯'))
-    assert.ok(iFirst > 0, '他院管理の ♯行まで消えている')
-    assert.equal(ls[iFirst - 1], '', '自院ブロックが空でない＝主病名を推測して出力している')
+    assert.equal(ls[iFirst], '♯内分泌疾患（具体的な病名を入力ください）', '記入待ちの主病名行が無い')
+    // 自院ブロック（＝区切りの空行より前）はプレースホルダだけ。具体的な病名を推測していない
+    const iBlank = ls.findIndex((l, i) => l === '' && i > iFirst)
+    assert.deepEqual(ls.slice(iFirst, iBlank), ['♯内分泌疾患（具体的な病名を入力ください）'], '主病名を推測して出力している')
     assert.ok(karte.includes('□主病名：医師の診察時に確定・記載'))
     assert.ok(!karte.includes('□初回療養計画書を作成済'), '生活習慣病なしなのに療養計画書が出ている')
     const withCarePlan = buildKarteTemplate('内分泌', ENDOCRINE_WITH_CAREPLAN)
