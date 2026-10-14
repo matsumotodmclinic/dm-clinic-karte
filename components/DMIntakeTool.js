@@ -65,7 +65,7 @@ const initialData = {
   },
   disease: {
     dmOnsetEra: "令和", dmOnset: "", dmOnsetUnknown: false,
-    ht: false, hl: false, insulinUse: false,
+    ht: false, hl: false, insulinUse: false, glp1Use: false,
     gastricCancer:  { selected: false, resection: "", surgeryType: "", surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", visitFreq: "", meds: "" },
     pancreasCancer: { selected: false, surgeryType: "", resection: "", surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", visitFreq: "", meds: "" },
     ihd:            { selected: false, treatment: "", surgeryEra: "平成", surgeryYear: "", surgeryUnknown: false, treatedHospital: "", treatedHospitalOther: "", visitingHospital: "", visitingHospitalOther: "", visitFreq: "", meds: "" },
@@ -662,6 +662,14 @@ export default function DMIntakeTool() {
           <label style={{ fontSize: 15, fontWeight: 700, color: "#1a5fa8", display: "flex", alignItems: "center", gap: 8, marginBottom: 16, cursor: "pointer", background: "#f0f7ff", padding: "12px 14px", borderRadius: 10, border: "1px solid #bcd4f8" }}>
             <input type="checkbox" checked={d.disease.insulinUse} onChange={e => up("disease", "insulinUse", e.target.checked)} style={{ width: 20, height: 20 }} />
             現在インスリン治療中
+          </label>
+
+          {/* ★2026-10-15 院長「GLP-1継続予定と申し送りにあるといいですよね」。
+              ドクターキューブの事前WEB問診は Q4「現在の治療状況」で GLP-1 を聞いているのに、
+              当院の問診にはインスリンしか器が無く、カルテに載らなかった。 */}
+          <label style={{ fontSize: 15, fontWeight: 700, color: "#1a5fa8", display: "flex", alignItems: "center", gap: 8, marginBottom: 16, cursor: "pointer", background: "#f0f7ff", padding: "12px 14px", borderRadius: 10, border: "1px solid #bcd4f8" }}>
+            <input type="checkbox" checked={d.disease.glp1Use} onChange={e => up("disease", "glp1Use", e.target.checked)} style={{ width: 20, height: 20 }} />
+            現在 GLP-1受容体作動薬の注射で治療中
           </label>
 
           <label style={lbl()}>糖尿病の症状（該当するものをすべてチェック）</label>

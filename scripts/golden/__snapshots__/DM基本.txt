@@ -64,6 +64,7 @@
     "ht": true,
     "hl": false,
     "insulinUse": false,
+    "glp1Use": true,
     "echoNeck": "希望なし",
     "echoAbdomen": "他院で施行済",
     "dmSymptoms": {

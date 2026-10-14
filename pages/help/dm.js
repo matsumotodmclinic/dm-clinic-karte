@@ -278,6 +278,7 @@ export default function DmGuidePage() {
           <ul>
             <li><strong>DM 発症時期</strong>: 和暦 (昭和 / 平成 / 令和) + 年 を選択、 不明チェックも可</li>
             <li><strong>インスリン治療中</strong>: 使っている方はここにチェック。 治療方針にも療養計画書の要否にも効きます</li>
+            <li><strong>GLP-1 の注射</strong>: 他院で続けている方はここにチェック (2026-10 追加)。 続けるかどうかを医師がその場で判断します</li>
             <li><strong>エコー検査</strong>: 頸動脈エコー / 腹部エコー の最終受診時期 (健康投資の評価)</li>
           </ul>
 
@@ -286,6 +287,7 @@ export default function DmGuidePage() {
             <Tr><Td>HT (高血圧)</Td><Td>♯高血圧</Td></Tr>
             <Tr><Td>HL (脂質異常症)</Td><Td>♯脂質異常症</Td></Tr>
             <Tr><Td>インスリン治療中</Td><Td>(病名の行は変わらない)</Td></Tr>
+            <Tr><Td>GLP-1 の注射</Td><Td>(病名の行は変わらない)</Td></Tr>
           </Table>
           <HandoffRef note="チェックの結果どの申し送りが出るかは早見表で見てください。" />
 

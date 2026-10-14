@@ -28,7 +28,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { splitDrQube } from '../lib/drQube'
-import { collapseBlankLinesForPrint } from '../lib/printKarte'
+import { collapseBlankLinesForPrint, toWarekiForPrint } from '../lib/printKarte'
 
 // 問診日は西暦（院長確定 2026-10-14）。カルテ本文は和暦だが、ここは受付が見る欄なので揃えない。
 export function formatDate(iso) {
@@ -144,7 +144,9 @@ export default function PrintSheet({ record, onFit, banner }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [record])
 
-  const dq = record?.form_data?.drQube?.text
+  // ★紙の上では西暦を和暦に直す（院長 2026-10-15）。カルテは和暦のみなので表記が混ざらないように。
+  //   保存してある貼り付け原文は患者が入力したまま（後から原文を確かめられるように）。
+  const dq = toWarekiForPrint(record?.form_data?.drQube?.text)
 
   return (
     <div className="kp-print-scroll"><div className="kp-print">
