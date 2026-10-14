@@ -92,7 +92,7 @@ export const FIXTURES = {
       eye: '上尾こいけ眼科', eyeVisiting: '', eyeFundusCheck: '受けている',
       retinopathy: '単純性網膜症', glaucoma: '緑内障なし', eyeNotebook: '持っている',
     },
-    body: commonBody,
+    body: { ...commonBody, polycythemia: false },
   },
 
   '1型糖尿病': {
@@ -173,7 +173,7 @@ export const FIXTURES = {
       otherDisease: '', otherDiseases,
     },
     history: commonHistory,
-    body: commonBody,
+    body: { ...commonBody, polycythemia: false },
   },
 
   '妊娠糖尿病': {
@@ -231,7 +231,7 @@ export const FIXTURES = {
       otherDiseases,
     },
     history: commonHistory,
-    body: commonBody,
+    body: { ...commonBody, polycythemia: false },
   },
 
   '内分泌': {

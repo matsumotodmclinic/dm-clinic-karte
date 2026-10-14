@@ -424,6 +424,26 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
     assert.ok(of('11.0', 'あり').includes(`${LINE}（体重減少あり・HbA1c 11%）`), '両方のとき理由が並ばない')
   })
 
+  // 院長 2026-10-14「糖尿病・高血圧脂質異常症・SAS については、体重過多・多血症の場合は
+  // 簡易PSG検査と常に表示させて」。多血症は夜間低酸素の結果なので SAS のサインになる。
+  test('簡易PSG: 体重過多（BMI25以上）か多血症で申し送りに出る', () => {
+    const base = FIXTURES['DM基本']
+    const of = (height, weightNow, polycythemia = false) => buildKarteTemplate('DM基本', {
+      ...base, body: { ...base.body, height, weightNow, polycythemia },
+    })
+    const LINE = '□簡易PSG検査をご検討ください'
+    // 168cm / 68kg = BMI 24.1 → 出ない
+    assert.ok(!of('168', '68').includes(LINE), 'BMI 24.1 で出ている')
+    // 168cm / 71kg = BMI 25.2 → 出る
+    assert.ok(of('168', '71').includes(`${LINE}（体重過多 BMI 25.2）`), 'BMI 25.2 で出ない')
+    // 痩せていても多血症なら出る
+    assert.ok(of('168', '68', true).includes(`${LINE}（多血症）`), '多血症で出ない')
+    // 両方なら理由が並ぶ
+    assert.ok(of('168', '71', true).includes(`${LINE}（体重過多 BMI 25.2・多血症）`), '両方のとき理由が並ばない')
+    // 身長が未入力なら BMI が出せないので体重過多では出ない
+    assert.ok(!of('', '90').includes(LINE), '身長なしで出ている')
+  })
+
   // 2026-10-14 院長: 紹介元は聞いていたが「現物を持参したか」を聞いていなかった（紙にはある）。
   // 持参ありのときだけ出す。「持参なし」と未聴取は区別しない。
   test('紹介状: 持参ありのときだけ申し送りに出る', () => {
@@ -506,9 +526,18 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
       if (!karte) continue
       assert.ok(!karte.includes('療養計画書を作成済'), `${f}: 「作成済」の断定が残っている`)
     }
-    // DM基本・1型は糖尿病が主病名なので常に出る
     assert.ok(buildKarteTemplate('DM基本', FIXTURES['DM基本']).includes('□療養計画書の作成をお願いします'))
-    assert.ok(buildKarteTemplate('1型糖尿病', FIXTURES['1型糖尿病']).includes('□療養計画書の作成をお願いします'))
+  })
+
+  // 院長 2026-10-14「インスリン使用 → 療養計画書は必要なし」。
+  // 1型はほぼ全例インスリン使用中なので、この除外で実質ほとんど出なくなる。
+  test('療養計画書: インスリン使用中は出さない', () => {
+    const LINE = '□療養計画書の作成をお願いします'
+    const dm = FIXTURES['DM基本']
+    assert.ok(!buildKarteTemplate('DM基本', { ...dm, disease: { ...dm.disease, insulinUse: true } }).includes(LINE), 'DM基本の真偽値で抑制されない')
+    const t1 = FIXTURES['1型糖尿病']
+    assert.ok(!buildKarteTemplate('1型糖尿病', t1).includes(LINE), '1型（インスリン使用中）で抑制されない')
+    assert.ok(buildKarteTemplate('1型糖尿病', { ...t1, disease: { ...t1.disease, insulinStatus: 'インスリン未使用' } }).includes(LINE), '1型の未使用で出ない')
   })
 
   test('療養計画書: 内分泌は 糖尿病/高血圧/脂質異常症 のどれかを選んだときだけ出る', () => {
