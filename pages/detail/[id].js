@@ -337,6 +337,13 @@ export default function DetailPage() {
                   style={{ flex:'1 1 140px', padding:'12px', borderRadius:6, border:`1px solid ${UI.primary.fg}`, background:UI.surface, color:UI.primary.fg, fontWeight:700, fontSize:14, cursor:'pointer' }}>
                   ▦ QRで渡す
                 </button>
+                {/* 🖨 医師への引継ぎ用 A4（2026-10-14）。上部は手書き欄・下部はカルテ全文。
+                    紙を入力用紙から出力用紙に変えて、スタッフの二重入力をなくすためのもの */}
+                <button onClick={() => window.open(`/print/${id}`, '_blank')}
+                  title="医師への引継ぎ用の A4 を開きます（上部は氏名などの手書き欄・下部にカルテ全文）"
+                  style={{ flex:'1 1 140px', padding:'12px', borderRadius:6, border:`1px solid ${UI.primary.fg}`, background:UI.surface, color:UI.primary.fg, fontWeight:700, fontSize:14, cursor:'pointer' }}>
+                  🖨 印刷用A4
+                </button>
                 <button onClick={handleSaveKarte}
                   style={{ flex:'1 1 140px', padding:'12px', borderRadius:6, border:`1px solid ${UI.success.fg}`, background:UI.surface, color:UI.success.fg, fontWeight:700, fontSize:14, cursor:'pointer' }}>
                   💾 編集を保存
