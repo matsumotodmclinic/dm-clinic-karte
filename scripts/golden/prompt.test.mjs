@@ -590,14 +590,14 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
   })
 
   // 2026-10-14 記号統一後。自院／他院の区別は記号でなく「空行の前か後か」だけが持つ。
-  test('空行ルール: 自院（♯糖尿病・♯HT）は空行の前、他院は空行の後', () => {
+  test('空行ルール: 自院（♯糖尿病・♯高血圧）は空行の前、他院は空行の後', () => {
     const lines = buildKarteTemplate('DM基本', DM).split('\n')
     const iBlank = lines.findIndex((l, i) => l === '' && i > 0 && lines[i - 1].startsWith('♯'))
     assert.ok(iBlank > 0, '自院／他院を分ける空行が無い')
 
     const own = lines.slice(lines.findIndex(l => l.startsWith('♯')), iBlank)
     assert.ok(own.some(l => l.startsWith('♯糖尿病')), '♯糖尿病 が空行より前に無い')
-    assert.ok(own.some(l => l.startsWith('♯HT')), '♯HT が空行より前に無い')
+    assert.ok(own.some(l => l.startsWith('♯高血圧')), '♯高血圧 が空行より前に無い')
     assert.ok(own.every(l => l.startsWith('♯')), '自院ブロックに ♯以外の行が混ざっている')
 
     const iAllergy = lines.findIndex(l => l.startsWith('【アレルギー歴】'))
@@ -641,6 +641,16 @@ describe('lib/buildKarteTemplate（全14フォーム）', () => {
       for (const ng of ['（該当時のみ）', '整形済みテキスト', 'undefined', '[object Object]', '【患者情報JSON】', '（記載あれば']) {
         assert.ok(!karte.includes(ng), `カルテ本文に "${ng}" が混入している`)
       }
+    })
+
+    // ★病名は略号でなく名前で書く（院長 2026-10-14「export のカルテ規則で決まっているはず」）。
+    //   labotech-export も ＃HT→＃高血圧 / ＃HL→＃脂質異常症 に書き換えている
+    //   （cleanup/rebuild.py の RYAKUGO_NAMAE・院長 2026-10-05 第10回）。そろえないと
+    //   まとめ直しのたびに書き換えが要る。申し送りの文中（□HTの確認のため…）は病名の行ではないので対象外。
+    test(`${f}: ♯の病名は略号で書かない（♯HT / ♯HL は ♯高血圧 / ♯脂質異常症）`, () => {
+      const karte = buildKarteTemplate(f, dataFor(f))
+      const ryakugo = karte.match(/^♯[ 　]*(HT|HL|DL)(?=$|[ 　（(、,:：])/m)
+      assert.equal(ryakugo, null, `♯の病名に略号が残っている: ${ryakugo && ryakugo[0]}`)
     })
 
     test(`${f}: 必ず出る行がそろっている`, () => {

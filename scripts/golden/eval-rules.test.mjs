@@ -96,7 +96,7 @@ describe('eval ルールが赤になることの確認（壊したカルテを�
   })
 
   test('書式の warn: 連続空行 / 要望の直前 / 区切り線の連続 / 行末空白 / 空の括弧 / 継ぎ目', () => {
-    hit('no-double-blank', OK_KARTE.replace('♯HT\n', '♯HT\n\n\n'))
+    hit('no-double-blank', OK_KARTE.replace('♯高血圧\n', '♯高血圧\n\n\n'))
     hit('handoff-adjacent', OK_KARTE.replace('【診察にあたっての要望】', '\n【診察にあたっての要望】'))
     hit('divider-not-adjacent', OK_KARTE.replace('【健診】市の健診', '---------------------------------------------\n---------------------------------------------'))
     hit('no-trailing-space', OK_KARTE.replace('【健診】市の健診', '【健診】市の健診   '))

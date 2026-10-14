@@ -163,6 +163,7 @@ export default function DmGuidePage() {
             <li><strong>薬剤アレルギー</strong>が申し送りにも出るようになりました（カルテ末尾の ⚠️ 行は従来どおり）</li>
             <li><strong>療養計画書</strong>は「作成済」ではなく「作成をお願いします」になりました。インスリン使用中の方には出ません</li>
             <li><strong>病名の記号が ♯ に統一</strong>されました。当院で診る病名と他院で診ている病名は、記号でなく<strong>空行の前後</strong>で分かれます</li>
+            <li><strong>病名は略号でなく名前</strong>で書くようになりました（<Code>♯HT</Code>→<Code>♯高血圧</Code>、<Code>♯HL</Code>→<Code>♯脂質異常症</Code>）。実カルテのまとめ直し（ラボテック）と同じ規則です</li>
             <li>詳細画面に <strong>「🖨 印刷用 A4」</strong>が増えました。上半分の氏名・生年月日・初事前問診者は手書き欄です</li>
           </ul>
         </Section>
@@ -252,8 +253,8 @@ export default function DmGuidePage() {
 
           <Subh>合併する慢性疾患 (チェックボックス)</Subh>
           <Table headers={['疾患', 'カルテ表記', '備考']} themeColor={THEME}>
-            <Tr><Td>HT (高血圧)</Td><Td>♯HT</Td><Td>申し送りに「血圧手帳をお渡ししています」が入る</Td></Tr>
-            <Tr><Td>HL (脂質異常症)</Td><Td>♯HL</Td><Td>申し送りに「甲状腺3項目を追加しました」が入る</Td></Tr>
+            <Tr><Td>HT (高血圧)</Td><Td>♯高血圧</Td><Td>申し送りに「血圧手帳をお渡ししています」が入る</Td></Tr>
+            <Tr><Td>HL (脂質異常症)</Td><Td>♯脂質異常症</Td><Td>申し送りに「甲状腺3項目を追加しました」が入る</Td></Tr>
             <Tr><Td>インスリン治療中</Td><Td>(病名行は変わらない)</Td><Td>申し送りに「□インスリン使用中」。療養計画書の依頼は出ない</Td></Tr>
           </Table>
 
