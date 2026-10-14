@@ -35,6 +35,7 @@
   },
   "reason": {
     "type": "紹介",
+    "referralLetter": "持参あり",
     "referralFrom": "上尾中央総合病院",
     "referralDept": "糖尿病内科",
     "referralQuickSelect": true,

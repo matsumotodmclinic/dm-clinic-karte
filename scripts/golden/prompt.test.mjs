@@ -424,6 +424,30 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
     assert.ok(of('11.0', 'あり').includes(`${LINE}（体重減少あり・HbA1c 11%）`), '両方のとき理由が並ばない')
   })
 
+  // 2026-10-14 院長: 紹介元は聞いていたが「現物を持参したか」を聞いていなかった（紙にはある）。
+  // 持参ありのときだけ出す。「持参なし」と未聴取は区別しない。
+  test('紹介状: 持参ありのときだけ申し送りに出る', () => {
+    const base = FIXTURES['DM基本']
+    const of = (referralLetter) => buildKarteTemplate('DM基本', { ...base, reason: { ...base.reason, referralLetter } })
+    assert.ok(of('持参あり').includes('□紹介状 持参あり'), '持参ありで出ない')
+    assert.ok(!of('持参なし').includes('□紹介状'), '持参なしで出ている')
+    assert.ok(!of('').includes('□紹介状'), '未聴取で出ている')
+    assert.ok(!of(undefined).includes('□紹介状'), '未設定で出ている')
+  })
+
+  // 2026-10-14 院長: 2型で既にインスリンを使っている人の情報がカルテに出ていなかった。
+  // DM基本は真偽値、1型・小児1型は列挙値と器が違うので両方受ける。
+  test('インスリン使用中: 真偽値と列挙値のどちらでも申し送りに出る', () => {
+    const base = FIXTURES['DM基本']
+    const dm = (insulinUse) => buildKarteTemplate('DM基本', { ...base, disease: { ...base.disease, insulinUse } })
+    assert.ok(dm(true).includes('□インスリン使用中'), 'DM基本の真偽値で出ない')
+    assert.ok(!dm(false).includes('□インスリン使用中'), 'DM基本で使っていないのに出ている')
+    const t1 = FIXTURES['1型糖尿病']
+    const t1d = (insulinStatus) => buildKarteTemplate('1型糖尿病', { ...t1, disease: { ...t1.disease, insulinStatus } })
+    assert.ok(t1d('インスリン使用中').includes('□インスリン使用中'), '1型の列挙値で出ない')
+    assert.ok(!t1d('インスリン未使用').includes('□インスリン使用中'), '1型で未使用なのに出ている')
+  })
+
   test('【仕事】: 「していない」は就労なしと明記、未入力は空欄', () => {
     // 院長判断 2026-09-06: 空欄だと「無職」と「聞き漏らし」が区別できない
     assert.equal(buildJobLine({ lifestyle: { work: 'していない', job: [], activity: '' } }), '【仕事】就労なし')

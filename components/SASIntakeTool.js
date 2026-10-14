@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import Hba1cInput from "./Hba1cInput";
+import ReferralLetterInput from "./ReferralLetterInput";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
@@ -72,6 +73,7 @@ const ALCOHOL_TYPES = [
 
 const initialData = {
   reason: {
+    referralLetter: "",
     purposes: [],
     purposeOther: "",
     currentClinic: "",
@@ -565,6 +567,10 @@ export default function SASIntakeTool() {
           <Hba1cInput
             value={data.body.hba1c}
             onChange={(v) => setData(p => ({ ...p, body: { ...p.body, hba1c: v } }))}
+          />
+          <ReferralLetterInput
+            value={data.reason?.referralLetter || ""}
+            onChange={(v) => setData(p => ({ ...p, reason: { ...p.reason, referralLetter: v } }))}
           />
         </div>
       );

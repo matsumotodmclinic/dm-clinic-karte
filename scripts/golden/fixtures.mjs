@@ -62,6 +62,8 @@ const otherDiseases = [
 
 const commonReason = {
   type: '紹介',
+  // 紹介状の現物を持参したか（2026-10-14 追加）。紹介の土台なので「持参あり」を既定にする
+  referralLetter: '持参あり',
   referralFrom: '上尾中央総合病院', referralDept: '糖尿病内科', referralQuickSelect: true,
   referralDetail: '安定していたため当院へ',
   transferFrom: '', transferDetail: '', checkupType: '',

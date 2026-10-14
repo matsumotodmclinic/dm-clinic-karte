@@ -5,6 +5,7 @@ import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
 import { generateKarteText, callGenerateApi } from "../lib/generateKarte";
 import { UI } from "../lib/uiTokens";
 import FormHeader from "./FormHeader";
+import ReferralLetterInput from "./ReferralLetterInput";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
 // TONE = このフォームのカテゴリ色
@@ -52,7 +53,8 @@ function getStepTitles(formType) {
 
 
 const initialData = {
-  reason: { summary: "", type: "", referralFrom: "", referralDept: "", referralDetail: "", checkupType: "", transferFrom: "", transferDetail: "", thyroidConcern: false, thyroidConcernReason: [], thyroidConcernNote: "" },
+  reason: {
+    referralLetter: "", summary: "", type: "", referralFrom: "", referralDept: "", referralDetail: "", checkupType: "", transferFrom: "", transferDetail: "", thyroidConcern: false, thyroidConcernReason: [], thyroidConcernNote: "" },
   echo: {
     // 甲状腺ベース所見（全フォーム共通）
     thyroidSize: "",        // 腫大 / 萎縮 / 正常
@@ -205,6 +207,10 @@ export default function ThyroidIntakeTool({ formType }) {
           {data.reason.thyroidConcern ? '✓ 甲状腺疾患が気になる' : '甲状腺疾患が気になる'}
         </button>
       </div>
+      <ReferralLetterInput
+        value={data.reason?.referralLetter || ""}
+        onChange={(v) => setData(p => ({ ...p, reason: { ...p.reason, referralLetter: v } }))}
+      />
 
       {data.reason.thyroidConcern && (
         <div style={{ ...sBox({ border: "1px solid #d6bcfa", background: "#faf5ff" }), marginBottom: 14 }}>

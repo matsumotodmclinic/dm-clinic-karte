@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import Hba1cInput from "./Hba1cInput";
+import ReferralLetterInput from "./ReferralLetterInput";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
@@ -31,7 +32,8 @@ const NEARBY_HOSPITALS = ["ナラヤマレディースクリニック", "葵ウ�
 const EYE_CLINICS = ["上尾こいけ眼科", "おが・おおぐし眼科", "上尾中央総合病院眼科", "おおたけ眼科", "こしの眼科"];
 
 const initialData = {
-  reason: { type: "", referralFrom: "", referralDept: "", referralQuickSelect: false, referralDetail: "", transferFrom: "", transferDetail: "", checkupType: "", summary: "" },
+  reason: {
+    referralLetter: "", type: "", referralFrom: "", referralDept: "", referralQuickSelect: false, referralDetail: "", transferFrom: "", transferDetail: "", checkupType: "", summary: "" },
   disease: {
     dmType: "", pastGDM: "",
     pastGDMChild: [{era:'令和',year:'',had:''},{era:'令和',year:'',had:''},{era:'令和',year:'',had:''}],
@@ -522,6 +524,10 @@ export default function GDMIntakeTool() {
           <Hba1cInput
             value={data.body.hba1c}
             onChange={(v) => setData(p => ({ ...p, body: { ...p.body, hba1c: v } }))}
+          />
+          <ReferralLetterInput
+            value={data.reason?.referralLetter || ""}
+            onChange={(v) => setData(p => ({ ...p, reason: { ...p.reason, referralLetter: v } }))}
           />
         </div>
       );

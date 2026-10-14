@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import Hba1cInput from "./Hba1cInput";
+import ReferralLetterInput from "./ReferralLetterInput";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
@@ -33,7 +34,8 @@ const LIVING_OTHERS = ["祖父母と同居", "兄弟姉妹と同居", "一人っ
 const EYE_CLINICS = ["上尾こいけ眼科", "おが・おおぐし眼科", "上尾中央総合病院眼科", "おおたけ眼科", "こしの眼科"];
 
 const initialData = {
-  reason: { type: "", referralFrom: "", referralDept: "", referralQuickSelect: false, referralDetail: "", transferFrom: "", transferDetail: "", summary: "" },
+  reason: {
+    referralLetter: "", type: "", referralFrom: "", referralDept: "", referralQuickSelect: false, referralDetail: "", transferFrom: "", transferDetail: "", summary: "" },
   disease: { dm1type: "", dmOnsetEra: "令和", dmOnset: "", dmOnsetUnknown: false, ht: false, hl: false, thyroidChecked: false, bakusmi: "", dmSymptoms: { selected: [], otherText: "" } },
   support: { familyMain: "", familySubList: [], familyNote: "", schoolStaff: [], schoolSupportPerson: [], schoolSupportNote: "", disclosedChild: "", disclosedTeacher: "", childGrade: "", childActivities: [], childActivityNote: "", parentWorkMain: [], parentWorkMainNote: "", parentWorkSub: [], parentWorkSubNote: "", independenceLevel: "", independenceNote: "" },
   chronic: { status: "", birthWeight: "", birthWeek: "", birthWeekDay: "", birthCity: "", booklets: [], documents: [], residenceCity: "", paymentConfirmed: "", maternalHandbook: "" },
@@ -655,6 +657,10 @@ export default function PedT1DIntakeTool() {
           <Hba1cInput
             value={data.body.hba1c}
             onChange={(v) => setData(p => ({ ...p, body: { ...p.body, hba1c: v } }))}
+          />
+          <ReferralLetterInput
+            value={data.reason?.referralLetter || ""}
+            onChange={(v) => setData(p => ({ ...p, reason: { ...p.reason, referralLetter: v } }))}
           />
         </div>
       );

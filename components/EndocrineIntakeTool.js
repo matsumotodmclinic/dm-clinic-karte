@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import Hba1cInput from "./Hba1cInput";
+import ReferralLetterInput from "./ReferralLetterInput";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
@@ -40,7 +41,8 @@ const ALCOHOL_TYPES = [
 ];
 
 const initialData = {
-  reason: { type: "", referralFrom: "", referralDept: "", referralQuickSelect: false, referralDetail: "", transferFrom: "", transferDetail: "", checkupType: "", concern: false, concernType: "", summary: "" },
+  reason: {
+    referralLetter: "", type: "", referralFrom: "", referralDept: "", referralQuickSelect: false, referralDetail: "", transferFrom: "", transferDetail: "", checkupType: "", concern: false, concernType: "", summary: "" },
   // 内分泌はバリエーションが豊富で医師が直接問診するため、病名の選択欄は持たない
   disease: {
     echoNeck: "", echoAbdomen: "", otherDisease: "", otherDiseases: [{name:"",hospital:"",hospitalOther:""}],
@@ -564,6 +566,10 @@ export default function EndocrineIntakeTool() {
           <Hba1cInput
             value={data.body.hba1c}
             onChange={(v) => setData(p => ({ ...p, body: { ...p.body, hba1c: v } }))}
+          />
+          <ReferralLetterInput
+            value={data.reason?.referralLetter || ""}
+            onChange={(v) => setData(p => ({ ...p, reason: { ...p.reason, referralLetter: v } }))}
           />
         </div>
       );
