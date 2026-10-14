@@ -381,7 +381,7 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
 
   // 2026-10-14 院長 OK: ラボテック取り出しアプリが「下部にたまるワクチン接種の行を上部 1 行にまとめ直す」
   // 運用なので、書き込み先の行が常に無いと行き場が無くなる。値の有無で行が消えてはいけない。
-  test('【ワクチン歴】: 60歳以上なら値が空でも行を残す・60歳未満は出さない', () => {
+  test('【ワクチン歴】: 年齢に関係なく値が空でも行を残す（妊娠糖尿病だけ出さない）', () => {
     const base = FIXTURES['DM基本']
     const withAge = (age, vac = {}) => buildKarteTemplate('DM基本', {
       ...base,
@@ -389,8 +389,10 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
     })
     assert.ok(withAge(65).split('\n').includes('【ワクチン歴】'), '60歳以上で空欄行が出ていない')
     assert.ok(withAge(65, { vaccine65Prevena: '済' }).includes('【ワクチン歴】プレベナー20：済'), '値が入らない')
-    // 60歳未満は対象ワクチン（プレベナー20・帯状疱疹）が適応外なので従来どおり出さない
-    assert.ok(!withAge(50).includes('【ワクチン歴】'), '60歳未満なのに行が出ている')
+    // 院長確定 2026-10-14: 55歳の長期通院患者のワクチン行にも行き場が要るので年齢で切らない
+    assert.ok(withAge(50).split('\n').includes('【ワクチン歴】'), '60歳未満で行が消えている')
+    // 妊娠中は健診・ワクチン歴を載せない運用（従来どおり）
+    assert.ok(!buildKarteTemplate('妊娠糖尿病', FIXTURES['妊娠糖尿病']).includes('【ワクチン歴】'), '妊娠糖尿病に出ている')
   })
 
   test('【仕事】: 「していない」は就労なしと明記、未入力は空欄', () => {
