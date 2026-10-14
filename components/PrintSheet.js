@@ -28,6 +28,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { splitDrQube } from '../lib/drQube'
+import { collapseBlankLinesForPrint } from '../lib/printKarte'
 
 // 問診日は西暦（院長確定 2026-10-14）。カルテ本文は和暦だが、ここは受付が見る欄なので揃えない。
 export function formatDate(iso) {
@@ -196,7 +197,8 @@ export default function PrintSheet({ record, onFit, banner }) {
         {/* ── 下部: 左=生成されたカルテ全文 / 右=ドクターキューブ ───── */}
         {/* 貼り付けが無い回は従来どおりカルテが全幅（横並びにすると右が空いて間延びする） */}
         <div className={dq ? 'kp-print-cols' : undefined}>
-          <div className="kp-print-karte">{record.generated_karte || '（カルテ未生成）'}</div>
+          {/* ★紙だけ空行を詰める（電子カルテに貼る文は 3 行のまま・院長 2026-10-14） */}
+          <div className="kp-print-karte">{collapseBlankLinesForPrint(record.generated_karte) || '（カルテ未生成）'}</div>
 
           {dq && (
             <div className="kp-print-dq">

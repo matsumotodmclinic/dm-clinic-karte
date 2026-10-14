@@ -13,6 +13,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { buildKarteTemplate } from '../../lib/buildKarteTemplate.js'
 import { splitDrQube } from '../../lib/drQube.js'
+import { collapseBlankLinesForPrint } from '../../lib/printKarte.js'
 import { SAMPLE_FORM_DATA, SAMPLE_FORM_TYPE } from '../../lib/printSample.js'
 import { FIXTURES } from './fixtures.mjs'
 
@@ -56,6 +57,45 @@ describe('印刷用 A4（components/PrintSheet.js）', () => {
       `見本（${sample}行）とフィクスチャ（${fixture}行）が離れすぎ。見本の中身が痩せている可能性`)
   })
 
+  // ★紙と電子カルテで要る隙間が違う（院長 2026-10-14）
+  //   電子カルテに貼る文 = フッターの上に 3 行（医師が追記する場所）
+  //   紙              = 1 行（3 行だと 目標HbA1c 以下が裏のページに送られる）
+  describe('フッターの空行（紙は1行・電子カルテは3行）', () => {
+    const FORMS = Object.keys(FIXTURES)
+    // ★受診理由の 1 行目も `R8.10：…` で始まる。フッターは **最後の** 一致
+    const footerIndex = ls => ls.map((l, i) => [l, i])
+      .filter(([l]) => /^R\d+\.\d+：/.test(l)).map(([, i]) => i).pop() ?? -1
+
+    test('カルテ本文（電子カルテに貼る文）はフッターの上が空行3つ', () => {
+      for (const f of FORMS) {
+        const karte = buildKarteTemplate(f, FIXTURES[f])
+        const ls = karte.split('\n')
+        const i = footerIndex(ls)
+        assert.ok(i > 0, `${f}: フッターが見つからない`)
+        const blanks = []
+        for (let k = i + 1; k < ls.length && ls[k] === ''; k++) blanks.push(k)
+        assert.equal(blanks.length, 3, `${f}: フッター直後の空行が ${blanks.length} 行（3 行であること）`)
+      }
+    })
+
+    test('紙に出すときは空行1つに詰まる', () => {
+      for (const f of FORMS) {
+        const karte = buildKarteTemplate(f, FIXTURES[f])
+        const ls = collapseBlankLinesForPrint(karte).split('\n')
+        const i = footerIndex(ls)
+        let n = 0
+        for (let k = i + 1; k < ls.length && ls[k] === ''; k++) n++
+        assert.equal(n, 1, `${f}: 紙のフッター直後の空行が ${n} 行（1 行であること）`)
+      }
+    })
+
+    test('詰めるのはフッターだけ（本文の行は 1 行も消えない）', () => {
+      const karte = buildKarteTemplate('DM基本', FIXTURES['DM基本'])
+      const printed = collapseBlankLinesForPrint(karte)
+      const nonBlank = s => s.split('\n').filter(l => l.trim())
+      assert.deepEqual(nonBlank(printed), nonBlank(karte), '中身の行が変わっている（空行を詰めるだけのはず）')
+    })
+  })
   test('見本に実在しそうな個人情報を書かない（氏名・生年月日は手書き欄）', () => {
     const s = JSON.stringify(SAMPLE_FORM_DATA)
     for (const ng of ['生年月日', '様', '電話', '℡']) {
