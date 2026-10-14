@@ -491,19 +491,34 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
       '□腹部エコーセット＋胸部X-P の予約（体重減少あり）',
       '□HTの確認のため、血圧手帳をお渡ししています。',
       '□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。',
+      // 2026-10-14 院長: 「作成済」の断定でなく医師への依頼の形で出す
+      '□療養計画書の作成をお願いします',
       '□新患2枠取得済み',
     ])
   })
 
-  // 2026-10-14 院長: 療養計画書は実際には医師が作成している。問診の申し送りに「作成済」と
-  // 書くのは事実と違うので全フォームで外した。インスリン使用の有無はこの条件にしか
-  // 使われていなかったため、外した結果カルテに一切出なくなっている（coverage の allow-list に ⚠️ で記録）。
-  test('申し送り: 療養計画書の行はどのフォームでも出さない', () => {
+  // 2026-10-14 院長の 2 段階の判断:
+  //   ①「実際には医師が作成しているので『作成済』はおかしい」→ いったん削除
+  //   ②「糖尿病・高血圧・脂質異常症のどれかが選択されたら『作成をお願いします』と出す」→ 依頼の形で復活
+  test('療養計画書: 「作成済」と断定せず「作成をお願いします」と依頼の形で出す', () => {
     for (const f of Object.keys(FIXTURES)) {
       const karte = buildKarteTemplate(f, FIXTURES[f])
       if (!karte) continue
-      assert.ok(!karte.includes('療養計画書'), `${f}: 療養計画書の行が残っている`)
+      assert.ok(!karte.includes('療養計画書を作成済'), `${f}: 「作成済」の断定が残っている`)
     }
+    // DM基本・1型は糖尿病が主病名なので常に出る
+    assert.ok(buildKarteTemplate('DM基本', FIXTURES['DM基本']).includes('□療養計画書の作成をお願いします'))
+    assert.ok(buildKarteTemplate('1型糖尿病', FIXTURES['1型糖尿病']).includes('□療養計画書の作成をお願いします'))
+  })
+
+  test('療養計画書: 内分泌は 糖尿病/高血圧/脂質異常症 のどれかを選んだときだけ出る', () => {
+    const base = FIXTURES['内分泌']
+    const of = (cp) => buildKarteTemplate('内分泌', { ...base, disease: { ...base.disease, carePlanDiseases: cp } })
+    const LINE = '□療養計画書の作成をお願いします'
+    assert.ok(!of({ dm: false, ht: false, hl: false }).includes(LINE), 'どれも選んでいないのに出ている')
+    assert.ok(of({ dm: true, ht: false, hl: false }).includes(LINE), '糖尿病で出ない')
+    assert.ok(of({ dm: false, ht: true, hl: false }).includes(LINE), '高血圧で出ない')
+    assert.ok(of({ dm: false, ht: false, hl: true }).includes(LINE), '脂質異常症で出ない')
   })
 
   // ★問診票の体重減少ボタンは「あり / なし / 不明」の3択で、

@@ -87,10 +87,8 @@ function filled(formType) {
 // カルテにも統合材料にも影響しないと分かっている項目。
 // ★ 追加するときは必ず理由を書くこと。理由が書けないものは「落ちている情報」なので直す。
 const COMMON_ALLOWED = {
-  // 2026-10-14: 療養計画書の行を外した結果、インスリン使用の聴取結果が宙に浮いたが、
-  //   同日 院長判断で「□インスリン使用中」を申し送りに出すことにしたので allow-list から外した。
-  //   carePlanDiseases は療養計画書の要否判定にしか使っておらず、行が無くなったので死んでいる。
-  'disease.carePlanDiseases.dm': '⚠️療養計画書の行を外した 2026-10-14 以降、どこにも出ない。入力欄ごと消すか院長判断待ち',
+  // 2026-10-14: 療養計画書の行を「作成済」から「作成をお願いします」に変えて復活させたので、
+  //   carePlanDiseases も再び使われている（この allow-list から外した）。
   'voiceMemo.transcript': '生の音声。カルテには AI 整形済みの aiSummary を使う',
   'voicePastHistory.transcript': '同上',
   'reason.referralQuickSelect': '紹介元のクイック選択を使ったかの UI 用フラグ',
@@ -137,8 +135,8 @@ const ALLOWED = {
   },
   '内分泌': {
     'disease.otherDisease': '複数行入力（otherDiseases）に置き換わった旧フィールド',
-    'disease.carePlanDiseases.ht': '⚠️療養計画書の行を外した 2026-10-14 以降、どこにも出ない（dm と同じ）',
-    'disease.carePlanDiseases.hl': '⚠️同上',
+    'disease.carePlanDiseases.ht': '3つのどれか1つでも true なら療養計画書の依頼行が出る（OR 判定）',
+    'disease.carePlanDiseases.hl': '同上',
   },
 }
 
