@@ -467,14 +467,19 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
       '□腹部エコーセット＋胸部X-P の予約（体重減少あり）',
       '□HTの確認のため、血圧手帳をお渡ししています。',
       '□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。',
-      '□生活習慣病療養計画書を作成済',
       '□新患2枠取得済み',
     ])
   })
 
-  test('申し送り: インスリン使用中なら療養計画書の行は出さない', () => {
-    const karte = buildKarteTemplate('DM基本', { disease: { insulinUse: true } })
-    assert.ok(!karte.includes('□生活習慣病療養計画書を作成済'))
+  // 2026-10-14 院長: 療養計画書は実際には医師が作成している。問診の申し送りに「作成済」と
+  // 書くのは事実と違うので全フォームで外した。インスリン使用の有無はこの条件にしか
+  // 使われていなかったため、外した結果カルテに一切出なくなっている（coverage の allow-list に ⚠️ で記録）。
+  test('申し送り: 療養計画書の行はどのフォームでも出さない', () => {
+    for (const f of Object.keys(FIXTURES)) {
+      const karte = buildKarteTemplate(f, FIXTURES[f])
+      if (!karte) continue
+      assert.ok(!karte.includes('療養計画書'), `${f}: 療養計画書の行が残っている`)
+    }
   })
 
   // ★問診票の体重減少ボタンは「あり / なし / 不明」の3択で、
@@ -624,9 +629,6 @@ describe('lib/buildKarteTemplate（全14フォーム）', () => {
     const iBlank = ls.findIndex((l, i) => l === '' && i > iFirst)
     assert.deepEqual(ls.slice(iFirst, iBlank), ['♯内分泌疾患（具体的な病名を入力ください）'], '主病名を推測して出力している')
     assert.ok(karte.includes('□主病名：医師の診察時に確定・記載'))
-    assert.ok(!karte.includes('□初回療養計画書を作成済'), '生活習慣病なしなのに療養計画書が出ている')
-    const withCarePlan = buildKarteTemplate('内分泌', ENDOCRINE_WITH_CAREPLAN)
-    assert.ok(withCarePlan.includes('□初回療養計画書を作成済'))
     const withDm = buildKarteTemplate('内分泌', ENDOCRINE_WITH_DM_DIFF)
     assert.ok(withDm.includes('♯糖尿病'))
     assert.ok(withDm.includes('□主病名：医師の診察時に確定・記載'), 'DM判明時も主病名の申し送りは残す')
