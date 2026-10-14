@@ -15,7 +15,15 @@
 // 実行: node scripts/handoff-audit.mjs [フォーム名 ...]
 
 import { buildKarteTemplate } from '../lib/buildKarteTemplate.js'
-import { FIXTURES } from './golden/fixtures.mjs'
+import { FIXTURES, THYROID_FIXTURE } from './golden/fixtures.mjs'
+
+// 甲状腺6フォームは 1 つのフィクスチャを form_type で切り替えて使う（FIXTURES に入っていない）
+const THYROID_FORMS = [
+  '甲状腺（バセドウ初診）', '甲状腺（バセドウ継続）', '甲状腺（橋本病）',
+  '甲状腺（腫大異常なし）', '甲状腺（腺腫経過観察）', '甲状腺（腺腫悪性疑い）',
+]
+const fixtureFor = (f) => (THYROID_FORMS.includes(f) ? THYROID_FIXTURE : FIXTURES[f])
+const ALL_FORMS = [...Object.keys(FIXTURES), ...THYROID_FORMS]
 
 const HANDOFF_HEAD = '【事前聴取時　申し送り事項】'
 const HANDOFF_END = '【診察にあたっての要望】'
@@ -96,11 +104,11 @@ function probesFor(cur) {
   return ENUM_PROBES.filter(v => v !== cur)
 }
 
-const forms = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(FIXTURES)
+const forms = process.argv.slice(2).length ? process.argv.slice(2) : ALL_FORMS
 const out = []
 
 for (const formType of forms) {
-  const base = FIXTURES[formType]
+  const base = fixtureFor(formType)
   if (!base) { out.push(`\n## ${formType}\n(フィクスチャ無し)`); continue }
   const baseline = handoffLines(buildKarteTemplate(formType, base))
 

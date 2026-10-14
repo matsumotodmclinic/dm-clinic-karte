@@ -290,7 +290,10 @@ export const ENDOCRINE_WITH_CAREPLAN = {
 // 甲状腺（代表1件、6タイプは formType prop で分岐）
 // 甲状腺フォームは音声入力を持たない（3〜4分フォーム）ので voiceMemo は入れない。
 export const THYROID_FIXTURE = {
-  reason: { type: '検診異常', checkupType: '市健診', summary: '', thyroidConcern: false, thyroidConcernReason: [], thyroidConcernNote: '' },
+  // 紹介状の持参は全フォーム共通（2026-10-14 追加）。
+  // 土台は「持参あり」にする。空にすると取りこぼし検査の探り値（空文字・適当な文字列）では
+  // 「持参あり」の分岐を踏めず、使われていない項目に見えてしまうため。
+  reason: { type: '検診異常', referralLetter: '持参あり', checkupType: '市健診', summary: '', thyroidConcern: false, thyroidConcernReason: [], thyroidConcernNote: '' },
   echo: {
     thyroidSize: '腫大', thyroidBloodFlow: '豊富', thyroidParenchyma: '不均一',
     ecg: '洞調律', hasNodule: 'なし',
