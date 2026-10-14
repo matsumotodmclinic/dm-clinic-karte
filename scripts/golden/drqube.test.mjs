@@ -42,9 +42,9 @@ describe('lib/drQube（ドクターキューブの貼り付け）', () => {
     assert.ok(blocks.every(b => b.startsWith('【')), '【 で始まらない塊がある')
   })
 
-  test('項目の値は塊の中に残る（2段組みで泣き別れない）', () => {
+  test('項目の値は塊の中に残る（段や欄の切れ目で泣き別れない）', () => {
     const blocks = splitDrQube(SAMPLE)
-    // 実測で泣き別れていたのがこの塊（右段の先頭に「血糖値」だけが出ていた）
+    // 2 段組みを試したときに実測で泣き別れていたのがこの塊（右段の先頭に「血糖値」だけが出ていた）
     const hba1c = blocks.find(b => b.startsWith('【HbA1c】'))
     assert.ok(hba1c.includes('8.1%'), 'HbA1c の値が別の塊に行っている')
     assert.ok(hba1c.includes('血糖値'), '血糖値の行が別の塊に行っている')

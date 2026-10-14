@@ -59,15 +59,20 @@ const CSS = `
   font-size: 11.5px; line-height: 1.55;
   font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
 }
+/* ★貼り付けがある回は「左=カルテ / 右=ドクターキューブ」の横並び（院長案 2026-10-14）。
+   上下に積むと縮小 70%（カルテ 8.1px）まで落ちるが、横並びなら 96%（11.1px）で収まる。
+   カルテは 70% 幅でも ♯行・【】行・□行が折り返さない（実測: 折り返すのは末尾の長い 1 行だけで
+   980px → 998px）。60% まで削ると折り返しが増えて逆に背が伸びる（1082px → 1099px）ので 70% にした。 */
+.kp-print-cols { display: flex; gap: 5mm; align-items: flex-start; }
+.kp-print-cols > .kp-print-karte { flex: 0 0 70%; }
 .kp-print-dq {
-  margin-top: 10px; border: 1px solid #333; padding: 8px 10px;
+  flex: 1; border: 1px solid #333; padding: 8px 10px;
   white-space: pre-wrap; word-break: break-word;
   font-size: 10.5px; line-height: 1.6; font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
 }
-.kp-print-dq-head { font-size: 10.5px; font-weight: 700; margin-bottom: 4px; column-span: all; }
-/* 【項目】ごとの短い行が並ぶので 2 段組みが効く。1 段のままだと縮小率が 0.63 まで落ちる */
-.kp-print-dq-body { column-count: 2; column-gap: 8mm; }
-.kp-print-dq-block { break-inside: avoid; margin-bottom: 4px; }
+.kp-print-dq-head { font-size: 10.5px; font-weight: 700; margin-bottom: 6px; }
+/* 【項目】ごとに間を空ける。ベタ打ちのままだと項目の切れ目が読み取れない */
+.kp-print-dq-block { margin-bottom: 5px; }
 /* 縮小は transform でかける。font-size を個別に下げると行間や枠が崩れるため */
 .kp-print-fit { transform-origin: top left; }
 @page { size: A4; margin: 8mm; }
@@ -190,24 +195,22 @@ export default function PrintPage() {
             </div>
           </div>
 
-          {/* ── 下部: 生成されたカルテ全文 ───────────────────── */}
-          <div className="kp-print-karte">{record.generated_karte || '（カルテ未生成）'}</div>
+          {/* ── 下部: 左=生成されたカルテ全文 / 右=ドクターキューブ ───── */}
+          {/* 貼り付けが無い回は従来どおりカルテが全幅（横並びにすると右が空いて間延びする） */}
+          <div className={record.form_data?.drQube?.text ? 'kp-print-cols' : undefined}>
+            <div className="kp-print-karte">{record.generated_karte || '（カルテ未生成）'}</div>
 
-          {/* ドクターキューブ（患者が来院前に入力した内容）。詳細画面で貼り付けたものをそのまま出す */}
-          {record.form_data?.drQube?.text && (
-            <div className="kp-print-dq">
-              <div className="kp-print-dq-head">■ ドクターキューブ 事前WEB問診（患者入力）</div>
-              {(() => {
-                const blocks = splitDrQube(record.form_data.drQube.text)
-                if (!blocks) return <div>{record.form_data.drQube.text}</div>
-                return (
-                  <div className="kp-print-dq-body">
-                    {blocks.map((b, k) => <div className="kp-print-dq-block" key={k}>{b}</div>)}
-                  </div>
-                )
-              })()}
-            </div>
-          )}
+            {record.form_data?.drQube?.text && (
+              <div className="kp-print-dq">
+                <div className="kp-print-dq-head">■ ドクターキューブ 事前WEB問診（患者入力）</div>
+                {(() => {
+                  const blocks = splitDrQube(record.form_data.drQube.text)
+                  if (!blocks) return <div>{record.form_data.drQube.text}</div>
+                  return blocks.map((b, k) => <div className="kp-print-dq-block" key={k}>{b}</div>)
+                })()}
+              </div>
+            )}
+          </div>
           </div>
           </div></div>
       </div>
