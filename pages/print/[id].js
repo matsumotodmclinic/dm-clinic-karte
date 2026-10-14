@@ -16,9 +16,20 @@
 // 療養計画書 / 診療科変更 / DQ予約
 // → これらは生成カルテの本文か申し送りに入っている。紙に二度書かない。
 
-import { useState, useEffect } from 'react'
+// ■ ドクターキューブの事前WEB問診（院長依頼 2026-10-14）
+// 患者が来院前にドクターキューブで入力した内容を、詳細画面で貼り付けてここに印字する。
+// **カルテ本文（電子カルテに貼る文）には入れない**（院長確定）。生成カルテの書式を崩さないため。
+//
+// ■ 1 枚に収める（院長「A4 についてはかわらず 1 枚で出してほしい」）
+// 内容が増えると 1 枚に入らない。**全体を縮小して 1 枚に収める**（切らない・2 枚目に送らない）。
+// ★これを入れて分かったこと: 1型・小児1型はカルテが 54 行あり、**貼り付けが無くても
+//   はみ出していた**（11.5px × 行間1.75 で約 311mm・A4 の印字領域は 281mm）。
+// 縮小率は画面に出す。下限まで縮めても入らないときは画面で警告する（黙って切らない）。
+
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
 import { UI } from '../../lib/uiTokens'
+import { splitDrQube } from '../../lib/drQube'
 
 // 問診日は西暦（院長確定 2026-10-14）。カルテ本文は和暦だが、ここは受付が見る欄なので揃えない。
 function formatDate(iso) {
@@ -29,7 +40,11 @@ function formatDate(iso) {
 }
 
 const CSS = `
-.kp-print { max-width: 190mm; margin: 0 auto; padding: 12mm 10mm; background: #fff; }
+.kp-print { width: 190mm; margin: 0 auto; padding: 12mm 10mm; background: #fff; }
+/* ★幅は常に A4 ぶん（190mm）に固定する。max-width にすると狭い画面で折り返しが増え、
+   「1 枚に収める」計算が画面幅に引きずられる（実測: 画面を細くすると縮小率 2% まで落ちた）。
+   画面が狭いときは横スクロールさせる（印刷のためのページなので、見た目より寸法を優先） */
+.kp-print-scroll { overflow-x: auto; }
 .kp-print-head { border: 1px solid #333; padding: 10px 14px; margin-bottom: 10px; }
 .kp-print-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 18px; margin-bottom: 10px; }
 .kp-print-row:last-child { margin-bottom: 0; }
@@ -41,9 +56,20 @@ const CSS = `
 .kp-print-value { font-size: 13px; font-weight: 700; border-bottom: 1px solid #333; min-width: 72px; padding: 0 4px 1px; }
 .kp-print-karte {
   white-space: pre-wrap; word-break: break-word;
-  font-size: 11.5px; line-height: 1.75;
+  font-size: 11.5px; line-height: 1.55;
   font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
 }
+.kp-print-dq {
+  margin-top: 10px; border: 1px solid #333; padding: 8px 10px;
+  white-space: pre-wrap; word-break: break-word;
+  font-size: 10.5px; line-height: 1.6; font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
+}
+.kp-print-dq-head { font-size: 10.5px; font-weight: 700; margin-bottom: 4px; column-span: all; }
+/* 【項目】ごとの短い行が並ぶので 2 段組みが効く。1 段のままだと縮小率が 0.63 まで落ちる */
+.kp-print-dq-body { column-count: 2; column-gap: 8mm; }
+.kp-print-dq-block { break-inside: avoid; margin-bottom: 4px; }
+/* 縮小は transform でかける。font-size を個別に下げると行間や枠が崩れるため */
+.kp-print-fit { transform-origin: top left; }
 @page { size: A4; margin: 8mm; }
 @media print {
   .kp-no-print { display: none !important; }
@@ -57,6 +83,9 @@ export default function PrintPage() {
   const { id } = router.query
   const [record, setRecord] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [scale, setScale] = useState(1)
+  const [overflow, setOverflow] = useState(false)
+  const fitRef = useRef(null)
 
   useEffect(() => {
     if (!id) return
@@ -65,6 +94,23 @@ export default function PrintPage() {
       .then(data => { setRecord(data); setLoading(false) })
       .catch(() => setLoading(false))
   }, [id])
+
+  // A4 の印字領域（@page margin 8mm）。CSS の 1mm = 96/25.4 px。
+  // 2% だけ余裕をみる（プリンタの余白設定で数 mm 変わるため）
+  const PAGE_H = (297 - 8 * 2) * (96 / 25.4) * 0.98
+  const MIN_SCALE = 0.62   // これ以上は読めないので縮めない（警告を出す）
+
+  useEffect(() => {
+    const el = fitRef.current
+    if (!el) return
+    el.style.transform = 'none'
+    const h = el.scrollHeight
+    // 画面に出ていないと 0 が返る。そのときは縮めない（勝手に極小で印刷されるのを防ぐ）
+    if (!h) { setScale(1); setOverflow(false); return }
+    const s = h > PAGE_H ? Math.max(MIN_SCALE, PAGE_H / h) : 1
+    setScale(s)
+    setOverflow(h * s > PAGE_H + 1)
+  }, [record])
 
   if (loading) return <div style={{ padding: 32, fontFamily: "'Noto Sans JP', sans-serif" }}>読み込み中…</div>
   if (!record) return <div style={{ padding: 32, fontFamily: "'Noto Sans JP', sans-serif" }}>見つかりませんでした</div>
@@ -87,9 +133,25 @@ export default function PrintPage() {
           >
             🖨 印刷
           </button>
+          {scale < 1 && !overflow && (
+            <span style={{ alignSelf: 'center', fontSize: 12, color: UI.textMuted }}>
+              1 枚に収めるため {Math.round(scale * 100)}% に縮小しています
+            </span>
+          )}
+          {overflow && (
+            <span style={{ alignSelf: 'center', fontSize: 12, color: UI.danger.fg, fontWeight: 700 }}>
+              ⚠️ これ以上縮めると読めないため、1 枚に入りきりません（貼り付け内容を削ってください）
+            </span>
+          )}
         </div>
 
-        <div className="kp-print">
+        <div className="kp-print-scroll"><div className="kp-print">
+          {/* 1 枚に収めるための縮小。中身は触らず全体を縮める */}
+          <div
+            ref={fitRef}
+            className="kp-print-fit"
+            style={{ transform: `scale(${scale})`, width: `${100 / scale}%` }}
+          >
           {/* ── 上部: 手書き欄 ────────────────────────────── */}
           <div className="kp-print-head">
             <div className="kp-print-row">
@@ -130,7 +192,24 @@ export default function PrintPage() {
 
           {/* ── 下部: 生成されたカルテ全文 ───────────────────── */}
           <div className="kp-print-karte">{record.generated_karte || '（カルテ未生成）'}</div>
-        </div>
+
+          {/* ドクターキューブ（患者が来院前に入力した内容）。詳細画面で貼り付けたものをそのまま出す */}
+          {record.form_data?.drQube?.text && (
+            <div className="kp-print-dq">
+              <div className="kp-print-dq-head">■ ドクターキューブ 事前WEB問診（患者入力）</div>
+              {(() => {
+                const blocks = splitDrQube(record.form_data.drQube.text)
+                if (!blocks) return <div>{record.form_data.drQube.text}</div>
+                return (
+                  <div className="kp-print-dq-body">
+                    {blocks.map((b, k) => <div className="kp-print-dq-block" key={k}>{b}</div>)}
+                  </div>
+                )
+              })()}
+            </div>
+          )}
+          </div>
+          </div></div>
       </div>
     </>
   )

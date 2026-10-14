@@ -29,6 +29,13 @@ export default function DetailPage() {
   const [hba1c, setHba1c] = useState('');
   const [savingHba1c, setSavingHba1c] = useState(false);
   const [hba1cMsg, setHba1cMsg] = useState('');
+
+  // ドクターキューブ（患者が事前に入力する WEB 問診）の貼り付け。院長依頼 2026-10-14。
+  // ★カルテ本文には入れない（院長確定）。電子カルテに貼る文の書式を崩さないため、
+  //   印刷用 A4 にだけ出す。保存先は form_data.drQube。
+  const [drQube, setDrQube] = useState('');
+  const [savingDrQube, setSavingDrQube] = useState(false);
+  const [drQubeMsg, setDrQubeMsg] = useState('');
   const [generateMode, setGenerateMode] = useState('');  // '' | 'legacy'（どちらで作り直したか）
   // ▦ QR で渡す (2026-09-07)。電カル端末が閉域の施設向け
   const [qrText, setQrText] = useState(null);
@@ -41,6 +48,7 @@ export default function DetailPage() {
         setRecord(data);
         setKarte(data.generated_karte || '');
         setHba1c(data?.form_data?.body?.hba1c || '');
+        setDrQube(data?.form_data?.drQube?.text || '');
         setLoading(false);
       });
   }, [id]);
@@ -140,6 +148,38 @@ export default function DetailPage() {
 
   // legacy=true は旧方式（AI に全文を書かせる）。テンプレート版の出力がおかしい患者が出たとき、
   // デプロイを待たずにその場で戻せるようにしてある。通常は使わない。
+  // ドクターキューブの貼り付けを保存する。印刷にしか使わないので再生成は要らない。
+  const handleSaveDrQube = async () => {
+    if (savingDrQube) return;
+    setSavingDrQube(true);
+    setDrQubeMsg('');
+    try {
+      const text = drQube.trim();
+      const newFormData = {
+        ...record.form_data,
+        drQube: text ? { text, updatedAt: new Date().toISOString() } : null,
+      };
+      const res = await fetch('/api/questionnaire', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, form_data: newFormData }),
+      });
+      if (res.ok) {
+        setRecord(prev => ({ ...prev, form_data: newFormData }));
+        setDrQubeMsg(text ? '✓ 保存しました。「🖨 印刷用A4」に出ます。' : '✓ 空にしました。印刷には出ません。');
+        setTimeout(() => setDrQubeMsg(''), 8000);
+      } else {
+        setDrQubeMsg('保存に失敗しました');
+        setTimeout(() => setDrQubeMsg(''), 3000);
+      }
+    } catch (e) {
+      setDrQubeMsg('保存に失敗しました');
+      setTimeout(() => setDrQubeMsg(''), 3000);
+    } finally {
+      setSavingDrQube(false);
+    }
+  };
+
   const handleGenerate = async (legacy = false) => {
     setGenerating(true);
     setGenerateMode(legacy ? 'legacy' : '');
@@ -254,6 +294,36 @@ export default function DetailPage() {
             )}
           </div>
         )}
+
+        {/* ドクターキューブ（患者が来院前に入力する WEB 問診）の貼り付け。院長依頼 2026-10-14。
+            ★カルテ本文には混ぜない（院長確定）。電子カルテに貼る文の書式を崩さないため、印刷用 A4 にだけ出す。 */}
+        <div style={{ background:UI.surface, borderRadius:8, padding:'18px 20px', marginBottom:12, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', border:`1px dashed ${UI.border}` }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:8 }}>
+            <div style={{ fontSize:14, fontWeight:700, color:UI.text }}>ドクターキューブの事前WEB問診</div>
+            <span style={{ fontSize:11, fontWeight:700, color:UI.textMuted, background:UI.surfaceAlt, border:`1px solid ${UI.border}`, borderRadius:10, padding:'2px 8px' }}>印刷用A4にだけ出ます</span>
+          </div>
+          <textarea
+            value={drQube}
+            onChange={e => setDrQube(e.target.value)}
+            rows={8}
+            placeholder="ドクターキューブの画面からコピーして、ここに貼り付けてください。"
+            style={{ width:'100%', padding:'10px 12px', border:`1px solid ${UI.border}`, borderRadius:8, fontSize:13, lineHeight:1.7, color:'#1a2a3a', background:UI.surface, outline:'none', boxSizing:'border-box', fontFamily:'inherit', resize:'vertical' }}
+          />
+          <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap', marginTop:8 }}>
+            <button onClick={handleSaveDrQube} disabled={savingDrQube}
+              style={{ padding:'10px 18px', borderRadius:6, border:'none', background: savingDrQube ? UI.textDisabled : UI.primary.fg, color:'#fff', fontWeight:700, fontSize:13, cursor: savingDrQube ? 'not-allowed' : 'pointer' }}>
+              {savingDrQube ? '💾 保存中...' : '💾 保存'}
+            </button>
+            <span style={{ fontSize:12, color:UI.textMuted, lineHeight:1.6 }}>
+              カルテ本文（電子カルテに貼る文）には入りません。長いときは A4 側で字を縮めて 1 枚に収めます。
+            </span>
+          </div>
+          {drQubeMsg && (
+            <div style={{ marginTop:8, padding:'10px 14px', background: drQubeMsg.startsWith('✓') ? '#f0fff4' : '#fff5f5', border:`1px solid ${drQubeMsg.startsWith('✓') ? UI.success.fg : UI.danger.fg}`, borderRadius:8, fontSize:13, color: drQubeMsg.startsWith('✓') ? '#276749' : '#c53030', fontWeight:700 }}>
+              {drQubeMsg}
+            </div>
+          )}
+        </div>
 
         {/* DM差分問診（事前採血で糖尿病判明時にスタッフが追加聴取）
             SAS / 高血圧・脂質異常症 / 反応性低血糖 で表示 */}
