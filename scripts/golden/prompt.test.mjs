@@ -424,6 +424,19 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
     assert.ok(of('11.0', 'あり').includes(`${LINE}（体重減少あり・HbA1c 11%）`), '両方のとき理由が並ばない')
   })
 
+  // 院長 2026-10-14「アレルギーの場合は、最下部の山の目標HbA1cの直上にも記載してほしい」。
+  // これは元から実装されていたが、位置を守る検査が無かったので固定する（行が1つ増えるとずれる）。
+  test('薬剤アレルギー: 末尾の警告は「目標HbA1c」の直上に置く', () => {
+    for (const f of Object.keys(FIXTURES)) {
+      const ls = String(buildKarteTemplate(f, FIXTURES[f])).split('\n')
+      const iWarn = ls.findIndex(l => l.includes('アレルギー⚠️'))
+      assert.ok(iWarn > 0, `${f}: 末尾の警告が出ていない`)
+      const iGoal = ls.findIndex(l => l.startsWith('目標HbA1c'))
+      // 甲状腺は目標HbA1c の行を持たない。その場合は位置を問わない
+      if (iGoal > 0) assert.equal(iGoal, iWarn + 1, `${f}: 警告が目標HbA1c の直上にない`)
+    }
+  })
+
   // 院長 2026-10-14「（薬剤アレルギーを申し送りにも）出してほしい」。処方に直結するため。
   // それまではカルテ末尾の「⚠️○○アレルギー⚠️」だけで、申し送りには何も出ていなかった。
   test('薬剤アレルギー: 申し送りに出る。非薬剤は混ぜない', () => {

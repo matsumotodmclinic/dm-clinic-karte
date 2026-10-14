@@ -144,11 +144,27 @@ for (const formType of forms) {
     if (!moved) silent.push(p)
   }
 
+  // 行ごとでなく「項目ごと」にまとめる。入力値がそのまま行に入る項目（CGM の機種名など）は
+  // 値の数だけ行が増えて読めなくなるため、3 行を超えたら 1 行に畳む。
+  const byField = new Map()
+  for (const [line, fields] of triggers) {
+    for (const f of fields) {
+      if (!byField.has(f)) byField.set(f, new Set())
+      byField.get(f).add(line)
+    }
+  }
+
   out.push(`\n## ${formType}`)
   out.push('\n### 常に出る')
   out.push(baseline.filter(l => always.has(l)).map(l => `- ${l}`).join('\n') || '- （なし）')
-  out.push('\n### 条件つきで出る')
-  out.push([...triggers].map(([l, ps]) => `- ${l}\n  ← ${[...ps].join(' / ')}`).join('\n') || '- （なし）')
+  out.push('\n### 条件つきで出る（項目ごと）')
+  out.push([...byField].map(([f, ls]) => {
+    const list = [...ls]
+    const body = list.length > 3
+      ? `  → ${list[0]}\n  → ほか ${list.length - 1} 通り（入力値がそのまま行に入る項目）`
+      : list.map(l => `  → ${l}`).join('\n')
+    return `- ${f}\n${body}`
+  }).join('\n') || '- （なし）')
   out.push('\n### 選択しても申し送りが動かない項目')
   out.push(silent.map(p => `- ${p}`).join('\n') || '- （なし）')
 }
