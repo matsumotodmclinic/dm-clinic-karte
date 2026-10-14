@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
+import Hba1cInput from "./Hba1cInput";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
@@ -80,7 +81,7 @@ const initialData = {
     eye: "", eyeVisiting: "", eyeFundusCheck: "", eyeNotebook: "", checkup: [], vaccine65Prevena: "", vaccine65Herpes: "",
   },
   lifestyle: { livingSpouse: "", livingOther: [], livingCustom: "", childInfo: "", childLocation: "", childGender: [], work: "していない", job: [], jobNote: "", activity: "" },
-  body: { height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
+  body: { hba1c: "", height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
   voiceMemo: { transcript: "", aiSummary: "", needsDoctorReview: false },
   voicePastHistory: { transcript: "", aiSummary: "", needsDoctorReview: false },
 };
@@ -622,6 +623,10 @@ export default function DMIntakeTool() {
             formType="dm"
             initialValue={data.voicePastHistory}
             onUpdate={(memo) => setData(p => ({ ...p, voicePastHistory: memo }))}
+          />
+          <Hba1cInput
+            value={data.body.hba1c}
+            onChange={(v) => setData(p => ({ ...p, body: { ...p.body, hba1c: v } }))}
           />
         </div>
       );

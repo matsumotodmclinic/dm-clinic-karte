@@ -157,6 +157,7 @@ SAS症状チェック：いびき・日中の眠気
     "activity": "座っていることが多い"
   },
   "body": {
+    "hba1c": "7.2",
     "height": "168",
     "weightNow": "74",
     "weight20": "60",

@@ -33,6 +33,8 @@ const pick = (o, ks) => Object.fromEntries(ks.filter(k => k in o).map(k => [k, o
 const omit = (o, ks) => Object.fromEntries(Object.entries(o).filter(([k]) => !ks.includes(k)))
 
 const commonBody = {
+  // 当日の HbA1c（院内測定・2026-10-14 追加）。全例測定しているので埋まっているのが通常
+  hba1c: '7.2',
   height: '168', weightNow: '74', weight20: '60', weightMax: '80', weightMaxAge: '45',
   concern: '薬を減らしたい',
   preferredDays: ['火'],
@@ -40,6 +42,10 @@ const commonBody = {
   patientFlag: '通常',
   doubleSlot: false,
 }
+
+// 甲状腺6フォームは HbA1c の入力欄を持たない（エコー技師がエコー → スタッフが 3〜4 分で聴取する
+// 短いフォームで、2026-10-14 の HbA1c 追加の対象外にした）。フィクスチャも実物に合わせて外す。
+const { hba1c: _hba1cNotInThyroid, ...thyroidBody } = commonBody
 
 const commonVoice = {
   voiceMemo: { transcript: '', aiSummary: '', needsDoctorReview: false },
@@ -150,6 +156,7 @@ export const FIXTURES = {
       paymentConfirmed: '窓口負担なし（公費）', maternalHandbook: '忘れた',
     },
     body: {
+      hba1c: '9.8',
       height: '140', weightNow: '34', concern: '薬を減らしたい',
       preferredDays: ['火'], doctorGender: '女性医師希望', patientFlag: '通常', doubleSlot: false,
     },
@@ -298,7 +305,7 @@ export const THYROID_FIXTURE = {
     eyeHistory: false, eyeClinic: '', treatmentHistory: '',
     diagnosisEra: '令和', diagnosisYear: '3', diagnosisMonth: '5', medications: ['メルカゾール'],
   },
-  body: commonBody,
+  body: thyroidBody,
 }
 
 // 結節ありのバリエーション（腺腫・悪性疑いフォームの結節所見行を固定する）

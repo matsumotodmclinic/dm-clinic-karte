@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
+import Hba1cInput from "./Hba1cInput";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
@@ -37,7 +38,7 @@ const initialData = {
   support: { familyMain: "", familySubList: [], familyNote: "", schoolStaff: [], schoolSupportPerson: [], schoolSupportNote: "", disclosedChild: "", disclosedTeacher: "", childGrade: "", childActivities: [], childActivityNote: "", parentWorkMain: [], parentWorkMainNote: "", parentWorkSub: [], parentWorkSubNote: "", independenceLevel: "", independenceNote: "" },
   chronic: { status: "", birthWeight: "", birthWeek: "", birthWeekDay: "", birthCity: "", booklets: [], documents: [], residenceCity: "", paymentConfirmed: "", maternalHandbook: "" },
   history: { allergy: "なし", allergyDetail: "", fh: { dm: false, dmWho: [], dm1: false, dm1Who: [], collagen: false, collagenItems: [{who:"",disease:""}], ht: false, apo: false, ihd: false }, eyeVisiting: "", eyeFundusCheck: "", eyeNotebook: "", eye: "", livingSpouse: "", livingOther: [], livingCustom: "", keyPerson: "" },
-  body: { height: "", weightNow: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
+  body: { hba1c: "", height: "", weightNow: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
   voiceMemo: { transcript: "", aiSummary: "", needsDoctorReview: false },
   voicePastHistory: { transcript: "", aiSummary: "", needsDoctorReview: false },
 };
@@ -650,6 +651,10 @@ export default function PedT1DIntakeTool() {
             formType="ped-t1d"
             initialValue={data.voicePastHistory}
             onUpdate={(memo) => setData(p => ({ ...p, voicePastHistory: memo }))}
+          />
+          <Hba1cInput
+            value={data.body.hba1c}
+            onChange={(v) => setData(p => ({ ...p, body: { ...p.body, hba1c: v } }))}
           />
         </div>
       );

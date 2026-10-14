@@ -24,6 +24,11 @@ export default function DetailPage() {
   const [showDmDxNote, setShowDmDxNote] = useState(false);
   const [savingDmDiff, setSavingDmDiff] = useState(false);
   const [dmDiffMsg, setDmDiffMsg] = useState('');
+  // 当日の HbA1c（院内測定）。問診の最終ステップでも入れられるが、採血が問診より後になる回は
+  // ここで入れて再生成する（院長確定 2026-10-14「両方に置く」）。保存先は同じ form_data.body.hba1c。
+  const [hba1c, setHba1c] = useState('');
+  const [savingHba1c, setSavingHba1c] = useState(false);
+  const [hba1cMsg, setHba1cMsg] = useState('');
   const [generateMode, setGenerateMode] = useState('');  // '' | 'legacy'（どちらで作り直したか）
   // ▦ QR で渡す (2026-09-07)。電カル端末が閉域の施設向け
   const [qrText, setQrText] = useState(null);
@@ -35,6 +40,7 @@ export default function DetailPage() {
       .then(data => {
         setRecord(data);
         setKarte(data.generated_karte || '');
+        setHba1c(data?.form_data?.body?.hba1c || '');
         setLoading(false);
       });
   }, [id]);
@@ -99,6 +105,36 @@ export default function DetailPage() {
       setTimeout(() => setDmDiffMsg(''), 3000);
     } finally {
       setSavingDmDiff(false);
+    }
+  };
+
+  // 当日の HbA1c を後から入れる経路。問診の最終ステップで入れ損ねた回（採血が後の回）に使う。
+  // 保存だけして再生成は押させる（dmDiff と同じ作法。黙って本文を書き換えない）。
+  const handleSaveHba1c = async () => {
+    if (savingHba1c) return;
+    setSavingHba1c(true);
+    setHba1cMsg('');
+    try {
+      const body = { ...(record.form_data?.body || {}), hba1c };
+      const newFormData = { ...record.form_data, body };
+      const res = await fetch('/api/questionnaire', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, form_data: newFormData }),
+      });
+      if (res.ok) {
+        setRecord(prev => ({ ...prev, form_data: newFormData }));
+        setHba1cMsg('✓ HbA1c を保存しました。「🔄 再生成」を押すとカルテに反映されます。');
+        setTimeout(() => setHba1cMsg(''), 8000);
+      } else {
+        setHba1cMsg('保存に失敗しました');
+        setTimeout(() => setHba1cMsg(''), 3000);
+      }
+    } catch (e) {
+      setHba1cMsg('保存に失敗しました');
+      setTimeout(() => setHba1cMsg(''), 3000);
+    } finally {
+      setSavingHba1c(false);
     }
   };
 
@@ -187,6 +223,37 @@ export default function DetailPage() {
             </button>
           )}
         </div>
+
+        {/* 当日の HbA1c（院内測定）。問診 → 採血 の順なので、問診時に入れられなかった回はここで入れる。
+            甲状腺6フォームは HbA1c を聴取しないので出さない（2026-10-14 院長確定） */}
+        {!record.form_type?.startsWith('甲状腺') && (
+          <div style={{ background:UI.surface, borderRadius:8, padding:'18px 20px', marginBottom:12, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', border:`1px dashed ${UI.primary.fg}` }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+              <div style={{ fontSize:14, fontWeight:700, color:UI.text }}>当日の HbA1c（院内測定）</div>
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="例：7.2"
+                value={hba1c}
+                onChange={e => setHba1c(e.target.value)}
+                style={{ width:110, padding:'9px 12px', border:`1px solid ${UI.border}`, borderRadius:8, fontSize:14, color:'#1a2a3a', background:UI.surface, outline:'none', boxSizing:'border-box', fontFamily:'inherit' }}
+              />
+              <span style={{ fontSize:13, color:UI.textMuted }}>%</span>
+              <button onClick={handleSaveHba1c} disabled={savingHba1c}
+                style={{ padding:'10px 18px', borderRadius:6, border:'none', background: savingHba1c ? UI.textDisabled : UI.primary.fg, color:'#fff', fontWeight:700, fontSize:13, cursor: savingHba1c ? 'not-allowed' : 'pointer' }}>
+                {savingHba1c ? '💾 保存中...' : '💾 保存'}
+              </button>
+            </div>
+            <div style={{ fontSize:12, color:UI.textMuted, marginTop:8, lineHeight:1.6 }}>
+              10%以上、または体重減少ありのときは「□腹部エコーセット＋胸部X-P の予約」が申し送りに入ります。
+            </div>
+            {hba1cMsg && (
+              <div style={{ marginTop:8, padding:'10px 14px', background: hba1cMsg.startsWith('✓') ? '#f0fff4' : '#fff5f5', border:`1px solid ${hba1cMsg.startsWith('✓') ? UI.success.fg : UI.danger.fg}`, borderRadius:8, fontSize:13, color: hba1cMsg.startsWith('✓') ? '#276749' : '#c53030', fontWeight:700 }}>
+                {hba1cMsg}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* DM差分問診（事前採血で糖尿病判明時にスタッフが追加聴取）
             SAS / 高血圧・脂質異常症 / 反応性低血糖 で表示 */}

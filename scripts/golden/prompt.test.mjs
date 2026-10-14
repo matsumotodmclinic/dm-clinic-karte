@@ -395,6 +395,35 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
     assert.ok(!buildKarteTemplate('妊娠糖尿病', FIXTURES['妊娠糖尿病']).includes('【ワクチン歴】'), '妊娠糖尿病に出ている')
   })
 
+  // 2026-10-14 院長確定: HbA1c は当日 院内で全例測定している。値が入ればフッターの空欄を埋め、
+  // 紙の運用「体重減少 または HbA1c 10%以上 → 腹エコー＋胸部X-P 追加」（悪性腫瘍スクリーニング）を出す。
+  test('HbA1c: 値があればフッターを埋める・未入力は空欄のまま', () => {
+    const base = FIXTURES['DM基本']
+    const of = (hba1c) => buildKarteTemplate('DM基本', { ...base, body: { ...base.body, hba1c } })
+    assert.ok(of('').includes('HbA1c　　%'), '未入力なのに空欄が埋まっている')
+    assert.ok(of(undefined).includes('HbA1c　　%'), '未設定なのに空欄が埋まっている')
+    assert.ok(of('7.2').includes('HbA1c 7.2 %'), '値が入らない')
+    // 単位付き・全角の手入力も拾う（スタッフが「10.4%」「１０．４」と打つことがある）
+    assert.ok(of('10.4%').includes('HbA1c 10.4 %'), '単位付きを拾えない')
+    assert.ok(of('１０．４').includes('HbA1c 10.4 %'), '全角を拾えない')
+    // 数値として読めないものは埋めない（推測で書かない）
+    assert.ok(of('測定中').includes('HbA1c　　%'), '数値でないものを埋めている')
+  })
+
+  test('HbA1c: 10%以上 または 体重減少 で腹エコー＋胸部X-P の申し送りが出る', () => {
+    const base = FIXTURES['DM基本']
+    const of = (hba1c, weightLoss) => buildKarteTemplate('DM基本', {
+      ...base, body: { ...base.body, hba1c }, alert: { ...base.alert, weightLoss },
+    })
+    const LINE = '□腹部エコーセット＋胸部X-P の予約'
+    assert.ok(!of('7.2', 'なし').includes(LINE), '該当しないのに出ている')
+    assert.ok(of('7.2', 'あり').includes(`${LINE}（体重減少あり）`), '体重減少で出ない')
+    assert.ok(of('10.4', 'なし').includes(`${LINE}（HbA1c 10.4%）`), 'HbA1c 10%以上で出ない')
+    assert.ok(of('10', 'なし').includes(LINE), '境界の 10% ちょうどで出ない')
+    assert.ok(of('9.9', 'なし') .includes(LINE) === false, '9.9% で出ている')
+    assert.ok(of('11.0', 'あり').includes(`${LINE}（体重減少あり・HbA1c 11%）`), '両方のとき理由が並ばない')
+  })
+
   test('【仕事】: 「していない」は就労なしと明記、未入力は空欄', () => {
     // 院長判断 2026-09-06: 空欄だと「無職」と「聞き漏らし」が区別できない
     assert.equal(buildJobLine({ lifestyle: { work: 'していない', job: [], activity: '' } }), '【仕事】就労なし')
@@ -434,6 +463,8 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
       '□既往歴：要ドクター確認',
       '□糖尿病-眼科連携手帳をお渡し',
       '□体重減少あり（3ヶ月以内に3kg以上）インスリン導入要検討',
+      // 紙の運用「体重減少 または HbA1c 10%以上 → 腹エコー＋胸部X-P 追加」（悪性腫瘍スクリーニング）
+      '□腹部エコーセット＋胸部X-P の予約（体重減少あり）',
       '□HTの確認のため、血圧手帳をお渡ししています。',
       '□健診・前医採血でLDL-C140mg/dl以上のため、甲状腺3項目を追加しました。',
       '□生活習慣病療養計画書を作成済',

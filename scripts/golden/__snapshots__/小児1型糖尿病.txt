@@ -92,6 +92,7 @@
     ]
   },
   "body": {
+    "hba1c": "9.8",
     "height": "140",
     "weightNow": "34",
     "concern": "薬を減らしたい",

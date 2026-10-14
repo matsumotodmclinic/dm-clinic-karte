@@ -150,6 +150,7 @@
     "eyeNotebook": "持っている"
   },
   "body": {
+    "hba1c": "7.2",
     "height": "168",
     "weightNow": "74",
     "weight20": "60",
