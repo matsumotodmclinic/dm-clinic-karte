@@ -163,8 +163,7 @@
     ],
     "doctorGender": "女性医師希望",
     "patientFlag": "通常",
-    "doubleSlot": false,
-    "polycythemia": false
+    "doubleSlot": false
   }
 }
 

@@ -424,24 +424,21 @@ describe('lib/buildKarteTemplate（AI フリー版・DM基本）', () => {
     assert.ok(of('11.0', 'あり').includes(`${LINE}（体重減少あり・HbA1c 11%）`), '両方のとき理由が並ばない')
   })
 
-  // 院長 2026-10-14「糖尿病・高血圧脂質異常症・SAS については、体重過多・多血症の場合は
-  // 簡易PSG検査と常に表示させて」。多血症は夜間低酸素の結果なので SAS のサインになる。
-  test('簡易PSG: 体重過多（BMI25以上）か多血症で申し送りに出る', () => {
+  // 院長 2026-10-14「糖尿病・高血圧脂質異常症・SAS については、体重過多の場合は簡易PSG検査と常に表示」。
+  // ⚠️当初は多血症も条件に入れたが撤回（当院は初診当日に血算を出していないので判定材料が無い）。
+  test('簡易PSG: 体重過多（BMI25以上）で申し送りに出る', () => {
     const base = FIXTURES['DM基本']
-    const of = (height, weightNow, polycythemia = false) => buildKarteTemplate('DM基本', {
-      ...base, body: { ...base.body, height, weightNow, polycythemia },
+    const of = (height, weightNow) => buildKarteTemplate('DM基本', {
+      ...base, body: { ...base.body, height, weightNow },
     })
     const LINE = '□簡易PSG検査をご検討ください'
-    // 168cm / 68kg = BMI 24.1 → 出ない
     assert.ok(!of('168', '68').includes(LINE), 'BMI 24.1 で出ている')
-    // 168cm / 71kg = BMI 25.2 → 出る
     assert.ok(of('168', '71').includes(`${LINE}（体重過多 BMI 25.2）`), 'BMI 25.2 で出ない')
-    // 痩せていても多血症なら出る
-    assert.ok(of('168', '68', true).includes(`${LINE}（多血症）`), '多血症で出ない')
-    // 両方なら理由が並ぶ
-    assert.ok(of('168', '71', true).includes(`${LINE}（体重過多 BMI 25.2・多血症）`), '両方のとき理由が並ばない')
-    // 身長が未入力なら BMI が出せないので体重過多では出ない
+    // 身長が未入力なら BMI が出せないので出さない（推測しない）
     assert.ok(!of('', '90').includes(LINE), '身長なしで出ている')
+    // 名指しされていない内分泌では出さない
+    const en = FIXTURES['内分泌']
+    assert.ok(!buildKarteTemplate('内分泌', en).includes(LINE), '内分泌で出ている')
   })
 
   // 2026-10-14 院長: 紹介元は聞いていたが「現物を持参したか」を聞いていなかった（紙にはある）。

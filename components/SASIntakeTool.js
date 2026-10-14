@@ -102,7 +102,7 @@ const initialData = {
     livingSpouse: "", livingOther: [], livingCustom: "", childInfo: "", childLocation: "", childGender: [],
     work: "していない", job: [], jobNote: "", activity: "",
   },
-  body: { hba1c: "", polycythemia: false, height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
+  body: { hba1c: "", height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
   voiceMemo: { transcript: "", aiSummary: "", needsDoctorReview: false },
   voicePastHistory: { transcript: "", aiSummary: "", needsDoctorReview: false },
   dmDiff: { completed: false }, // 採血で DM 判明後にスタッフが詳細画面から追記
@@ -567,8 +567,6 @@ export default function SASIntakeTool() {
           <Hba1cInput
             value={data.body.hba1c}
             onChange={(v) => setData(p => ({ ...p, body: { ...p.body, hba1c: v } }))}
-            polycythemia={data.body.polycythemia}
-            onPolycythemiaChange={(v) => setData(p => ({ ...p, body: { ...p.body, polycythemia: v } }))}
           />
           <ReferralLetterInput
             value={data.reason?.referralLetter || ""}

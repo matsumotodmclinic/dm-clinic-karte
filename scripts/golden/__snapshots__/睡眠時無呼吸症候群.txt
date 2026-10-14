@@ -153,8 +153,7 @@ SAS症状チェック：いびき・日中の眠気
     ],
     "doctorGender": "女性医師希望",
     "patientFlag": "通常",
-    "doubleSlot": false,
-    "polycythemia": false
+    "doubleSlot": false
   }
 }
 
