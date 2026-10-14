@@ -39,12 +39,12 @@ const FLOW = [
   {
     step: '5',
     title: 'ドクターキューブの事前WEB問診を貼り付ける（あれば）',
-    body: '患者さんが来院前にドクターキューブで入力していた回は、その画面からコピーして詳細画面の「ドクターキューブの事前WEB問診」欄に貼り付け、保存してください。印刷用A4の下部に出ます。カルテ本文（電子カルテに貼る文）には入りません。',
+    body: '患者さんが来院前にドクターキューブで入力していた回は、その画面からコピーして詳細画面の「ドクターキューブの事前WEB問診」欄に貼り付け、保存してください。印刷用A4の右半分に出ます。カルテ本文（電子カルテに貼る文）には入りません。',
   },
   {
     step: '6',
     title: '「🖨 印刷用A4」で印刷して医師に渡す',
-    body: '上半分の氏名・生年月日・初事前問診者は空欄で印字されるので手書きしてください。年齢・問診日・受付コードはアプリが入れます。下半分はカルテ全文です。',
+    body: '上半分の氏名・生年月日・初事前問診者は空欄で印字されるので手書きしてください。年齢・問診日・受付コードはアプリが入れます。その下はカルテ全文（貼り付けがある回は左にカルテ・右にドクターキューブ）。1枚に収まらないときは自動で少し縮みます。',
   },
 ]
 
@@ -94,6 +94,11 @@ export default function HandoffHelpPage() {
             >
               🖨 印刷（A4）
             </button>
+            <Link href="/print/sample" legacyBehavior>
+              <a style={{ padding: '9px 15px', borderRadius: 8, border: `1px solid ${UI.border}`, background: UI.surface, color: UI.textMuted, fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
+                印刷用A4の見本を見る
+              </a>
+            </Link>
           </div>
 
           <div style={{ marginBottom: 16 }}>

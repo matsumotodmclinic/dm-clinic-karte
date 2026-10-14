@@ -666,7 +666,7 @@ describe('lib/buildKarteTemplate（全14フォーム）', () => {
       const lines = buildKarteTemplate(f, dataFor(f)).split('\n')
       const i = lines.findIndex(l => l.startsWith('【診察にあたっての要望】'))
       assert.ok(lines[i - 1].startsWith('□'), `要望の直前が □ 行でない: ${JSON.stringify(lines[i - 1])}`)
-      // フッターの記入欄（空行4つ）以外に連続した空行を作らない
+      // フッターより前で連続した空行を作らない（フッターの空行は 1 つだけ・2026-10-14）
       const footerStart = lines.findIndex(l => /^R\d+\.\d+：($|HbA1c|甲状腺)/.test(l) && lines.indexOf(l) > i)
       const body = footerStart > 0 ? lines.slice(0, footerStart) : lines
       for (let k = 1; k < body.length; k++) {
