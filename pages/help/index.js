@@ -21,6 +21,11 @@ import { GUIDE } from '../../components/HelpGuide'
 // 以前はガイド 1 本ごとに違う色 (紺/赤/桃/青/橙/緑/紫 の 7 色) を振っていたが、
 // 色に意味がないまま数だけ増えて散らかるため、カテゴリ色に一本化した。
 const GUIDES = [
+  // ----- 全フォーム共通 -----
+  { category: '📋 全フォーム共通', tone: UI.primary.fg, items: [
+    { id: 'handoff', label: '運用の流れと 申し送り早見表', emoji: '📋', ready: true, href: '/help/handoff',
+      desc: '問診から医師に渡すまでの流れ + 「どう入力すると医師に何が伝わるか」の対応表（2026-10 改訂・A4 印刷可）' },
+  ]},
   // ----- 糖尿病関連 -----
   { category: '🩺 糖尿病関連', tone: UI.primary.fg, items: [
     { id: 'dm',      label: 'DM 基本 (2 型糖尿病)', emoji: '🩺',  ready: true,  href: '/help/dm',      desc: '6 ステップ完全攻略 + 音声入力 (現病歴/既往歴) + 受付コード運用 + 再生成' },
