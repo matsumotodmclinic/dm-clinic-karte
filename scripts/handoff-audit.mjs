@@ -49,13 +49,20 @@ function leafPaths(obj, prefix = '') {
   return out
 }
 
-/** 「選択肢」とみなす値だけを対象にする（自由記述・数値は行動の指示に直結しないので除く） */
+/**
+ * 走査の対象にする値。
+ * ★数値も対象に含める（2026-10-14 院長指摘）。身長・体重から計算する BMI のように
+ *   **数値が条件になっている分岐**があり、除外していると「常に出る」と誤って分類される。
+ *   実際そのせいで簡易PSG（BMI 25以上）を「常に出る」と報告して院長に訂正された。
+ */
 function isChoice(v) {
   if (typeof v === 'boolean') return true
   if (Array.isArray(v)) return true
-  if (typeof v === 'string') return v !== '' && !/^\d+(\.\d+)?$/.test(v) && v.length <= 24
+  if (typeof v === 'string') return v !== '' && v.length <= 24
   return false
 }
+
+const isNumeric = (v) => typeof v === 'string' && /^\d+(\.\d+)?$/.test(v)
 
 // ★列挙値は「コードが見ている値」を踏まないと動かない。空文字と適当な文字列だけで探ると
 //   「変えても動かない」と誤判定する（2026-09-07 の「効果の出ない対照」と同じ罠）。
@@ -84,6 +91,8 @@ const ENUM_PROBES = [
 function probesFor(cur) {
   if (typeof cur === 'boolean') return [!cur]
   if (Array.isArray(cur)) return [[], [...cur, 'ZZ']]
+  // 数値は閾値をまたぐように散らす（BMI 25 の境目などを踏むため）
+  if (isNumeric(cur)) return ['', '0', '40', '100', '200'].filter(v => v !== cur)
   return ENUM_PROBES.filter(v => v !== cur)
 }
 
@@ -111,13 +120,21 @@ for (const formType of forms) {
       const added = after.filter(l => !baseline.includes(l))
       // 選択値がそのまま行に入る項目（□医師希望：女性医師 等）は、探った値の数だけ
       // 別の行に見えてしまう。値の部分を「…」に畳んで 1 行にまとめる。
-      const norm = (l) => {
+      const norm = (l0) => {
+        // 数値由来の行は括弧の中身が毎回変わる（□簡易PSG…（体重過多 BMI 35.4））ので畳む
+        const l = isNumeric(cur) ? l0.replace(/（[^）]*\d[^）]*）/g, '（…）') : l0
         const i = l.indexOf('：')
         if (i < 0) return l
         const tail = l.slice(i + 1)
-        return probesFor(cur).some(v => String(v) === tail) ? `${l.slice(0, i)}：…（選択値）` : l
+        // 値がそのまま入る行（□医師希望：女性医師）も、値＋後置き（□薬剤アレルギー：○○（処方時に確認））も畳む
+        const hit = probesFor(cur).some(v => typeof v === 'string' && v !== '' && tail.startsWith(v))
+        return hit ? `${l.slice(0, i)}：…（入力値）` : l
       }
-      for (const l of [...gone, ...added].filter(l => !l.includes('ZZ')).map(norm)) {
+      for (const raw of [...gone, ...added].filter(l => !l.includes('ZZ'))) {
+        // 畳む前の形（＝土台に出ている行そのもの）も「常に出る」から外す。
+        // 外さないと「常に出る」と「条件つき」の両方に同じ行が載る。
+        always.delete(raw)
+        const l = norm(raw)
         always.delete(l)
         if (!triggers.has(l)) triggers.set(l, new Set())
         triggers.get(l).add(p)
