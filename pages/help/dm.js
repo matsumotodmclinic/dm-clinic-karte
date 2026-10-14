@@ -31,6 +31,7 @@ const THEME = UI.primary.fg  // 糖尿病関連カテゴリの色 (問診フォ�
 const TOC = [
   { id: 'overview',       icon: '🗺️', title: 'DM 問診の全体像 (患者 → スタッフ → 医師の動線)' },
   { id: 'login',          icon: '🔐', title: 'ログインと入口 (kinkan staff 共通)' },
+  { id: 'rev2026-10',     icon: '🆕', title: '2026 年 10 月の改訂 (先に読んでください)' },
   { id: 'steps',          icon: '📝', title: '6 ステップの流れ (重要確認 → 病歴・経緯の聴取)' },
   { id: 'step-alert',     icon: '⚠️', title: 'Step 1: 重要確認 (体重減少のスクリーニング)' },
   { id: 'step-reason',    icon: '🩺', title: 'Step 2: 受診理由 (健診・紹介状・転院など)' },
@@ -147,6 +148,25 @@ export default function DmGuidePage() {
           </Box>
         </Section>
 
+        {/* ========== 2026-10 改訂のまとめ（運用が変わった分） ========== */}
+        <Section id="rev2026-10" icon="🆕" title="2026 年 10 月の改訂（先に読んでください）" themeColor={THEME}>
+          <Box color="info">
+            紙（WEB 用 DM・血糖異常）に書いてあった段取りをアプリに取り込みました。
+            <strong>紙は入力用紙ではなく、アプリが作る出力用紙になります。</strong>
+            申し送りがどう出るかの一覧は <Code>/help/handoff</Code>「運用の流れと 申し送り早見表」にまとめてあります。
+          </Box>
+          <ul>
+            <li><strong>当日の HbA1c を聞く欄</strong>が最終 Step に増えました。採血がまだなら空のままで進めて構いません。後から詳細画面でも入れられます</li>
+            <li><strong>体重減少 or HbA1c 10%以上</strong>で「腹部エコーセット＋胸部 X-P の予約」が申し送りに入ります（悪性腫瘍を見逃さないため）</li>
+            <li><strong>BMI 25 以上</strong>で「簡易 PSG 検査をご検討ください」が入ります</li>
+            <li><strong>紹介状の現物を持参したか</strong>を聞く欄が増えました</li>
+            <li><strong>薬剤アレルギー</strong>が申し送りにも出るようになりました（カルテ末尾の ⚠️ 行は従来どおり）</li>
+            <li><strong>療養計画書</strong>は「作成済」ではなく「作成をお願いします」になりました。インスリン使用中の方には出ません</li>
+            <li><strong>病名の記号が ♯ に統一</strong>されました。当院で診る病名と他院で診ている病名は、記号でなく<strong>空行の前後</strong>で分かれます</li>
+            <li>詳細画面に <strong>「🖨 印刷用 A4」</strong>が増えました。上半分の氏名・生年月日・初事前問診者は手書き欄です</li>
+          </ul>
+        </Section>
+
         {/* ========== 6 ステップの概観 ========== */}
         <Section id="steps" icon="📝" title="6 ステップの流れ (重要確認 → 病歴・経緯の聴取)" themeColor={THEME}>
           <p>
@@ -196,10 +216,10 @@ export default function DmGuidePage() {
           </p>
 
           <Table headers={['受診理由', '追加質問', '備考']} themeColor={THEME}>
-            <Tr><Td>健診で指摘</Td><Td>健診の種類 (人間ドック / 会社健診 / 特定健診)</Td><Td>HbA1c 数値は Step 5 の自由記入で</Td></Tr>
-            <Tr><Td>紹介状あり</Td><Td>紹介元 (クイック選択 = 当院との連携医) + 診療科</Td><Td>市外の大病院は自由入力</Td></Tr>
+            <Tr><Td>健診で指摘</Td><Td>健診の種類 (人間ドック / 会社健診 / 特定健診)</Td><Td>当日の HbA1c は最終 Step の専用欄へ (2026-10-14 新設)</Td></Tr>
+            <Tr><Td>紹介状あり</Td><Td>紹介元 (クイック選択 = 当院との連携医) + 診療科</Td><Td>市外の大病院は自由入力。<strong>現物の持参有無も聞きます</strong> (2026-10-14 新設)</Td></Tr>
             <Tr><Td>転院希望</Td><Td>転院元の通院先 + 詳細</Td><Td>転院理由は申し送りで医師判断</Td></Tr>
-            <Tr highlight><Td>糖尿病か気になる</Td><Td>気になる理由 (家族歴 / 症状 / 健診値 等)</Td><Td>2026-04-25 改修: 暫定診断「<Code>＃糖尿病 or IGT or 正常耐糖能</Code>」+ 申し送り「血糖、HbA1c の結果により上段の診断を確定」</Td></Tr>
+            <Tr highlight><Td>糖尿病か気になる</Td><Td>気になる理由 (家族歴 / 症状 / 健診値 等)</Td><Td>2026-04-25 改修: 暫定診断「<Code>♯糖尿病 or IGT or 正常耐糖能</Code>」+ 申し送り「血糖、HbA1c の結果により上段の診断を確定」</Td></Tr>
             <Tr><Td>その他</Td><Td>自由記述</Td><Td>音声入力で補強可</Td></Tr>
           </Table>
 
@@ -226,16 +246,15 @@ export default function DmGuidePage() {
           <Subh>糖尿病既往</Subh>
           <ul>
             <li><strong>DM 発症時期</strong>: 和暦 (昭和 / 平成 / 令和) + 年 を選択、 不明チェックも可</li>
-            <li><strong>インスリン治療中</strong>: 該当時はカルテに「<Code>＃糖尿病 (インスリン治療中)</Code>」 と展開</li>
+            <li><strong>インスリン治療中</strong>: 該当時は申し送りに「<Code>□インスリン使用中</Code>」が入り、<strong>療養計画書の依頼は出なくなります</strong> (対象外のため・2026-10-14 改訂)</li>
             <li><strong>エコー検査</strong>: 頸動脈エコー / 腹部エコー の最終受診時期 (健康投資の評価)</li>
           </ul>
 
           <Subh>合併する慢性疾患 (チェックボックス)</Subh>
           <Table headers={['疾患', 'カルテ表記', '備考']} themeColor={THEME}>
-            <Tr><Td>HT (高血圧)</Td><Td>＃高血圧症</Td><Td>治療歴・通院先は Step 6 音声で補強</Td></Tr>
-            <Tr><Td>HL (脂質異常症)</Td><Td>＃脂質異常症</Td><Td>同上</Td></Tr>
-            <Tr><Td>甲状腺疾患</Td><Td>＃甲状腺機能異常</Td><Td>2026-04-21 追加</Td></Tr>
-            <Tr><Td>インスリン治療中</Td><Td>＃糖尿病 (インスリン治療中)</Td><Td>糖尿病既往と統合</Td></Tr>
+            <Tr><Td>HT (高血圧)</Td><Td>♯HT</Td><Td>申し送りに「血圧手帳をお渡ししています」が入る</Td></Tr>
+            <Tr><Td>HL (脂質異常症)</Td><Td>♯HL</Td><Td>申し送りに「甲状腺3項目を追加しました」が入る</Td></Tr>
+            <Tr><Td>インスリン治療中</Td><Td>(病名行は変わらない)</Td><Td>申し送りに「□インスリン使用中」。療養計画書の依頼は出ない</Td></Tr>
           </Table>
 
           <Subh>重要既往 (詳細展開、 4 項目)</Subh>
@@ -315,8 +334,11 @@ export default function DmGuidePage() {
 
           <Subh>健診受診歴・ワクチン</Subh>
           <p>
-            会社健診・人間ドック・特定健診の有無 (複数可) + <strong>65 歳ワクチン</strong> (プレベナー 13 /
+            会社健診・人間ドック・特定健診の有無 (複数可) + <strong>ワクチン</strong> (プレベナー 20 /
             帯状疱疹) の接種状況。 高齢糖尿病患者の感染予防チェック。
+            <br />
+            2026-10-14 改訂: <strong>【ワクチン歴】の行は年齢に関わらず必ずカルテに出ます</strong> (空欄でも行は残る)。
+            以前は 60 歳以上かつ入力ありのときだけ出ており、<strong>入力したのに消えていた</strong>方がいました。
           </p>
         </Section>
 
@@ -528,12 +550,12 @@ export default function DmGuidePage() {
           <p>
             SAS (睡眠時無呼吸症候群) / 高血圧・脂質異常症 / 反応性低血糖 / 内分泌 は全例当院で事前採血を行います。
             その <strong>HbA1c 高値 → 糖尿病確定</strong> が判明した場合、 詳細画面で <Code>DmDiffEditor</Code> を
-            起動して DM 差分問診を追加入力 → 再生成すると <strong>＃糖尿病 を含む統合カルテ</strong> に切り替わります。
+            起動して DM 差分問診を追加入力 → 再生成すると <strong>♯糖尿病 を含む統合カルテ</strong> に切り替わります。
           </p>
 
           <Subh>運用フロー</Subh>
           <Step n={1} title="初回生成 (SAS のみ)" themeColor={THEME}>
-            患者が SAS 問診に回答 → <Code>＃SAS / ＃SAS 疑い</Code> を主病名にカルテ生成。
+            患者が SAS 問診に回答 → <Code>♯SAS / ♯SAS 疑い</Code> を主病名にカルテ生成。
           </Step>
           <Step n={2} title="採血結果で DM 確定" themeColor={THEME}>
             事前採血 (全例実施) で HbA1c 6.5% 以上 → スタッフが DM 差分問診を要判定。
@@ -544,7 +566,7 @@ export default function DmGuidePage() {
           </Step>
           <Step n={4} title="🔄 再生成 → SAS + DM 統合カルテ" themeColor={THEME}>
             <Code>/api/generate-karte</Code> の SAS 分岐が <Code>dmDiff.completed=true</Code> を見て
-            <strong>SAS + DM 統合プロンプト</strong> に切り替わり、 主病名が <Code>＃糖尿病 ＃SAS</Code> 等に再構成。
+            <strong>SAS + DM 統合プロンプト</strong> に切り替わり、 主病名が <Code>♯糖尿病 ♯SAS</Code> 等に再構成。
           </Step>
 
           <Box color="info">
