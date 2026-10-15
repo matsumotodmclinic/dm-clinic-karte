@@ -17,6 +17,11 @@ const FONT = "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif"
 
 const FLOW = [
   {
+    step: '0',
+    title: 'ご予約なしで来院された方は、先に紙に記入していただく',
+    body: 'WEB予約を使えない方が予約なしで来られたときは、受付で「予約なし来院の問診票（手書き用）」をお渡しします。記入後は上部の体重減少・HbA1c をまず見て、該当する方は初事前のご予約を前倒しします。',
+  },
+  {
     step: '1',
     title: '問診をアプリに入力する',
     body: '受診の区分に合うフォームを選んで、上から順に入力します。紙に書いてもらってから打ち直す必要はありません。',
@@ -97,6 +102,11 @@ export default function HandoffHelpPage() {
             <Link href="/print/sample" legacyBehavior>
               <a style={{ padding: '9px 15px', borderRadius: 8, border: `1px solid ${UI.border}`, background: UI.surface, color: UI.textMuted, fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
                 印刷用A4の見本を見る
+              </a>
+            </Link>
+            <Link href="/print/walkin" legacyBehavior>
+              <a style={{ padding: '9px 15px', borderRadius: 8, border: `1px solid ${UI.border}`, background: UI.surface, color: UI.textMuted, fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
+                予約なし来院の問診票（手書き用）
               </a>
             </Link>
           </div>
