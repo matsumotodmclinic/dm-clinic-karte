@@ -41,12 +41,16 @@ jobs:
         run: npm ci
 
       # 依存なしで走る検査を先に回す（速い & 失敗理由が読みやすい）
+      # フォームの見た目の共通スタイル（npm run check の 1 段目。CI には 2026-10-15 まで載っていなかった）
+      - name: スタイル検査
+        run: npm run check:styles
+
       - name: ゴールデンテスト（カルテ本文・取りこぼし検査・eval ルール）
         run: npm test
 
       # 14 フォーム × 5 例（最小 / 標準 / 複雑 / 難渋 / 分岐）を組み立てて機械判定する。
       # AI を呼ばないので決定的・日付非依存・API キー不要。error が 1 件でも出たら落ちる。
-      - name: カルテ生成 eval（70 ケース）
+      - name: カルテ生成 eval（14 フォーム・難渋症例を含む）
         run: npm run eval
 
       - name: Build
@@ -84,6 +88,6 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `🚨 CI failed on main (${sha})`,
-              body: `main への push で **プロンプト同期チェック / ゴールデンテスト / ビルド** のいずれかが失敗しました。\n\n- commit: \`${context.sha}\`\n- 実行ログ: ${runUrl}\n\nビルド失敗の場合は Vercel デプロイも失敗し、本番が古いまま固まります。\nプロンプト同期チェックの失敗は「経路A/経路B の片方だけ直した」サインです。\nログを確認して修正 → 再 push してください。`,
+              body: `main への push で **スタイル検査 / ゴールデンテスト / eval / ビルド** のいずれかが失敗しました。\n\n- commit: \`${context.sha}\`\n- 実行ログ: ${runUrl}\n\nビルド失敗の場合は Vercel デプロイも失敗し、本番が古いまま固まります。\nログを確認して修正 → 再 push してください。`,
               labels: ['ci-failure'],
             })

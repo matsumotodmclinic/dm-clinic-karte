@@ -1,6 +1,7 @@
 import { supabase } from '../../lib/supabase'
 import { getSession } from '../../lib/session'
 import { recordAuditLog } from '../../lib/auditLog'
+import { validateCreate, validatePatch } from '../../lib/validateQuestionnaire'
 
 function generateVisitCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -13,7 +14,10 @@ function generateVisitCode() {
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
-    const { age, form_type, form_data, generated_karte } = req.body
+    // 入力検証（lib/validateQuestionnaire.js。年齢ははじかずに整える）
+    const v = validateCreate(req.body)
+    if (!v.ok) return res.status(v.status).json({ error: v.error })
+    const session = await getSession(req, res)
 
     let visit_code
     let attempts = 0
@@ -32,11 +36,20 @@ export default async function handler(req, res) {
 
     const { data, error } = await supabase
       .from('questionnaires')
-      .insert([{ visit_code, age, form_type, form_data, generated_karte, status: 'new' }])
+      .insert([{ visit_code, ...v.row, status: 'new' }])
       .select()
       .single()
 
     if (error) return res.status(500).json({ error: error.message })
+
+    // 監査ログ（問診の中身は送らない。種類と受付番号だけ）
+    await recordAuditLog({
+      category: 'questionnaire',
+      action: 'create',
+      table_name: 'questionnaires',
+      record_id: data.id,
+      note: `${v.row.form_type} を新規保存（受付番号 ${visit_code}）`,
+    }, session.user)
     return res.status(200).json({ visit_code, id: data.id })
   }
 
@@ -55,7 +68,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-    const { id, status, generated_karte, form_data, markAllDone } = req.body
+    const { id, markAllDone } = req.body
     const session = await getSession(req, res)
 
     // 全件完了化（院長・事務長・リーダーのみ）
@@ -86,20 +99,10 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, count: targets?.length || 0 })
     }
 
-    const updates = { updated_at: new Date().toISOString() }
-    if (status) updates.status = status
-    if (generated_karte) updates.generated_karte = generated_karte
-    if (form_data) {
-      // SAS問診の DM差分問診追記など、form_data 全体を更新する用途。
-      // object 型・サイズチェック（generate-karte と同じ 100KB 上限）。
-      if (typeof form_data !== 'object' || Array.isArray(form_data)) {
-        return res.status(400).json({ error: 'form_data must be an object' })
-      }
-      if (JSON.stringify(form_data).length > 100 * 1024) {
-        return res.status(413).json({ error: 'form_data too large' })
-      }
-      updates.form_data = form_data
-    }
+    // 入力検証（lib/validateQuestionnaire.js）。form_data は DM差分問診の追記など全体の更新に使う
+    const v = validatePatch(req.body)
+    if (!v.ok) return res.status(v.status).json({ error: v.error })
+    const updates = { ...v.updates, updated_at: new Date().toISOString() }
 
     const { error } = await supabase
       .from('questionnaires')
@@ -109,6 +112,8 @@ export default async function handler(req, res) {
     if (error) return res.status(500).json({ error: error.message })
 
     // 監査ログ(失敗してもメイン処理は続行)
+    // ★問診の中身（form_data・カルテ本文）は送らない。勤怠アプリの audit_logs に
+    //   医療情報の写しを作らないため（2026-10-15 まで updates を丸ごと送っていた）
     const changedFields = Object.keys(updates).filter(k => k !== 'updated_at')
     await recordAuditLog({
       category: 'questionnaire',
@@ -116,7 +121,7 @@ export default async function handler(req, res) {
       table_name: 'questionnaires',
       record_id: id,
       note: `${changedFields.join(', ')} を更新`,
-      new_value: JSON.stringify(updates),
+      new_value: updates.status ? JSON.stringify({ status: updates.status }) : null,
     }, session.user)
 
     return res.status(200).json({ ok: true })

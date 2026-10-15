@@ -39,7 +39,7 @@ const initialData = {
   disease: { dm1type: "", dmOnsetEra: "令和", dmOnset: "", dmOnsetUnknown: false, ht: false, hl: false, thyroidChecked: false, bakusmi: "", dmSymptoms: { selected: [], otherText: "" } },
   support: { familyMain: "", familySubList: [], familyNote: "", schoolStaff: [], schoolSupportPerson: [], schoolSupportNote: "", disclosedChild: "", disclosedTeacher: "", childGrade: "", childActivities: [], childActivityNote: "", parentWorkMain: [], parentWorkMainNote: "", parentWorkSub: [], parentWorkSubNote: "", independenceLevel: "", independenceNote: "" },
   chronic: { status: "", birthWeight: "", birthWeek: "", birthWeekDay: "", birthCity: "", booklets: [], documents: [], residenceCity: "", paymentConfirmed: "", maternalHandbook: "" },
-  history: { allergy: "なし", allergyDetail: "", fh: { dm: false, dmWho: [], dm1: false, dm1Who: [], collagen: false, collagenItems: [{who:"",disease:""}], ht: false, apo: false, ihd: false }, eyeVisiting: "", eyeFundusCheck: "", eyeNotebook: "", eye: "", livingSpouse: "", livingOther: [], livingCustom: "", keyPerson: "" },
+  history: { allergy: "なし", allergyDetail: "", fh: { dm: false, dmWho: [], dm1: false, dm1Who: [], collagen: false, collagenItems: [{who:"",disease:""}], ht: false, apo: false, ihd: false }, eyeFundusCheck: "", eyeNotebook: "", eye: "", livingSpouse: "", livingOther: [], livingCustom: "", keyPerson: "" },
   body: { hba1c: "", height: "", weightNow: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
   voiceMemo: { transcript: "", aiSummary: "", needsDoctorReview: false },
   voicePastHistory: { transcript: "", aiSummary: "", needsDoctorReview: false },

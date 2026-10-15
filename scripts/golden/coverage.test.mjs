@@ -104,7 +104,6 @@ const COMMON_ALLOWED = {
   'disease.ihd.treatedHospitalOther': '同上',
   'disease.ihd.visitingHospitalOther': '通院先が「その他」のときだけ使う',
   // ⚠️ これは列挙値の都合ではなく、本当にどこからも読まれていない
-  'history.eyeVisiting': 'フォームの UI にも無い遺物（initialData に残っているだけ）。次に触るとき消す',
 }
 
 const ALLOWED = {

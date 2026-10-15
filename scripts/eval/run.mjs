@@ -11,6 +11,7 @@
 
 import { buildKarteTemplate, buildMergePrompt, parseMergeResponse, needsMerge } from '../../lib/buildKarteTemplate.js'
 import { CASES } from './cases.mjs'
+import { MERGE_MODEL, MERGE_MAX_TOKENS } from '../../lib/generateKarte.js'
 import { judge } from './rules.mjs'
 
 const argv = process.argv.slice(2)
@@ -36,8 +37,8 @@ async function callMerge(prompt) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 600,
+      model: MERGE_MODEL,
+      max_tokens: MERGE_MAX_TOKENS,
       messages: [{ role: 'user', content: prompt }],
     }),
   })

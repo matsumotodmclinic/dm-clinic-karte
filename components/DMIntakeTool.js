@@ -80,7 +80,7 @@ const initialData = {
     alcoholNone: false, alcoholItems: [emptyAlcohol()],
     smoking: "なし", smokingAmount: "", smokingYears: "", smokingStartAge: "",
     smokingQuitEra: "令和", smokingQuitYear: "",
-    eye: "", eyeVisiting: "", eyeFundusCheck: "", eyeNotebook: "", checkup: [], vaccine65Prevena: "", vaccine65Herpes: "",
+    eye: "", eyeFundusCheck: "", eyeNotebook: "", checkup: [], vaccine65Prevena: "", vaccine65Herpes: "",
   },
   lifestyle: { livingSpouse: "", livingOther: [], livingCustom: "", childInfo: "", childLocation: "", childGender: [], work: "していない", job: [], jobNote: "", activity: "" },
   body: { hba1c: "", height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },

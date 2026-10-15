@@ -19,6 +19,7 @@ import {
   summarizeForKarte, summarizeForPastHistory,
 } from '../../lib/voiceSummary.js'
 import { buildVocabularyHint } from '../../lib/voiceVocabulary.js'
+import { CLAUDE_MODEL } from '../../lib/config.js'
 
 const d = (y, m, day = 15) => new Date(y, m - 1, day)
 
@@ -192,7 +193,7 @@ describe('voiceSummary: API 呼び出し', () => {
       assert.equal(calls.length, 1)
       const { url, body } = calls[0]
       assert.equal(url, '/api/generate')
-      assert.equal(body.model, 'claude-sonnet-4-5')
+      assert.equal(body.model, CLAUDE_MODEL)
       assert.equal(body.max_tokens, maxTokens)
       assert.equal(body.system[0].cache_control.ttl, '1h')
       assert.ok(body.system[0].text.includes('【今日の日付】'))

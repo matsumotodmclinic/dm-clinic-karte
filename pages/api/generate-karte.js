@@ -6,7 +6,9 @@
 //
 // 旧方式（?legacy=1 = AI に全文を書かせる lib/buildKartePrompt.js）は 2026-10-15 に削除した。
 import { generateKarteText, MERGE_MAX_TOKENS, MERGE_MODEL } from '../../lib/generateKarte'
-import { TEMPLATE_FORM_TYPES as ALLOWED_FORM_TYPES } from '../../lib/buildKarteTemplate'
+import { TEMPLATE_FORM_TYPES as ALLOWED_FORM_TYPES, buildMergePrompt } from '../../lib/buildKarteTemplate'
+import { getSession } from '../../lib/session'
+import { checkRateLimit, rateLimitKey } from '../../lib/rateLimit'
 
 // form_data のサイズ上限(JSON 文字列のバイト数)。
 // 通常の問診入力は 20KB 程度で収まる想定、余裕を持って 100KB。
@@ -57,9 +59,18 @@ export default async function handler(req, res) {
     })
   }
 
+  // レート制限（lib/rateLimit.js）。AI を実際に呼ぶ回だけ数える（音声入力が無い回は無料）。
+  // ★超えても 429 にはしない。AI を飛ばして JS 素組みのカルテを返す（詳細画面を空にしない。
+  //   申し送りに「統合できなかった」旨の 1 行が付くので、質が落ちたことは分かる）
+  let callAI = p => callAnthropic(p, MERGE_MAX_TOKENS)
+  if (buildMergePrompt(form_type, form_data)) {
+    const session = await getSession(req, res)
+    if (!checkRateLimit(rateLimitKey(req, session.user)).ok) callAI = null
+  }
+
   // 音声入力が無ければ AI は 1 回も呼ばれない。AI が落ちても JS 素組みが返る。
   try {
-    const karte = await generateKarteText(form_type, form_data, p => callAnthropic(p, MERGE_MAX_TOKENS))
+    const karte = await generateKarteText(form_type, form_data, callAI)
     if (karte == null) return res.status(400).json({ error: `未対応のform_type: ${form_type}` })
     return res.status(200).json({ karte })
   } catch (e) {

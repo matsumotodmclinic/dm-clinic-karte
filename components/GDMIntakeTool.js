@@ -46,7 +46,7 @@ const initialData = {
     allergy: "なし", allergyDetail: "",
     fh: { dm: false, dmWho: [], ht: false, apo: false, ihd: false },
     smoking: "なし",
-    eyeVisiting: "", eyeFundusCheck: "", eyeNotebook: "", eye: "",
+    eyeFundusCheck: "", eyeNotebook: "", eye: "",
     livingSpouse: "", livingOther: [], livingCustom: "",
     work: "していない", job: [], jobNote: "", activity: "",
     otherDiseases: [{name:"",hospital:"",hospitalOther:""}],

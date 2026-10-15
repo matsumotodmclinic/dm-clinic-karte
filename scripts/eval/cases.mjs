@@ -64,7 +64,7 @@ export const EMPTY = {
     history: {
       ...emptyHistoryCommon(),
       fh: { dm: false, dmWho: [], ht: false, apo: false, ihd: false },
-      eye: '', eyeVisiting: '', eyeFundusCheck: '', eyeNotebook: '',
+      eye: '', eyeFundusCheck: '', eyeNotebook: '',
     },
     lifestyle: emptyLifestyleKeys(),
     body: emptyBody(),
@@ -87,7 +87,7 @@ export const EMPTY = {
     history: {
       ...emptyHistoryCommon(), ...emptyLifestyleKeys(),
       fh: { dm: false, dmWho: [], ht: false, apo: false, ihd: false },
-      eye: '', eyeVisiting: '', eyeFundusCheck: '', eyeNotebook: '',
+      eye: '', eyeFundusCheck: '', eyeNotebook: '',
       otherDiseases: [emptyOther()],
     },
     body: emptyBody(),
@@ -118,7 +118,7 @@ export const EMPTY = {
     history: {
       allergy: 'なし', allergyDetail: '',
       fh: { dm: false, dmWho: [], dm1: false, dm1Who: [], collagen: false, collagenItems: [{ who: '', disease: '' }], ht: false, apo: false, ihd: false },
-      eye: '', eyeVisiting: '', eyeFundusCheck: '', eyeNotebook: '',
+      eye: '', eyeFundusCheck: '', eyeNotebook: '',
       livingSpouse: '', livingOther: [], livingCustom: '', keyPerson: '',
       otherDiseases: [emptyOther()],
     },
@@ -176,7 +176,7 @@ export const EMPTY = {
       fh: { dm: false, dmWho: [], ht: false, apo: false, ihd: false },
       smoking: 'なし', smokingAmount: '', smokingYears: '', smokingStartAge: '',
       smokingQuitEra: '令和', smokingQuitYear: '',
-      eye: '', eyeVisiting: '', eyeFundusCheck: '', eyeNotebook: '',
+      eye: '', eyeFundusCheck: '', eyeNotebook: '',
       livingSpouse: '', livingOther: [], livingCustom: '',
       work: 'していない', job: [], jobNote: '', activity: '',
       otherDiseases: [emptyOther()],

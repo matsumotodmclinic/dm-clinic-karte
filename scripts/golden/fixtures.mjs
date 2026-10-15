@@ -89,7 +89,7 @@ export const FIXTURES = {
       // DM基本の家族歴に HL は無い（HTHL/RH/内分泌 のみ）
       fh: { dm: true, dmWho: ['母'], ht: true, apo: false, ihd: false },
       // 眼底検査まわりは DM基本 固有
-      eye: '上尾こいけ眼科', eyeVisiting: '', eyeFundusCheck: '受けている',
+      eye: '上尾こいけ眼科', eyeFundusCheck: '受けている',
       retinopathy: '単純性網膜症', glaucoma: '緑内障なし', eyeNotebook: '持っている',
     },
     body: commonBody,
@@ -116,7 +116,7 @@ export const FIXTURES = {
     history: {
       ...commonHistory,
       fh: { dm: true, dmWho: ['母'], ht: true, apo: false, ihd: false },
-      eye: '', eyeVisiting: '', eyeFundusCheck: '受けていない', eyeNotebook: '持っていない',
+      eye: '', eyeFundusCheck: '受けていない', eyeNotebook: '持っていない',
       otherDiseases,
     },
     body: commonBody,
@@ -137,7 +137,7 @@ export const FIXTURES = {
     history: {
       allergy: 'あり', allergyDetail: 'ペニシリン・金属',
       fh: { dm: true, dmWho: ['母'], dm1: true, dm1Who: ['兄'], collagen: true, collagenItems: [{ who: '母', disease: '橋本病' }], ht: false, apo: false, ihd: false },
-      eye: '', eyeVisiting: '', eyeFundusCheck: '受けていない', eyeNotebook: '持っていない',
+      eye: '', eyeFundusCheck: '受けていない', eyeNotebook: '持っていない',
       livingSpouse: '配偶者あり', livingOther: ['息子と同居'], livingCustom: '',
       keyPerson: '母',
       otherDiseases,
@@ -193,7 +193,7 @@ export const FIXTURES = {
       fh: { dm: true, dmWho: ['母'], ht: true, apo: false, ihd: false },
       smoking: '禁煙済', smokingAmount: '10', smokingYears: '8', smokingStartAge: '20',
       smokingQuitEra: '令和', smokingQuitYear: '5',
-      eye: '', eyeVisiting: '', eyeFundusCheck: '受けていない', eyeNotebook: '持っていない',
+      eye: '', eyeFundusCheck: '受けていない', eyeNotebook: '持っていない',
       livingSpouse: '配偶者あり', livingOther: [], livingCustom: '',
       work: 'している', job: ['会社員（デスクワーク）'], jobNote: '週3日リモート', activity: '座っていることが多い',
       otherDiseases,

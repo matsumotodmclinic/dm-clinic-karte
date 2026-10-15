@@ -64,7 +64,7 @@ const initialData = {
     alcoholNone: false, alcoholItems: [emptyAlcohol()],
     smoking: "なし", smokingAmount: "", smokingYears: "", smokingStartAge: "",
     smokingQuitEra: "令和", smokingQuitYear: "",
-    eyeVisiting: "", eyeFundusCheck: "", eyeNotebook: "", eye: "",
+    eyeFundusCheck: "", eyeNotebook: "", eye: "",
     checkup: [],
     vaccine65Prevena: "", vaccine65Herpes: "",
     livingSpouse: "", livingOther: [], livingCustom: "", childInfo: "", childLocation: "", childGender: [],

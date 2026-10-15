@@ -470,7 +470,7 @@ dmDiff フォームで聞く項目（DM基本との差分のみ）:
 3. **duplicate key**: 病院ボタンで `key={hosp}` → `key={hosp+dept}` に
 4. **AI空行挿入**: テンプレートリテラル内の空行がAI出力に混入。プロンプトに「空行なし」明記
 5. ~~**プロンプト二重管理**~~: 2026-09-06 に `lib/buildKartePrompt.js` へ一本化して解消（上記参照）
-6. **lib/config.js未参照**: `CLAUDE_MODEL`定義済みだが各所ハードコード。統一TODO
+6. ~~**lib/config.js未参照**~~: 2026-10-15 に統一。モデル名は `lib/config.js` の `CLAUDE_MODEL` だけ（直書きするとテストが落ちる）
 
 ## 実装済み機能（2026-04月時点）
 
@@ -510,15 +510,20 @@ dmDiff フォームで聞く項目（DM基本との差分のみ）:
    - form_data サイズ上限(100KB)
    - form_data 型チェック(object 必須)
 
-### 🔴 高リスク(短期で対処検討)
+### ✅ 対応済み(2026-10-15)
 
-- **レート制限なし**: `/api/generate*` は Anthropic コスト直結。認証済みユーザーの連打で高額請求の可能性
-  - 対策候補: Vercel KV / Upstash Redis で IP 別カウント(1分10リクエスト等)
-  - 工数: 1〜2h
-
-- **操作ログなし**: 誰が何を削除・編集したか追跡不可(共有パスワードで「誰」は特定できないが「いつ・何・どのID」は残せる)
-  - 対策: audit_logs 相当のテーブル新設
-  - 工数: 1〜2h
+- **レート制限**: `lib/rateLimit.js`。スタッフごとに **1分20回・1時間200回**（`/api/generate` は 429、
+  `/api/generate-karte` は AI を飛ばして JS 素組みを返す＝画面を空にしない）。
+  外部サービス（Upstash 等）は使わず**サーバーのメモリで数える**ので、上限は Vercel のサーバー 1 台あたり。
+  厳密にしたくなったら `checkRateLimit()` の中身だけ KV に差し替える
+- **操作ログ**: 実は 2026-04-25 から `lib/auditLog.js` が kinkan-app の `audit_logs` に送っていた
+  （更新・削除・一括完了。個人ログインなので「誰が」まで残る）。この表が古いままだった。
+  2026-10-15 に **新規保存（create）** を追加し、**更新ログに form_data・カルテ本文を丸ごと送っていたのをやめた**
+  （勤怠アプリの DB に医療情報の写しを作らない。今は変えた項目名と status だけ）
+- **/api/questionnaire POST/PATCH の入力検証**: `lib/validateQuestionnaire.js`。
+  ★**問診を失わない**方針 = 年齢ははじかずに整える（「６５歳」→65、読めなければ null）。
+  はじくのは form_type（14 種以外）・form_data（object 以外・100KB 超）・カルテ本文（文字列以外・2 万字超）・
+  PATCH の id（uuid 以外）/ status（new・done 以外）だけ。テスト: `scripts/golden/apiGuards.test.mjs`
 
 ### 🟡 中リスク(要判断)
 
@@ -529,10 +534,6 @@ dmDiff フォームで聞く項目（DM基本との差分のみ）:
   - 退職者・パスワード変更は kinkan-app 側の1箇所で両アプリに反映
   - 実装計画: `kinkan-app/docs/design/security-phase2-plan.md` の Phase G 参照
   - 工数: dm-clinic-karte 側 +3h(iron-session + login 書き換え)
-
-- **/api/questionnaire POST/PATCH の入力検証なし**: age/form_type/generated_karte の型・値検証なし
-  - 対策: generate-karte と同様のホワイトリスト・型検証
-  - 工数: 30分
 
 ### 🟢 低リスク(商用展開時に検討)
 
@@ -549,6 +550,20 @@ dmDiff フォームで聞く項目（DM基本との差分のみ）:
 ## タスク履歴
 
 （ここに完了タスクを追記していく）
+
+### 2026-10-15 (4) 監査の残り（入力検証・レート制限・操作ログ）と片付け
+
+| | |
+|---|---|
+| 入力検証 | `lib/validateQuestionnaire.js`。年齢ははじかずに整える（問診を失わない） |
+| レート制限 | `lib/rateLimit.js`。1分20回・1時間200回／スタッフ。外部サービスなし（メモリ・1 台あたり） |
+| 操作ログ | 既に 04-25 からあった。新規保存を追加・**更新ログに問診の中身を送るのをやめた** |
+| モデル名 | `lib/config.js` に統一（既知バグ⑥）。`MAX_TOKENS` は未使用だったので削除 |
+| `history.eyeVisiting` | 画面に無い遺物を initialData・フィクスチャ・eval・印刷見本から削除（過去の保存データに残っていても無害） |
+| CI | スタイル検査が CI に載っていなかったので追加。失敗 issue の文面から「プロンプト同期チェック」を削除 |
+
+テスト `scripts/golden/apiGuards.test.mjs`（22 件）。「画面が実際に送っている form_type を API がはじかない」
+ことをコンポーネントの文字列から拾って確かめる（新フォームを足して API 側を忘れたら落ちる）。
 
 ### 2026-10-15 (3) lib/voiceSummary.js にテスト新設 → 既往歴の和暦換算の例が 2 年ずれていた
 

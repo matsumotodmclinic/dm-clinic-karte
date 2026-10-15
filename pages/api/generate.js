@@ -1,9 +1,12 @@
 // Anthropic API プロキシ
 // 認証済みユーザーが任意の payload を Anthropic に投げられないよう、
 // model と max_tokens をホワイトリスト/上限でチェックする。
+import { getSession } from '../../lib/session';
+import { enforceRateLimit } from '../../lib/rateLimit';
+import { CLAUDE_MODEL } from '../../lib/config';
 
 const ALLOWED_MODELS = new Set([
-  'claude-sonnet-4-5',
+  CLAUDE_MODEL,
   'claude-opus-4-5',
   'claude-haiku-4-5',
 ]);
@@ -16,6 +19,10 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  // レート制限（lib/rateLimit.js）。超えたら 429。カルテ生成は JS 素組みにフォールバックする
+  const session = await getSession(req, res);
+  if (!enforceRateLimit(req, res, session.user)) return;
 
   const { model, max_tokens, messages, system } = req.body || {};
 
