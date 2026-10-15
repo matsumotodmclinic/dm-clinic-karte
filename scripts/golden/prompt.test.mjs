@@ -7,7 +7,7 @@
 //
 // 2層構成:
 //   ① 振る舞いアサーション … 「この文字列を含む/含まない」を明示的に検証（意図が読める）
-//   ② スナップショット      … プロンプト全文を保存し、意図しない変化を差分で検知
+//   ② スナップショット      … カルテ本文の全文を保存し、意図しない変化を差分で検知
 //
 // 実行: node --test scripts/golden/
 // 更新: UPDATE_SNAPSHOTS=1 node --test scripts/golden/   （差分を確認してからコミットすること）
@@ -18,17 +18,15 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
-import { buildKartePrompt } from '../../lib/buildKartePrompt.js'
 import { buildOtherDiseasesText, pickOtherDiseases } from '../../lib/otherDiseases.js'
 import { formatEcho, buildEchoLine } from '../../lib/echo.js'
 import { buildDmDxNoteLine, buildPastValuesText, insertDmDxNote } from '../../lib/dmDxNote.js'
-import { buildStaffFlagLines, buildStaffFlagsBlock } from '../../lib/handoffNotes.js'
+import { buildStaffFlagLines } from '../../lib/handoffNotes.js'
 import {
   buildKarteTemplate, buildReasonSummary, buildImportantHistoryLines,
   buildPastHistoryLines, buildFhLine, buildEyeLine, TEMPLATE_FORM_TYPES, needsMerge,
   buildReasonFacts, buildMergePrompt, parseMergeResponse, buildDrugAllergyWarning, buildJobLine,
 } from '../../lib/buildKarteTemplate.js'
-import { ALLOWED_FORM_TYPES } from '../../lib/buildKartePrompt.js'
 import {
   FIXTURES, ENDOCRINE_WITH_CAREPLAN, THYROID_FIXTURE, THYROID_NODULE_FIXTURE,
   SAS_WITH_DM_DIFF, HTHL_WITH_DM_DIFF, RH_WITH_DM_DIFF, ENDOCRINE_WITH_DM_DIFF,
@@ -161,8 +159,7 @@ describe('スナップショット正規化（stabilize）', () => {
 describe('lib/handoffNotes（申し送り: スタッフ入力由来の行）', () => {
   test('該当なしなら 1 行も出さない', () => {
     assert.deepEqual(buildStaffFlagLines({ doubleSlot: false, doctorGender: '', patientFlag: '通常' }), [])
-    assert.equal(buildStaffFlagsBlock({ patientFlag: '通常' }), '')
-    assert.equal(buildStaffFlagsBlock(undefined), '')
+    assert.deepEqual(buildStaffFlagLines(undefined), [])
   })
 
   test('医師希望は「□医師希望：女性医師」形式（□女性医師希望 ではない）', () => {
@@ -189,10 +186,6 @@ describe('lib/handoffNotes（申し送り: スタッフ入力由来の行）', (
     )
   })
 
-  test('ブロックは末尾に改行を付ける（次行の【診察にあたっての要望】との間に空行を作らない）', () => {
-    assert.equal(buildStaffFlagsBlock({ doubleSlot: true }), '□新患2枠取得済み\n')
-    assert.ok(!buildStaffFlagsBlock({ doubleSlot: true }).endsWith('\n\n'))
-  })
 })
 
 describe('lib/dmDxNote', () => {
@@ -629,8 +622,8 @@ describe('lib/buildKarteTemplate（全14フォーム）', () => {
   const ALL = [...Object.keys(FIXTURES), ...THYROID_FORMS]
   const dataFor = f => (THYROID_FORMS.includes(f) ? THYROID_FIXTURE : FIXTURES[f])
 
-  test('14フォーム全てにテンプレートがある（ホワイトリストと一致）', () => {
-    assert.deepEqual([...TEMPLATE_FORM_TYPES].sort(), [...ALLOWED_FORM_TYPES].sort())
+  test('14フォーム全てにテンプレートがある（API のホワイトリストを兼ねる）', () => {
+    assert.deepEqual([...TEMPLATE_FORM_TYPES].sort(), [...ALL].sort())
     assert.equal(TEMPLATE_FORM_TYPES.size, 14)
   })
 
@@ -821,12 +814,6 @@ describe('lib/buildKarteTemplate（案2: 統合だけ AI に頼む）', () => {
     assert.ok(prompt.includes('アムロジピン'), '音声由来の♯候補が載っていない')
   })
 
-  test('統合プロンプトは今の全文プロンプトより桁違いに短い', () => {
-    const full = buildKartePrompt('DM基本', FIXTURES['DM基本']).prompt.length
-    const merge = buildMergePrompt('DM基本', withVoice).length
-    assert.ok(merge < full * 0.25, `統合プロンプトが長すぎる: ${merge} / ${full}`)
-  })
-
   test('統合プロンプト: 出力フォーマットの雛形を含まない（カルテ全文を書かせない）', () => {
     const prompt = buildMergePrompt('DM基本', withVoice)
     assert.ok(!prompt.includes('【事前聴取時'))
@@ -864,202 +851,50 @@ describe('lib/buildKarteTemplate（案2: 統合だけ AI に頼む）', () => {
 })
 
 // ──────────────────────────────────────────────────────────
-// ② プロンプト内容のアサーション（全フォーム）
+// ② カルテ本文のアサーション（全フォーム）
+//   2026-10-15 に旧方式（lib/buildKartePrompt.js）を削除した際、そちらで守っていた
+//   振る舞いのうちテンプレート版にも当てはまるものをここへ移した。
 // ──────────────────────────────────────────────────────────
-describe('buildKartePrompt: 全フォーム共通の必須事項', () => {
-  for (const [formType, formData] of Object.entries(FIXTURES)) {
-    test(`${formType}: その他の病名の通院先が正しく載る`, () => {
-      const { prompt } = buildKartePrompt(formType, formData)
-      assert.ok(prompt.includes('鰐坂医院'), '「その他」で入力した病院名がプロンプトに無い')
-      assert.ok(!prompt.includes('子宮筋腫（その他）'), '病院名が「（その他）」に潰れている')
-      assert.ok(prompt.includes('上尾中央総合病院 腎臓内科'), '病院＋科が載っていない')
+describe('カルテ本文: 申し送りのスタッフ入力行', () => {
+  const ALL = [...Object.keys(FIXTURES), ...THYROID_FORMS]
+  const dataFor = f => (THYROID_FORMS.includes(f) ? THYROID_FIXTURE : FIXTURES[f])
+  const withBody = (data, b) => ({ ...data, body: { ...(data.body || {}), ...b } })
+  const FLAGS = { doubleSlot: true, doctorGender: '院長（初回のみ）', patientFlag: '○患者疑い（話が長い方）' }
+  const NO_FLAGS = { doubleSlot: false, doctorGender: '指定なし', patientFlag: '通常' }
+
+  for (const f of ALL) {
+    test(`${f}: 該当する □ 行が入る`, () => {
+      const karte = buildKarteTemplate(f, withBody(dataFor(f), FLAGS))
+      assert.ok(karte.includes('□新患2枠取得済み'))
+      assert.ok(karte.includes('□医師希望：院長（初回のみ）'))
+      assert.ok(karte.includes('□○患者疑い（対応注意）'))
     })
 
-    test(`${formType}: ♯その他の病名を必ず全件出力する指示がある`, () => {
-      const { prompt } = buildKartePrompt(formType, formData)
-      assert.ok(
-        prompt.includes('1疾患1行で「♯病名（通院先）」の形式で必ず全て記載する'),
-        '♯出力の明示指示が無い（AI が ♯行を落とす原因になる）'
-      )
-    })
-
-    test(`${formType}: プロンプトが空でなく form_data が埋め込まれている`, () => {
-      const { prompt, max_tokens } = buildKartePrompt(formType, formData)
-      assert.ok(prompt.length > 500, 'プロンプトが短すぎる')
-      assert.ok(max_tokens >= 1000)
-      assert.ok(!prompt.includes('undefined'), 'プロンプトに undefined が混入している')
-      assert.ok(!prompt.includes('[object Object]'), 'プロンプトに [object Object] が混入している')
+    test(`${f}: 該当なしなら 1 行も出さず、要望の前に空行を作らない`, () => {
+      const karte = buildKarteTemplate(f, withBody(dataFor(f), NO_FLAGS))
+      assert.ok(!karte.includes('□新患2枠取得済み'))
+      assert.ok(!karte.includes('□医師希望：'))
+      assert.ok(!karte.includes('□指定なし'))
+      assert.ok(!karte.includes('\n\n【診察にあたっての要望】'),'申し送り最終行と要望の間に空行が入っている')
     })
   }
 })
 
-
-describe('buildKartePrompt: 申し送りのスタッフ入力行は JS で確定させる', () => {
-  // 2026-09-06 テンプレート化の第一歩。従来は「（新患2枠取得済の場合）□…」と
-  // 条件文を渡して AI に判定させていた。判定材料は全て body にあるので JS で確定させる。
-  const withFlags = data => ({
-    ...data,
-    body: { ...(data.body || {}), doubleSlot: true, doctorGender: '院長（初回のみ）', patientFlag: '○患者疑い（話が長い方）' },
-  })
-  const withoutFlags = data => ({
-    ...data,
-    body: { ...(data.body || {}), doubleSlot: false, doctorGender: '指定なし', patientFlag: '通常' },
-  })
-
-  for (const [formType, formData] of Object.entries(FIXTURES)) {
-    test(`${formType}: 条件文でなく確定した □ 行が入る`, () => {
-      const { prompt } = buildKartePrompt(formType, withFlags(formData))
-      assert.ok(prompt.includes('□新患2枠取得済み'))
-      assert.ok(prompt.includes('□医師希望：院長（初回のみ）'))
-      assert.ok(prompt.includes('□○患者疑い（対応注意）'))
-      assert.ok(!prompt.includes('（新患2枠取得済の場合）'), 'AI に判定させる条件文が残っている')
-      assert.ok(!prompt.includes('（医師希望指定ありの場合）'), 'AI に判定させる条件文が残っている')
-    })
-
-    test(`${formType}: 該当なしなら 1 行も出さず、要望の前に空行を作らない`, () => {
-      const { prompt } = buildKartePrompt(formType, withoutFlags(formData))
-      assert.ok(!prompt.includes('□新患2枠取得済み'))
-      assert.ok(!prompt.includes('□医師希望：'))
-      assert.ok(!prompt.includes('□指定なし'))
-      assert.ok(!prompt.includes('\n\n【診察にあたっての要望】'), '申し送り最終行と要望の間に空行が入っている')
-    })
-  }
-
-  test('甲状腺も同じ関数を使う（□女性医師希望 でなく □医師希望：女性医師）', () => {
-    const { prompt } = buildKartePrompt('甲状腺（バセドウ初診）', withFlags(THYROID_FIXTURE))
-    assert.ok(prompt.includes('□医師希望：院長（初回のみ）'))
-    assert.ok(!prompt.includes('□院長希望（初回のみ）'))
-    assert.ok(prompt.includes('□○患者疑い（対応注意）'))
-  })
-})
-
-describe('buildKartePrompt: エコー「希望なし」', () => {
+describe('カルテ本文: エコー「希望なし」', () => {
   const echoForms = ['DM基本', '高血圧・脂質異常症', '妊娠糖尿病', '睡眠時無呼吸症候群', '内分泌']
   for (const formType of echoForms) {
     test(`${formType}: 頚部・腹部とも「希望なし」が保持される`, () => {
       const fd = FIXTURES[formType]
-      const { prompt } = buildKartePrompt(formType, {
+      const karte = buildKarteTemplate(formType, {
         ...fd,
         disease: { ...fd.disease, echoNeck: '希望なし', echoAbdomen: '希望なし' },
       })
       assert.ok(
-        prompt.includes('頚部エコー：希望なし　腹部エコー：希望なし'),
+        karte.includes('頚部エコー：希望なし　腹部エコー：希望なし'),
         '「希望なし」が「当院で施行予定」等に化けている'
       )
     })
   }
-})
-
-describe('buildKartePrompt: 内分泌 固有', () => {
-  test('主病名（＃）を推測出力しない指示がある', () => {
-    const { prompt } = buildKartePrompt('内分泌', FIXTURES['内分泌'])
-    assert.ok(prompt.includes('＃で始まる行は絶対に推測して出力しない'))
-  })
-
-  test('家族歴の自由記入（複数組）が「母：バセドウ病、姉：橋本病」で載る', () => {
-    const { prompt } = buildKartePrompt('内分泌', FIXTURES['内分泌'])
-    assert.ok(prompt.includes('家族歴（自由記入）：母：バセドウ病、姉：橋本病'))
-  })
-
-  test('生活習慣病チェック無し → 療養計画書の行を出さない指示', () => {
-    const { prompt } = buildKartePrompt('内分泌', FIXTURES['内分泌'])
-    assert.ok(prompt.includes('生活習慣病（療養計画書の要否判定）：なし'))
-    assert.ok(!prompt.includes('\n□初回療養計画書を作成済'))
-  })
-
-  test('生活習慣病チェック有り → 療養計画書の行を出す', () => {
-    const { prompt } = buildKartePrompt('内分泌', ENDOCRINE_WITH_CAREPLAN)
-    assert.ok(prompt.includes('生活習慣病（療養計画書の要否判定）：糖尿病・脂質異常症'))
-    assert.ok(prompt.includes('□初回療養計画書を作成済'))
-  })
-
-  test('HTHL 固有の甲状腺3項目ルールを引き継いでいない', () => {
-    const { prompt } = buildKartePrompt('内分泌', FIXTURES['内分泌'])
-    assert.ok(!prompt.includes('◎甲状腺3項目追加済'))
-    assert.ok(!prompt.includes('LDL-C140'))
-  })
-
-  test('目標HbA1c 行がフッターに無い', () => {
-    const { prompt } = buildKartePrompt('内分泌', FIXTURES['内分泌'])
-    assert.ok(!prompt.includes('目標HbA1c'))
-  })
-})
-
-describe('buildKartePrompt: 甲状腺6フォーム', () => {
-  const thyroidTypes = [
-    '甲状腺（バセドウ初診）', '甲状腺（バセドウ継続）', '甲状腺（橋本病）',
-    '甲状腺（腫大異常なし）', '甲状腺（腺腫経過観察）', '甲状腺（腺腫悪性疑い）',
-  ]
-  for (const formType of thyroidTypes) {
-    test(`${formType}: 生成でき、不正な埋め込みが無い`, () => {
-      const { prompt } = buildKartePrompt(formType, THYROID_FIXTURE)
-      assert.ok(prompt.length > 500)
-      assert.ok(!prompt.includes('undefined'))
-      assert.ok(!prompt.includes('[object Object]'))
-    })
-  }
-})
-
-describe('buildKartePrompt: DM差分問診（採血で糖尿病判明）', () => {
-  const CASES = [
-    ['睡眠時無呼吸症候群', SAS_WITH_DM_DIFF],
-    ['高血圧・脂質異常症', HTHL_WITH_DM_DIFF],
-    ['反応性低血糖',       RH_WITH_DM_DIFF],
-    ['内分泌',             ENDOCRINE_WITH_DM_DIFF],
-  ]
-
-  for (const [formType, formData] of CASES) {
-    test(`${formType}: dmDiff ありで ＃糖尿病 と DM初期評価が入る`, () => {
-      const { prompt } = buildKartePrompt(formType, formData)
-      assert.ok(prompt.includes('【DM差分問診'), 'DM差分問診データブロックが無い')
-      assert.ok(prompt.includes('＃糖尿病'), '＃糖尿病 の指示が無い')
-      assert.ok(prompt.includes('□採血で DM判明 → DM初期評価追加実施済'))
-      assert.ok(prompt.includes('DM基本セット'), 'フッターが DM基本セット になっていない')
-      // 差分問診の中身が実際に渡っていること
-      assert.ok(prompt.includes('のどが渇く・足のしびれ'))
-      assert.ok(prompt.includes('その他: 夜間頻尿'))
-      assert.ok(prompt.includes('虚血性心疾患'))
-      // 眼底未受診・手帳なしなので連携手帳の申し送りが出ること
-      assert.ok(prompt.includes('□糖尿病-眼科連携手帳をお渡し'))
-      assert.ok(!prompt.includes('undefined'))
-      assert.ok(!prompt.includes('[object Object]'))
-    })
-
-    test(`${formType}: dmDiff なしなら DM差分問診は一切出ない`, () => {
-      const { prompt } = buildKartePrompt(formType, FIXTURES[formType])
-      assert.ok(!prompt.includes('【DM差分問診'))
-      assert.ok(!prompt.includes('□採血で DM判明'))
-    })
-  }
-
-  test('高血圧・脂質異常症: 糖尿病判明時は ＃IGT ではなく ＃糖尿病 とする', () => {
-    const { prompt } = buildKartePrompt('高血圧・脂質異常症', HTHL_WITH_DM_DIFF)
-    assert.ok(prompt.includes('＃IGT は記載せず ＃糖尿病 とする'))
-    assert.ok(!prompt.includes('＃IGT（該当時のみ、受診理由の直後、空行なし）'))
-  })
-
-  test('内分泌: ＃糖尿病 だけが例外。内分泌の主病名は出さず □主病名 の行も残る', () => {
-    const { prompt } = buildKartePrompt('内分泌', ENDOCRINE_WITH_DM_DIFF)
-    assert.ok(prompt.includes('「＃で始まる行は出力しない」ルールの唯一の例外'))
-    assert.ok(prompt.includes('内分泌の主病名は引き続き出力しない'))
-    assert.ok(prompt.includes('□主病名：医師の診察時に確定・記載'))
-  })
-
-  test('内分泌: DM判明時は療養計画書が必要になる（生活習慣病チェックが無くても）', () => {
-    // FIXTURES['内分泌'] は carePlanDiseases が全 false ＝ 通常は療養計画書なし
-    const { prompt: without } = buildKartePrompt('内分泌', FIXTURES['内分泌'])
-    assert.ok(without.includes('の行は出力しない'))
-    const { prompt: with_ } = buildKartePrompt('内分泌', ENDOCRINE_WITH_DM_DIFF)
-    assert.ok(with_.includes('□初回療養計画書を作成済'))
-  })
-
-  test('反応性低血糖: ＃糖尿病 は ♯反応性低血糖疑い より前', () => {
-    const { prompt } = buildKartePrompt('反応性低血糖', RH_WITH_DM_DIFF)
-    const iDm = prompt.indexOf('＃糖尿病（採血で判明')
-    const iRh = prompt.indexOf('♯反応性低血糖疑い\n・低血糖が生じるタイミング')
-    assert.ok(iDm > -1 && iRh > -1)
-    assert.ok(iDm < iRh, '＃糖尿病 が ♯反応性低血糖疑い より後ろにある')
-  })
 })
 
 describe('カルテ組立の実装は1つだけ（経路A/B の二重管理を復活させない）', () => {
@@ -1157,52 +992,8 @@ describe('AI を呼ぶのは「文章化が要る自由記述」があるとき�
   })
 })
 
-describe('buildKartePrompt: 未対応 form_type', () => {
-  test('throw する（500 ではなく 400 にマップされる）', () => {
-    assert.throws(() => buildKartePrompt('存在しない問診', FIXTURES['DM基本']), /未対応のform_type/)
-  })
-})
-
 // ──────────────────────────────────────────────────────────
-// ③ スナップショット（意図しないプロンプト変化の検知）
-// ──────────────────────────────────────────────────────────
-describe('プロンプト全文スナップショット', () => {
-  for (const [formType, formData] of Object.entries(FIXTURES)) {
-    test(formType, () => {
-      const { prompt } = buildKartePrompt(formType, formData)
-      matchSnapshot(formType, prompt)
-    })
-  }
-  test('内分泌（生活習慣病あり）', () => {
-    const { prompt } = buildKartePrompt('内分泌', ENDOCRINE_WITH_CAREPLAN)
-    matchSnapshot('内分泌_生活習慣病あり', prompt)
-  })
-
-  // 甲状腺6フォーム（2026-09-06 に経路A と一本化したので B のスナップショットが主経路の証拠になる）
-  for (const formType of THYROID_FORMS) {
-    test(formType, () => {
-      const { prompt } = buildKartePrompt(formType, THYROID_FIXTURE)
-      matchSnapshot(formType.replace(/[（）]/g, '_').replace(/_$/, ''), prompt)
-    })
-  }
-
-  for (const [name, formType, formData] of [
-    ['睡眠時無呼吸症候群_DM差分あり', '睡眠時無呼吸症候群', SAS_WITH_DM_DIFF],
-    ['高血圧・脂質異常症_DM差分あり', '高血圧・脂質異常症', HTHL_WITH_DM_DIFF],
-    ['反応性低血糖_DM差分あり',       '反応性低血糖',       RH_WITH_DM_DIFF],
-    ['内分泌_DM差分あり',             '内分泌',             ENDOCRINE_WITH_DM_DIFF],
-  ]) {
-    test(name, () => {
-      const { prompt } = buildKartePrompt(formType, formData)
-      matchSnapshot(name, prompt)
-    })
-  }
-})
-
-// ──────────────────────────────────────────────────────────
-// ④ カルテ本文のスナップショット（★これが本番の出力そのもの）
-//
-// ③ のプロンプトのスナップショットは「旧方式（?legacy=1）の逃げ道」を守るためのもの。
+// ③ カルテ本文のスナップショット（★これが本番の出力そのもの）
 // 2026-09-07 以降、実際に患者のカルテになるのはこちら。
 // ──────────────────────────────────────────────────────────
 describe('カルテ本文スナップショット（テンプレート版・本番の出力）', () => {

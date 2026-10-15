@@ -5,7 +5,7 @@
 // その HbA1c 高値で糖尿病が判明した場合、これらの問診票は糖尿病の初期評価に必要な
 // 項目を聞いていないため、ここで差分だけを追加聴取して form_data.dmDiff に保存する。
 // 保存後に「再生成」を押すと、元の主病名 ＋ ＃糖尿病 の統合カルテが生成される。
-// （プロンプト側は lib/dmDiff.js と lib/buildKartePrompt.js）
+// （カルテ側は lib/dmDiff.js と lib/buildKarteTemplate.js）
 
 import { useState } from 'react'
 import { UI } from '../lib/uiTokens';

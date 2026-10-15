@@ -4,10 +4,9 @@
 // 音声入力があるときだけ「統合」だけを AI に頼む形にした（経路A と同じ lib を呼ぶ）。
 // ここは 入力検証 → generateKarteText() だけを持つ。
 //
-// ?legacy=1 を付けると 旧方式（AI に全文を書かせる lib/buildKartePrompt.js）で生成する。
-// テンプレート版の出力がおかしい患者が出たときに、その場で戻せる逃げ道として残してある。
-import { buildKartePrompt, UnsupportedFormTypeError, ALLOWED_FORM_TYPES } from '../../lib/buildKartePrompt'
+// 旧方式（?legacy=1 = AI に全文を書かせる lib/buildKartePrompt.js）は 2026-10-15 に削除した。
 import { generateKarteText, MERGE_MAX_TOKENS, MERGE_MODEL } from '../../lib/generateKarte'
+import { TEMPLATE_FORM_TYPES as ALLOWED_FORM_TYPES } from '../../lib/buildKarteTemplate'
 
 // form_data のサイズ上限(JSON 文字列のバイト数)。
 // 通常の問診入力は 20KB 程度で収まる想定、余裕を持って 100KB。
@@ -58,29 +57,6 @@ export default async function handler(req, res) {
     })
   }
 
-  // ── 旧方式（AI に全文を書かせる）──────────────────────
-  if (req.query.legacy === '1') {
-    let prompt, max_tokens
-    try {
-      ;({ prompt, max_tokens } = buildKartePrompt(form_type, form_data))
-    } catch (e) {
-      if (e instanceof UnsupportedFormTypeError) return res.status(400).json({ error: e.message })
-      return res.status(500).json({ error: e.message })
-    }
-    try {
-      const raw = await callAnthropic(prompt, max_tokens)
-      // 連続する空行を最大1行に圧縮（条件付き行が空展開された箇所のクリーンアップ）
-      const karte = (raw || '生成に失敗しました')
-        .split('\n').map(l => l.replace(/[ 　\t]+$/, '')).join('\n')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim()
-      return res.status(200).json({ karte, mode: 'legacy' })
-    } catch (e) {
-      return res.status(500).json({ error: e.message })
-    }
-  }
-
-  // ── 通常（テンプレート＋統合）────────────────────────
   // 音声入力が無ければ AI は 1 回も呼ばれない。AI が落ちても JS 素組みが返る。
   try {
     const karte = await generateKarteText(form_type, form_data, p => callAnthropic(p, MERGE_MAX_TOKENS))

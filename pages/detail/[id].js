@@ -36,7 +36,6 @@ export default function DetailPage() {
   const [drQube, setDrQube] = useState('');
   const [savingDrQube, setSavingDrQube] = useState(false);
   const [drQubeMsg, setDrQubeMsg] = useState('');
-  const [generateMode, setGenerateMode] = useState('');  // '' | 'legacy'（どちらで作り直したか）
   // ▦ QR で渡す (2026-09-07)。電カル端末が閉域の施設向け
   const [qrText, setQrText] = useState(null);
 
@@ -146,8 +145,6 @@ export default function DetailPage() {
     }
   };
 
-  // legacy=true は旧方式（AI に全文を書かせる）。テンプレート版の出力がおかしい患者が出たとき、
-  // デプロイを待たずにその場で戻せるようにしてある。通常は使わない。
   // ドクターキューブの貼り付けを保存する。印刷にしか使わないので再生成は要らない。
   const handleSaveDrQube = async () => {
     if (savingDrQube) return;
@@ -180,11 +177,10 @@ export default function DetailPage() {
     }
   };
 
-  const handleGenerate = async (legacy = false) => {
+  const handleGenerate = async () => {
     setGenerating(true);
-    setGenerateMode(legacy ? 'legacy' : '');
     try {
-      const res = await fetch(`/api/generate-karte${legacy ? '?legacy=1' : ''}`, {
+      const res = await fetch('/api/generate-karte', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ form_data: record.form_data, form_type: record.form_type }),
@@ -418,25 +414,17 @@ export default function DetailPage() {
                   style={{ flex:'1 1 140px', padding:'12px', borderRadius:6, border:`1px solid ${UI.success.fg}`, background:UI.surface, color:UI.success.fg, fontWeight:700, fontSize:14, cursor:'pointer' }}>
                   💾 編集を保存
                 </button>
-                <button onClick={() => handleGenerate(false)} disabled={generating}
+                <button onClick={() => handleGenerate()} disabled={generating}
                   style={{ padding:'12px 16px', borderRadius:6, border:`1px solid ${UI.border}`, background:UI.surface, color:UI.textMuted, fontWeight:700, fontSize:13, cursor:generating?'not-allowed':'pointer' }}>
                   {generating ? '生成中...' : '🔄 再生成'}
                 </button>
-                <button onClick={() => handleGenerate(true)} disabled={generating}
-                  title="テンプレート版の出力がおかしいときだけ使ってください（2026-09-06 以前の、AI が全文を書く方式）"
-                  style={{ padding:'12px 14px', borderRadius:6, border:`1px dashed ${UI.border}`, background:UI.surface, color:UI.textFaint, fontWeight:700, fontSize:12, cursor:generating?'not-allowed':'pointer' }}>
-                  🅰 旧AI版で作り直す
-                </button>
-                {!generating && generateMode === 'legacy' && (
-                  <span style={{ fontSize:12, fontWeight:700, color:UI.textMuted }}>旧AI版で生成しました</span>
-                )}
                 {saveMsg && <span style={{ fontSize:13, fontWeight:700, color:saveMsg.startsWith('✓')?'#0f9668':'#c53030' }}>{saveMsg}</span>}
               </div>
             </>
           ) : (
             <div style={{ textAlign:'center', padding:'20px 0' }}>
               <div style={{ color:UI.textDisabled, marginBottom:16, fontSize:13 }}>カルテ文がまだ生成されていません</div>
-              <button onClick={() => handleGenerate(false)} disabled={generating}
+              <button onClick={() => handleGenerate()} disabled={generating}
                 style={{ padding:'12px 28px', borderRadius:6, border:'none', background:generating?UI.textDisabled:UI.primary.fg, color:'#fff', fontWeight:700, fontSize:14, cursor:generating?'not-allowed':'pointer' }}>
                 {generating ? '生成中...' : '✨ カルテ文を生成'}
               </button>

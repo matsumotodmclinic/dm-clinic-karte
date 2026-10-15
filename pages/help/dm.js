@@ -737,8 +737,9 @@ export default function DmGuidePage() {
           <Trouble symptom="再生成すると元のカルテと書式が変わる (♯ の順番、 申し送り欄の文言)">
             <strong>いまは起きない構造になっています</strong>。 初回生成も再生成も同じ 1 つの組立
             (<Code>lib/buildKarteTemplate.js</Code>) を通るためです (2026-09-07〜)。
-            それでも変わる場合は、 <strong>詳細画面で内容を編集して保存した</strong> か、
-            <Code>🅰 旧AI版で作り直す</Code> を押した可能性があります。
+            それでも変わる場合は、 <strong>詳細画面で内容を編集して保存した</strong> 可能性があります。
+            なお音声入力がある回は AI が統合するため、 <strong>受診理由サマリーと ♯既往の文面だけ</strong>
+            は生成のたびに多少言い回しが変わることがあります。
           </Trouble>
 
           <Trouble symptom="kinkan-app でパスワード変えたのに dm-clinic-karte でログインできない">
