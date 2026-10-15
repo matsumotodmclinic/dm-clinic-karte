@@ -80,7 +80,8 @@ export const FIXTURES = {
       ht: true, hl: false, insulinUse: false, glp1Use: true,
       // エコーは「希望なし」を入れる（2026-08-22 追加、当院で施行予定に化けないこと）
       echoNeck: '希望なし', echoAbdomen: '他院で施行済',
-      dmSymptoms: { selected: ['のどが渇く', '足のしびれ', 'その他'], otherText: '夜間頻尿' },
+      // 「食後の低血糖を心配している」はリブレの聴取（lib/libreNotes.js）の入口なので土台に入れる
+      dmSymptoms: { selected: ['のどが渇く', '足のしびれ', '食後の低血糖を心配している', 'その他'], otherText: '夜間頻尿' },
       otherDiseases,
     },
     lifestyle: pick(commonHistory, LIFESTYLE_KEYS),
@@ -93,6 +94,8 @@ export const FIXTURES = {
       retinopathy: '単純性網膜症', glaucoma: '緑内障なし', eyeNotebook: '持っている',
     },
     body: commonBody,
+    // 訴えがあった回にその場で装着したか（院長 2026-10-16）
+    libre: { attached: '装着済', date: '2026-10-16', note: '' },
   },
 
   '1型糖尿病': {
@@ -199,6 +202,10 @@ export const FIXTURES = {
       otherDiseases,
     },
     body: { ...commonBody, weightPregnancy: '62' },
+    // リブレ装着は初診時なので、初事前では予約を 3 回分取る（院長 2026-10-16）。
+    // ★土台は未記入にしてある = 入力欄を足す前のレコードと同じ状態。
+    //   3 つ揃った「取得済」は prompt.test.mjs / handoff-catalog.test.mjs で別に見る。
+    libre: { firstVisit: '', follow1: '', follow2: '' },
   },
 
   '反応性低血糖': {
@@ -208,10 +215,13 @@ export const FIXTURES = {
       timing: ['食後2〜3時間'], timingNote: '',
       symptoms: ['冷汗', '動悸'], symptomsNote: '',
       cause: ['炭水化物中心の食事'], causeNote: '',
+      cgmWish: '',
     },
     disease: {},
     history: { ...commonHistory, otherDiseases },
     body: commonBody,
+    // 初事前で装着する運用（全例）。院長 2026-10-16
+    libre: { attached: '装着済', date: '2026-10-16', note: '' },
   },
 
   // ★SAS は sasCategory / cpapPriorRecordsConfirmed が reason 配下、症状は symptom 配下。

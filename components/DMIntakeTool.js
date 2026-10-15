@@ -2,12 +2,14 @@ import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import Hba1cInput from "./Hba1cInput";
 import ReferralLetterInput from "./ReferralLetterInput";
+import LibreAttachedInput from "./LibreAttachedInput";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
 import { generateKarteText, callGenerateApi } from "../lib/generateKarte";
 import { UI } from "../lib/uiTokens";
 import FormHeader from "./FormHeader";
+import { POSTPRANDIAL_HYPO_SYMPTOM } from "../lib/libreNotes";
 
 // スタイルは lib/formStyles.js に集約（色はカテゴリ単位のトークン）
 // TONE = このフォームのカテゴリ色
@@ -16,7 +18,7 @@ const { inp, lbl, btn, sBox } = makeFormStyles(FORM_THEMES.dm);
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "指定なし"];
 const ALLERGY_QUICK = ["花粉", "ペニシリン", "造影剤", "フルーツ", "金属"];
-const DM_SYMPTOMS = ["のどが渇く", "尿の回数が多い", "体がだるい", "手のしびれ", "足のしびれ", "足がつりやすい", "視力が落ちた", "食後の低血糖を心配している", "その他"];
+const DM_SYMPTOMS = ["のどが渇く", "尿の回数が多い", "体がだるい", "手のしびれ", "足のしびれ", "足がつりやすい", "視力が落ちた", POSTPRANDIAL_HYPO_SYMPTOM, "その他"];
 const CHILD_LOCATIONS = ["近居（同一市区町村）", "近隣（同一都道府県）", "遠方（他都道府県）", "子供なし"];
 const CHILD_GENDERS = ["息子", "娘", "両方"];
 
@@ -84,6 +86,8 @@ const initialData = {
   },
   lifestyle: { livingSpouse: "", livingOther: [], livingCustom: "", childInfo: "", childLocation: "", childGender: [], work: "していない", job: [], jobNote: "", activity: "" },
   body: { hba1c: "", height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
+  // 問診中に食後低血糖を訴えた回に、その場でリブレを付けたか（院長 2026-10-16）。カルテは lib/libreNotes.js
+  libre: { attached: "", date: "", note: "" },
   voiceMemo: { transcript: "", aiSummary: "", needsDoctorReview: false },
   voicePastHistory: { transcript: "", aiSummary: "", needsDoctorReview: false },
 };
@@ -691,6 +695,16 @@ export default function DMIntakeTool() {
               onChange={e => setData(p => ({ ...p, disease: { ...p.disease, dmSymptoms: { ...p.disease.dmSymptoms, otherText: e.target.value } } }))} />
           )}
           {!(d.disease.dmSymptoms?.selected || []).includes("その他") && <div style={{ marginBottom: 14 }} />}
+
+          {/* 反応性低血糖の訴えがあった回だけ。付けていなければ初診時に医師と相談に回す（院長 2026-10-16） */}
+          {(d.disease.dmSymptoms?.selected || []).includes(POSTPRANDIAL_HYPO_SYMPTOM) && (
+            <LibreAttachedInput
+              value={d.libre}
+              onChange={(libre) => setData(p => ({ ...p, libre }))}
+              title="食後低血糖の訴えあり → リブレ（自費CGM）を装着しましたか"
+              hint="未装着・未入力のときは申し送りに「初診時に医師とご相談ください」が入ります。"
+            />
+          )}
 
           <label style={lbl()}>患者様の年齢</label>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>

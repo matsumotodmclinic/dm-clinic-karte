@@ -6,6 +6,9 @@ import { copyKarteToClipboard } from '../../lib/copyKarte';
 import { insertDmDxNote } from '../../lib/dmDxNote';
 import { UI } from '../../lib/uiTokens';
 import QrModal from '../../components/QrModal';
+import LibreAttachedInput from '../../components/LibreAttachedInput';
+import LibreReservationInput from '../../components/LibreReservationInput';
+import { POSTPRANDIAL_HYPO_SYMPTOM } from '../../lib/libreNotes';
 
 // 確認中を削除：新規→完了の2ステップ
 const STATUS_LABEL = { new: '新規', done: '完了' };
@@ -30,6 +33,13 @@ export default function DetailPage() {
   const [savingHba1c, setSavingHba1c] = useState(false);
   const [hba1cMsg, setHba1cMsg] = useState('');
 
+  // リブレ（自費CGM）の装着・予約（院長 2026-10-16）。問診の最終ステップでも入れられるが、
+  // 装着や予約が問診より後になる回・入れ忘れた回はここで入れて再生成する（HbA1c と同じ作法）。
+  // 保存先は問診と同じ form_data.libre。
+  const [libre, setLibre] = useState(null);
+  const [savingLibre, setSavingLibre] = useState(false);
+  const [libreMsg, setLibreMsg] = useState('');
+
   // ドクターキューブ（患者が事前に入力する WEB 問診）の貼り付け。院長依頼 2026-10-14。
   // ★カルテ本文には入れない（院長確定）。電子カルテに貼る文の書式を崩さないため、
   //   印刷用 A4 にだけ出す。保存先は form_data.drQube。
@@ -47,6 +57,7 @@ export default function DetailPage() {
         setRecord(data);
         setKarte(data.generated_karte || '');
         setHba1c(data?.form_data?.body?.hba1c || '');
+        setLibre(data?.form_data?.libre || {});
         setDrQube(data?.form_data?.drQube?.text || '');
         setLoading(false);
       });
@@ -145,6 +156,34 @@ export default function DetailPage() {
     }
   };
 
+  // リブレの装着・予約を後から入れる経路。カルテの申し送りに出るので再生成は押させる。
+  const handleSaveLibre = async () => {
+    if (savingLibre) return;
+    setSavingLibre(true);
+    setLibreMsg('');
+    try {
+      const newFormData = { ...record.form_data, libre: libre || {} };
+      const res = await fetch('/api/questionnaire', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, form_data: newFormData }),
+      });
+      if (res.ok) {
+        setRecord(prev => ({ ...prev, form_data: newFormData }));
+        setLibreMsg('✓ 保存しました。「🔄 再生成」を押すとカルテに反映されます。');
+        setTimeout(() => setLibreMsg(''), 8000);
+      } else {
+        setLibreMsg('保存に失敗しました');
+        setTimeout(() => setLibreMsg(''), 3000);
+      }
+    } catch (e) {
+      setLibreMsg('保存に失敗しました');
+      setTimeout(() => setLibreMsg(''), 3000);
+    } finally {
+      setSavingLibre(false);
+    }
+  };
+
   // ドクターキューブの貼り付けを保存する。印刷にしか使わないので再生成は要らない。
   const handleSaveDrQube = async () => {
     if (savingDrQube) return;
@@ -218,6 +257,13 @@ export default function DetailPage() {
   // 全例当院で事前採血を行うフォーム。HbA1c 高値で糖尿病が判明したら
   // ここで差分だけ追加聴取し、再生成で ＃糖尿病 を含む統合カルテにする。
   const canDmDiff = ['睡眠時無呼吸症候群', '高血圧・脂質異常症', '反応性低血糖', '内分泌'].includes(record.form_type);
+  // リブレ（自費CGM）。どのフォームで何を聞くかは lib/libreNotes.js と同じ条件にそろえる。
+  //   反応性低血糖 … 初事前で装着（全例）
+  //   DM基本       … 食後低血糖の訴えがあった回だけ
+  //   妊娠糖尿病   … 装着は初診時なので、初事前では予約3回分
+  const needsLibreAttached = record.form_type === '反応性低血糖'
+    || (isDM && (record.form_data?.disease?.dmSymptoms?.selected || []).includes(POSTPRANDIAL_HYPO_SYMPTOM));
+  const needsLibreReservation = record.form_type === '妊娠糖尿病';
 
   return (
     <div style={{ minHeight:'100vh', background:UI.surfaceAlt, fontFamily:"'Noto Sans JP',sans-serif", padding:'16px' }}>
@@ -286,6 +332,32 @@ export default function DetailPage() {
             {hba1cMsg && (
               <div style={{ marginTop:8, padding:'10px 14px', background: hba1cMsg.startsWith('✓') ? '#f0fff4' : '#fff5f5', border:`1px solid ${hba1cMsg.startsWith('✓') ? UI.success.fg : UI.danger.fg}`, borderRadius:8, fontSize:13, color: hba1cMsg.startsWith('✓') ? '#276749' : '#c53030', fontWeight:700 }}>
                 {hba1cMsg}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* リブレ（自費CGM）の装着・予約。問診で入れ損ねた回・後から装着した回のための経路（院長 2026-10-16）。
+            ★問診の最終ステップと同じ部品・同じ保存先（form_data.libre）なので、どちらから入れても同じ結果になる。 */}
+        {(needsLibreAttached || needsLibreReservation) && (
+          <div style={{ background:UI.surface, borderRadius:8, padding:'18px 20px', marginBottom:12, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', border:`1px dashed ${UI.primary.fg}` }}>
+            {needsLibreAttached && (
+              <LibreAttachedInput
+                value={libre}
+                onChange={setLibre}
+                title={isDM ? '食後低血糖の訴えあり → リブレ（自費CGM）を装着しましたか' : 'リブレ（自費CGM）の装着（初事前）'}
+              />
+            )}
+            {needsLibreReservation && (
+              <LibreReservationInput value={libre} onChange={setLibre} />
+            )}
+            <button onClick={handleSaveLibre} disabled={savingLibre}
+              style={{ padding:'10px 18px', borderRadius:6, border:'none', background: savingLibre ? UI.textDisabled : UI.primary.fg, color:'#fff', fontWeight:700, fontSize:13, cursor: savingLibre ? 'not-allowed' : 'pointer' }}>
+              {savingLibre ? '💾 保存中...' : '💾 保存'}
+            </button>
+            {libreMsg && (
+              <div style={{ marginTop:8, padding:'10px 14px', background: libreMsg.startsWith('✓') ? '#f0fff4' : '#fff5f5', border:`1px solid ${libreMsg.startsWith('✓') ? UI.success.fg : UI.danger.fg}`, borderRadius:8, fontSize:13, color: libreMsg.startsWith('✓') ? '#276749' : '#c53030', fontWeight:700 }}>
+                {libreMsg}
               </div>
             )}
           </div>

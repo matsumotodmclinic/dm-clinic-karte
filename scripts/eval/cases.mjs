@@ -68,6 +68,8 @@ export const EMPTY = {
     },
     lifestyle: emptyLifestyleKeys(),
     body: emptyBody(),
+    // リブレ（自費CGM）の装着。院長 2026-10-16
+    libre: { attached: '', date: '', note: '' },
   }),
 
   '1型糖尿病': () => ({
@@ -182,13 +184,15 @@ export const EMPTY = {
       otherDiseases: [emptyOther()],
     },
     body: { ...emptyBody(), weightPregnancy: '' },
+    // リブレ装着は初診時なので、初事前では予約を 3 回分取る。院長 2026-10-16
+    libre: { firstVisit: '', follow1: '', follow2: '' },
   }),
 
   '反応性低血糖': () => ({
     ...emptyVoice(),
     symptom: {
       timing: [], timingNote: '', cause: [], causeNote: '', symptoms: [], symptomsNote: '',
-      libreStarted: '', libreNote: '', cgmWish: '',
+      cgmWish: '',
     },
     history: {
       ...emptyHistoryCommon(), ...emptyLifestyleKeys(),
@@ -590,8 +594,9 @@ add('反応性低血糖', '複雑', '複数タイミング・胃切除後・自�
     timing: ['食後2〜3時間', '空腹時', '運動後'], timingNote: '特に昼食後がひどい',
     symptoms: ['冷汗', '動悸', '手のふるえ', '意識が遠のく'], symptomsNote: '週に2〜3回',
     cause: ['炭水化物中心の食事', '食事を抜くこと'], causeNote: '朝食を抜くことが多い',
-    libreStarted: '本日装着', libreNote: '', cgmWish: '希望あり',
+    cgmWish: '希望あり',
   },
+  libre: { attached: '装着済', date: '2026-10-16', note: '' },
   history: {
     age: '55', allergy: 'なし',
     fh: { dm: true, dmWho: ['母'], ht: false, hl: true, apo: false, ihd: false },
@@ -606,7 +611,7 @@ add('反応性低血糖', '複雑', '複数タイミング・胃切除後・自�
   body: { height: '168', weightNow: '54', weight20: '64', weightMax: '70', weightMaxAge: '45', concern: '仕事中に倒れないか不安', preferredDays: ['金'], doctorGender: '男性医師希望' },
 }))
 add('反応性低血糖', '難渋', '症状が1つも選ばれず自由記述だけ', build('反応性低血糖', {
-  symptom: { timing: [], timingNote: '', symptoms: [], symptomsNote: 'うまく言えないがフワッとする感じ', cause: [], causeNote: '', libreStarted: '', cgmWish: '' },
+  symptom: { timing: [], timingNote: '', symptoms: [], symptomsNote: 'うまく言えないがフワッとする感じ', cause: [], causeNote: '', cgmWish: '' },
   history: { age: '', allergy: 'なし', fh: { dm: false, dmWho: [], ht: false, hl: false, apo: false, ihd: false }, alcoholNone: false, alcoholItems: [emptyAlcohol()], smoking: 'なし', checkup: [], work: 'していない', job: [], activity: '', livingSpouse: '', livingOther: [], otherDiseases: [emptyOther()] },
   body: { ...emptyBody(), doctorGender: '指定なし' },
 }))
@@ -956,4 +961,23 @@ add('DM基本', '壊れた入力', 'null / 配列でない / 想定外の型が�
   history: { alcoholItems: null, checkup: 'まとめて文字列', fh: null },
   lifestyle: { job: 'ただの文字列', livingOther: 'ただの文字列' },
   body: { preferredDays: null, height: null, weightNow: undefined },
+}))
+
+// ── ⑥ リブレ（自費CGM）の装着・予約（院長 2026-10-16）────────────
+// 「やったかどうか」で文が変わるので、やっていない側・途中の側を必ず 1 本ずつ読む。
+add('反応性低血糖', '分岐', 'リブレ未装着（理由が話し言葉）→ 初診時に医師と相談', build('反応性低血糖', {
+  symptom: { timing: ['食後2〜3時間'], symptoms: ['冷汗', '動悸'], cause: ['炭水化物中心の食事'] },
+  history: { age: '46', allergy: 'なし', otherDiseases: [emptyOther()] },
+  body: { ...emptyBody(), height: '162', weightNow: '58' },
+  libre: { attached: '未装着', date: '', note: 'ご本人が今日は時間がないとのことで、次回でとおっしゃっていました' },
+}))
+add('妊娠糖尿病', '分岐', 'リブレの予約が初診ぶんだけ（残り2回分が未記入）', build('妊娠糖尿病', {
+  disease: { dmType: '妊娠糖尿病（GDM）', currentWeek: '28', dueDateEra: '令和', dueDateYear: '9', dueDateMonth: '1', obHospital: '葵ウィメンズクリニック' },
+  history: { allergy: 'なし', otherDiseases: [emptyOther()] },
+  body: { ...emptyBody(), height: '158', weightNow: '60', weightPregnancy: '54' },
+  libre: { firstVisit: '2026-10-23', follow1: '', follow2: '' },
+}))
+add('DM基本', '難渋', '食後低血糖の訴えあり・装着の有無が未入力', merge(dmStd(), {
+  disease: { dmSymptoms: { selected: ['体がだるい', '食後の低血糖を心配している'], otherText: '' } },
+  libre: { attached: '', date: '', note: '' },
 }))

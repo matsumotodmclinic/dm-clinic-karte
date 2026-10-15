@@ -737,6 +737,57 @@ describe('lib/buildKarteTemplate（全14フォーム）', () => {
     assert.ok(buildKarteTemplate('反応性低血糖', FIXTURES['反応性低血糖']).includes('□自費CGM（リブレ）初事前で装着済'))
   })
 
+  // ★2026-10-16 院長「リブレ装着をまちがいなく行ったかどうか、日付も含めて明確に残したい」。
+  //   それまでは入力が無くても「装着済」と書いていた（= やっていない回も済と書かれる）。
+  test('反応性低血糖: リブレは聴取した結果だけを書く（未入力を「済」にしない）', () => {
+    const base = FIXTURES['反応性低血糖']
+    const of = libre => buildKarteTemplate('反応性低血糖', { ...base, libre })
+    assert.ok(of({ attached: '装着済', date: '2026-10-16' }).includes('□自費CGM（リブレ）初事前で装着済（R8.10.16）'),
+      '装着日は和暦で出す（カルテは和暦のみ）')
+    assert.ok(of({ attached: '装着済', date: '' }).includes('□自費CGM（リブレ）初事前で装着済（装着日 未記入）'),
+      '日付が無いのに日付があるように書かない')
+    assert.ok(of({ attached: '未装着', note: '本人希望なし' })
+      .includes('□自費CGM（リブレ）未装着（理由：本人希望なし） → 初診時に医師とご相談ください'))
+    assert.ok(of({}).includes('□自費CGM（リブレ）初事前での装着 未確認 → 装着したかご確認ください'),
+      '未入力は「未確認」。全例装着の運用でも、聞けていない回を済と書かない')
+  })
+
+  // ★2026-10-16 院長「予約を３回分とったかどうか、日付も含めて」。
+  test('妊娠糖尿病: リブレ装着の予約3回分は取れたかどうかで書き分ける', () => {
+    const base = FIXTURES['妊娠糖尿病']
+    const of = libre => buildKarteTemplate('妊娠糖尿病', { ...base, libre })
+    assert.ok(of({ firstVisit: '2026-10-23', follow1: '2026-11-06', follow2: '2026-11-20' })
+      .includes('□リブレ装着の予約3回分 取得済（初診 R8.10.23・GDMフォロー① R8.11.6・GDMフォロー② R8.11.20）'))
+    assert.ok(of({ firstVisit: '2026-10-23' })
+      .includes('□リブレ装着の予約3回分（初診 R8.10.23・GDMフォロー① 未記入・GDMフォロー② 未記入）→ 残りの予約をお取りください'))
+    // 1 つも入っていない回は従来どおり段取りの指示（過去のレコードを「取っていない」と断定しない）
+    assert.ok(of({}).includes('□リブレ装着は初診時・初事前で予約3回分（初診・GDMフォロー①②）→ 予約日 未記入'))
+    // 装着の同意の行は従来どおり残す
+    assert.ok(of({}).includes('□リブレ（自費CGM）取り付けに同意済'))
+  })
+
+  // ★2026-10-16 院長「2型で反応性低血糖を訴えてきた際にリブレをつけたかどうか。
+  //   つけないならば初診時に医師と相談してほしい、という申し送りがほしい」。
+  test('DM基本: 食後低血糖の訴えがあった回だけリブレの行が出る', () => {
+    const base = FIXTURES['DM基本']
+    const of = libre => buildKarteTemplate('DM基本', { ...base, libre })
+    assert.ok(of({ attached: '装着済', date: '2026-10-16' })
+      .includes('□反応性低血糖の訴えあり：自費CGM（リブレ）装着済（R8.10.16）'))
+    assert.ok(of({ attached: '未装着' })
+      .includes('□反応性低血糖の訴えあり：自費CGM（リブレ）未装着 → 初診時に医師とご相談ください'))
+    assert.ok(of({})
+      .includes('□反応性低血糖の訴えあり：自費CGM（リブレ）装着の有無 未確認 → 初診時に医師とご相談ください'),
+      '未入力でも医師に相談を回す（訴えを聞いた事実は消さない）')
+
+    // 訴えが無い回は 1 行も出さない
+    const noComplaint = buildKarteTemplate('DM基本', {
+      ...base,
+      disease: { ...base.disease, dmSymptoms: { selected: ['のどが渇く'], otherText: '' } },
+      libre: { attached: '装着済', date: '2026-10-16' },
+    })
+    assert.ok(!noComplaint.includes('反応性低血糖の訴えあり'), '訴えが無いのに行が出ている')
+  })
+
   // 紙の運用「小児1型 → 小児慢性の申請確認」。以前は申請済のときしか申し送りに出ず、
   // 未申請・申請中・聞き漏らしが医師に伝わらなかった（2026-10-14 院長）。
   test('小児1型: 小児慢性の申請状況は 4 状態すべて申し送りに出る', () => {

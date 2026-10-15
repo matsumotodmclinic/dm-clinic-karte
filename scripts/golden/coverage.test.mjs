@@ -107,7 +107,9 @@ const COMMON_ALLOWED = {
 }
 
 const ALLOWED = {
-  'DM基本': {},
+  'DM基本': {
+    'libre.note': '装着しなかった理由。『未装着』を選んだときだけ出る（土台は装着済）',
+  },
   '1型糖尿病': {
     'reason.deviceWish': 'デバイス希望は cgmWish / pumpWish に置き換わった旧フィールド（UI からも消えている）',
     'reason.pumpCurrent': 'ポンプ希望があるときだけ「○○使用中→」として出る（土台は希望なし）',
@@ -122,9 +124,8 @@ const ALLOWED = {
   },
   '妊娠糖尿病': {},
   '反応性低血糖': {
-    'symptom.libreStarted': 'リブレは全例装着なので申し送りは無条件に出る（装着日時は電子カルテ側で管理）',
-    'symptom.libreNote': '同上',
     'symptom.cgmWish': '自費CGM（リブレ）は全例装着のため希望欄は分岐に使っていない',
+    'libre.note': '装着しなかった理由。『未装着』を選んだときだけ出る（土台は装着済）',
   },
   '睡眠時無呼吸症候群': {
     'reason.knowSource': '当院を知ったきっかけ（集患の参考情報）。カルテには載せない',

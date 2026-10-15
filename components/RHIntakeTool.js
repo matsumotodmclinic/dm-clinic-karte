@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import Hba1cInput from "./Hba1cInput";
 import ReferralLetterInput from "./ReferralLetterInput";
+import LibreAttachedInput from "./LibreAttachedInput";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
@@ -45,7 +46,6 @@ const initialData = {
     timing: [], timingNote: "",
     cause: [], causeNote: "",
     symptoms: [], symptomsNote: "",
-    libreStarted: "", libreNote: "",
     cgmWish: "",
   },
   history: {
@@ -62,6 +62,8 @@ const initialData = {
     otherDiseases: [{name:"",hospital:"",hospitalOther:""}],
   },
   body: { hba1c: "", height: "", weightNow: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
+  // リブレ（自費CGM）を初事前で装着したか（院長 2026-10-16）。カルテは lib/libreNotes.js
+  libre: { attached: "", date: "", note: "" },
   voiceMemo: { transcript: "", aiSummary: "", needsDoctorReview: false },
   voicePastHistory: { transcript: "", aiSummary: "", needsDoctorReview: false },
 };
@@ -471,6 +473,12 @@ export default function RHIntakeTool() {
           <Hba1cInput
             value={data.body.hba1c}
             onChange={(v) => setData(p => ({ ...p, body: { ...p.body, hba1c: v } }))}
+          />
+          <LibreAttachedInput
+            value={data.libre}
+            onChange={(libre) => setData(p => ({ ...p, libre }))}
+            title="リブレ（自費CGM）の装着（初事前）"
+            hint="反応性低血糖疑いは全例装着の運用です。未入力のままだと申し送りに「未確認」と出ます。"
           />
           <ReferralLetterInput
             value={data.reason?.referralLetter || ""}

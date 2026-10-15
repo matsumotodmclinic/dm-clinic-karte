@@ -61,6 +61,7 @@ function leafPaths(obj, prefix = '') {
 const PROBES = [
   '', 'あり', 'なし', '不明', '持参あり', '受けていない', '持っていない', '忘れた',
   'インスリン使用中', '申請済', '申請未', '申請中', '希望あり', '女性医師希望',
+  '装着済', '未装着',   // リブレ（lib/libreNotes.js）
   '○患者疑い（話が長い方）', '●患者疑い（出禁対象）', 'screening', 'cpap', 'X',
 ]
 const probesFor = cur => {
@@ -95,6 +96,13 @@ function producibleLines() {
       importantPast: { ...(rich.dmDiff?.importantPast || {}), gastricCancer: true, ihd: true, detail: '詳細は本人に確認' },
     }
     for (const l of handoffLines(buildKarteTemplate(form, rich))) found.add(l)
+  }
+
+  // 妊娠糖尿病の「予約3回分 取得済」は 3 つすべて埋まったときだけ出る
+  {
+    const gdm = structuredClone(FIXTURES['妊娠糖尿病'])
+    gdm.libre = { firstVisit: '2026-10-23', follow1: '2026-11-06', follow2: '2026-11-20' }
+    for (const l of handoffLines(buildKarteTemplate('妊娠糖尿病', gdm))) found.add(l)
   }
 
   for (const form of ALL_FORMS) {

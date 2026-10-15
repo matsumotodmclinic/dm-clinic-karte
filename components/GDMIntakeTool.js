@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import VoiceMemoSection from "./VoiceMemoSection";
 import Hba1cInput from "./Hba1cInput";
 import ReferralLetterInput from "./ReferralLetterInput";
+import LibreReservationInput from "./LibreReservationInput";
 import { useRouter } from "next/router";
 import { copyKarteToClipboard } from "../lib/copyKarte";
 import { makeFormStyles, FORM_THEMES } from "../lib/formStyles";
@@ -52,6 +53,8 @@ const initialData = {
     otherDiseases: [{name:"",hospital:"",hospitalOther:""}],
   },
   body: { hba1c: "", height: "", weightNow: "", weightPregnancy: "", weight20: "", weightMax: "", weightMaxAge: "", concern: "", preferredDays: [], doctorGender: "", patientFlag: "通常", doubleSlot: false },
+  // リブレ装着は初診時なので、初事前では予約を 3 回分取る（院長 2026-10-16）。カルテは lib/libreNotes.js
+  libre: { firstVisit: "", follow1: "", follow2: "" },
   voiceMemo: { transcript: "", aiSummary: "", needsDoctorReview: false },
   voicePastHistory: { transcript: "", aiSummary: "", needsDoctorReview: false },
 };
@@ -524,6 +527,10 @@ export default function GDMIntakeTool() {
           <Hba1cInput
             value={data.body.hba1c}
             onChange={(v) => setData(p => ({ ...p, body: { ...p.body, hba1c: v } }))}
+          />
+          <LibreReservationInput
+            value={data.libre}
+            onChange={(libre) => setData(p => ({ ...p, libre }))}
           />
           <ReferralLetterInput
             value={data.reason?.referralLetter || ""}

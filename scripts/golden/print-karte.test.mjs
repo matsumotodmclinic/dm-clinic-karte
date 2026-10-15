@@ -8,7 +8,8 @@
 
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { toWareki, toWarekiForPrint, collapseBlankLinesForPrint } from '../../lib/printKarte.js'
+import { toWarekiForPrint, collapseBlankLinesForPrint } from '../../lib/printKarte.js'
+import { toWareki, toWarekiYmd } from '../../lib/wareki.js'
 
 describe('lib/printKarte: 西暦 → 和暦', () => {
   test('元号の境目', () => {
