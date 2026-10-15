@@ -61,6 +61,20 @@ describe('予約なし来院の手書き問診票', () => {
     assert.ok(page.includes('paddingTop'), '余白を引く計算が無い')
   })
 
+  // ★入口はドクターキューブに一本化した（院長 2026-10-15）。この紙は非常用。
+  //   「非常用」の表示が消えると、通常運用に紛れ込んで二重入力が復活する。
+  test('非常用であることが紙にも画面にも書いてある', () => {
+    assert.match(WALKIN_META.emergency, /非常用/, '紙に印字する但し書きが無い')
+    assert.ok(page.includes('WALKIN_META.emergency'), '紙に但し書きを印字していない')
+    assert.ok(page.includes('通常は使いません'), '画面に「通常は使わない」と出していない')
+  })
+
+  test('スタッフ向けの流れが「ドクターキューブに一本化」になっている', () => {
+    const handoff = fs.readFileSync('pages/help/handoff.js', 'utf8')
+    assert.match(handoff, /一本化/, '運用の流れが紙の運用のままになっている')
+    assert.match(handoff, /非常用/, '非常用であることが書かれていない')
+  })
+
   test('クリニック名とタイトルがある', () => {
     assert.match(WALKIN_META.clinic, /まつもと糖尿病クリニック/)
     assert.match(WALKIN_META.title, /ご予約なし/)
