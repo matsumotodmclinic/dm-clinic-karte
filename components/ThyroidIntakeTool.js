@@ -811,8 +811,8 @@ export default function ThyroidIntakeTool({ formType }) {
               </div>
             )}
             <div style={{ background: "#fff8e1", border: "1px solid #f59e0b", borderRadius: 12, padding: "14px 18px", marginBottom: 12, textAlign: "center" }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: "#92400e" }}>📋 タブレットを受付にお返しください</div>
-              <div style={{ fontSize: 12, color: "#b45309", marginTop: 4 }}>問診は完了しています。ありがとうございました。</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "#92400e" }}>📋 受付番号を控えてください</div>
+              <div style={{ fontSize: 12, color: "#b45309", marginTop: 4 }}>保存済みです。一覧（/list）からこの番号で呼び出せます。</div>
             </div>
             <div style={{ marginBottom: 4 }}>
               <button onClick={() => setShowKarte(v => !v)} style={{ width: "100%", padding: "11px", borderRadius: 8, border: "1px solid #a7f3d0", background: showKarte ? "#e6fff8" : "#f0fdf9", color: "#0d4d42", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>

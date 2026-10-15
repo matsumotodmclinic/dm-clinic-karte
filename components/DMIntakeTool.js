@@ -1082,8 +1082,8 @@ export default function DMIntakeTool() {
               </div>
             )}
             <div style={{background:"#fff8e1",border:"1px solid #f59e0b",borderRadius:12,padding:"14px 18px",textAlign:"center"}}>
-              <div style={{fontSize:16,fontWeight: 700,color:"#92400e"}}>📋 タブレットを受付にお返しください</div>
-              <div style={{fontSize:12,color:"#b45309",marginTop:4}}>問診は完了しています。ありがとうございました。</div>
+              <div style={{fontSize:16,fontWeight: 700,color:"#92400e"}}>📋 受付番号を控えてください</div>
+              <div style={{fontSize:12,color:"#b45309",marginTop:4}}>保存済みです。一覧（/list）からこの番号で呼び出せます。</div>
             </div>
 
             {data.alert.weightLoss === "あり" && (

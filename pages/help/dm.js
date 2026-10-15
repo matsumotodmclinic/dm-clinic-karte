@@ -89,7 +89,7 @@ export default function DmGuidePage() {
         <GuideHeader
           icon="🩺"
           title="DM 基本 (2 型糖尿病) 問診 完全ガイド"
-          subtitle="患者が iPad で答えた問診を Claude (claude-sonnet-4-5) が即座にカルテ記載文に整形 → 受付コード 4 桁で取り出して電子カルテに貼る、 当院の標準フローを完全網羅。 6 ステップの意味、 音声入力 (現病歴/既往歴) の使い分け、 受付コード運用、 再生成、 SAS の DM 差分問診、 プロンプト同期の注意までカバー。"
+          subtitle="問診スタッフが PC で聴取しながら入力した内容を Claude (claude-sonnet-4-5) が即座にカルテ記載文に整形 → 受付コード 4 桁で取り出して電子カルテに貼る、 当院の標準フローを完全網羅。 6 ステップの意味、 音声入力 (現病歴/既往歴) の使い分け、 受付コード運用、 再生成、 SAS の DM 差分問診までカバー。"
           themeColor={THEME}
         />
 
@@ -98,20 +98,27 @@ export default function DmGuidePage() {
         {/* ========== 全体像 ========== */}
         <Section id="overview" icon="🗺️" title="DM 問診の全体像 (患者 → スタッフ → 医師の動線)" themeColor={THEME}>
           <p>
-            <strong>「患者は iPad で問診に答えるだけ、 医師は出来上がったカルテをコピペするだけ」</strong> が
+            <strong>「スタッフが聴きながら入力するだけ、 医師は出来上がったカルテをコピペするだけ」</strong> が
             DM 問診ツールの目的です。 紙の問診票で 5〜10 分かかっていた初診のカルテ起こしを、
             10〜15 秒に短縮します。
           </p>
 
-          <Step n={1} title="🪑 受付: スタッフが患者に iPad を渡す" themeColor={THEME}>
-            受付で <Code>/auth</Code> ログイン済みの iPad を渡し、 トップから <Code>/dm</Code> (DM 基本) を選んで貰います。
-            iPad は院内 Wi-Fi に接続必須。 個人情報 (氏名・生年月日) は <strong>入力させません</strong> (PII 防止)。
+          <Box color="info">
+            <strong>患者ご自身に入力していただく運用はしていません</strong> (2026-10 時点)。
+            問診スタッフが <strong>PC</strong> で聴き取りながら入力します。
+            もとは患者がタブレットで回答する形でしたが、 SAS・甲状腺から順にスタッフ聴取に移り、
+            現在は全フォームがスタッフ入力です。
+          </Box>
+
+          <Step n={1} title="🪑 事前問診: スタッフが PC で問診ツールを開く" themeColor={THEME}>
+            <Code>/auth</Code> にログインし、 トップから <Code>/dm</Code> (DM 基本) を選びます。
+            氏名・生年月日は <strong>入力しません</strong> (PII 防止。 紙に出すときは手書き欄になります)。
           </Step>
 
-          <Step n={2} title="📝 患者: 6 ステップを iPad で順に回答" themeColor={THEME}>
-            選択肢ボタン中心の UI で、 文字入力は最小限。 平均 3〜5 分で完了。
+          <Step n={2} title="📝 聴き取り: 6 ステップを順に埋める" themeColor={THEME}>
+            選択肢ボタン中心なので、 患者さんに質問しながらタップで進められます。 平均 3〜5 分。
             重要確認 → 受診理由 → 医療背景・家族歴 → 生活情報 → 体格・要望 → 病歴・経緯の聴取。
-            「分からない」 と言われたら無回答で進めて構いません (後で医師が確認)。
+            <strong>聞けなかった項目は無回答のまま</strong>進めて構いません (推測で埋めない)。
           </Step>
 
           <Step n={3} title="🎙️ スタッフ: 必要なら音声入力で現病歴・既往歴を補強" themeColor={THEME}>
@@ -124,7 +131,7 @@ export default function DmGuidePage() {
             「カルテ文を生成」 ボタンで、 入力データ + 音声整形結果 が Anthropic API に渡され、
             <strong>当院フォーマットのカルテ記載文</strong> が生成されます。 同時に Supabase に保存され、
             <strong>4 桁の受付コード</strong> (英数字、 I・O・0・1 除外で誤読防止) が発行されます。
-            患者には受付コードを口頭で伝えるだけで OK。
+            この受付コードで、 あとから <Code>/list</Code> で呼び出せます。
           </Step>
 
           <Step n={5} title="📋 医師/スタッフ: /list で受付コード検索 → カルテをコピー" themeColor={THEME}>
@@ -139,9 +146,9 @@ export default function DmGuidePage() {
           </Step>
 
           <Box color="success">
-            <strong>🎯 全工程の所要時間 (患者対応含む)</strong>: 患者の iPad 入力 3〜5 分 (待ち時間に並行) → スタッフ
-            音声入力 ~30 秒 → 生成 ~10 秒 → 受付コード受渡 ~5 秒 → 医師がコピペ ~10 秒 = <strong>診察直前の
-            事務作業はおよそ 15 秒</strong>。 紙カルテ運用比で 1 患者あたり 8〜10 分の医師時間削減。
+            <strong>🎯 全工程の所要時間</strong>: スタッフの聴き取り入力 3〜5 分 → 音声入力 ~30 秒 →
+            生成 ~10 秒 → 医師がコピペ ~10 秒 = <strong>診察直前の事務作業はおよそ 15 秒</strong>。
+            紙カルテ運用比で 1 患者あたり 8〜10 分の医師時間削減。
           </Box>
         </Section>
 
@@ -216,7 +223,7 @@ export default function DmGuidePage() {
           </Table>
 
           <Box color="info">
-            <strong>Step 6 はスタッフ補助が前提</strong>。 患者が iPad で 1〜5 を埋めた後、 スタッフが横で
+            <strong>Step 6 は音声入力の出番</strong>。 1〜5 を埋めたあと、 スタッフが
             「他に何か気になる症状や、 これまで治療した病気はありますか?」 と口頭で聞き、 音声入力で
             テキスト化します。 患者本人が話すのが恥ずかしい場合はスタッフが代弁しても構いません
             (録音は端末内のみで Supabase には保存されません)。
@@ -442,7 +449,7 @@ export default function DmGuidePage() {
         <Section id="voice" icon="🎤" title="音声入力 (現病歴 / 既往歴 + 要DR確認)" themeColor={THEME}>
           <Subh>使い方</Subh>
           <Step n={1} title="🔴 録音ボタン" themeColor={THEME}>
-            初回は iPad/PC がマイク許可を求めるダイアログを出します → 「許可」。 録音中はボタンが赤色 (停止) に変化。
+            初回はブラウザがマイク許可を求めるダイアログを出します → 「許可」。 録音中はボタンが赤色 (停止) に変化。
             リアルタイムで文字起こし結果がテキストエリアに流れます。
           </Step>
 
@@ -529,8 +536,8 @@ export default function DmGuidePage() {
             を INSERT。 同時に audit_logs に記録 (PII なし、 form_type + 件数のみ)。
           </Step>
           <Step n={3} title="受付コード表示 + 完了画面" themeColor={THEME}>
-            iPad に大きく受付コードが表示され、 患者に「<strong>受付に戻ってこのコードをお伝えください</strong>」
-            と案内が出ます。 スタッフはこのコードを受付ノートに転記 (or 口頭で受付に伝達)。
+            画面に大きく受付コードが表示されます。 これを控えておけば、 あとから <Code>/list</Code> で
+            すぐ呼び出せます (日付でも絞れるので、 控え忘れても当日分から探せます)。
           </Step>
           <HandoffRef note="どんな申し送りが出るかの一覧は" />
         </Section>
@@ -639,10 +646,10 @@ export default function DmGuidePage() {
 
         {/* ========== シナリオ別 ========== */}
         <Section id="scenarios" icon="💡" title="シナリオ別 対応集" themeColor={THEME}>
-          <Scenario q="患者が iPad 操作に不慣れで、 自分で入力できない" themeColor={THEME}>
-            スタッフが横に座って <strong>聞き取り代行</strong> してください。 各 step は選択肢ボタン中心なので、
-            「○○ですか?」 と質問しながらタップで進められます。 Step 6 の音声入力では患者本人に話してもらう
-            のが理想ですが、 恥ずかしがる場合はスタッフが要約して代弁しても OK。
+          <Scenario q="患者さんが Step 6 で話すのを恥ずかしがる" themeColor={THEME}>
+            音声入力は<strong>本人に話してもらうのが理想</strong>ですが、 難しければスタッフが要約して
+            代弁しても構いません (整形するのは文章であって、 誰が話したかは問いません)。
+            そもそも 1〜5 はスタッフが聴き取って入力するので、 患者さんが端末を操作する場面はありません。
           </Scenario>
 
           <Scenario q="受診理由が複数因子で複雑 (健診 + 紹介状 + 気になる症状)" themeColor={THEME}>
@@ -685,11 +692,11 @@ export default function DmGuidePage() {
 
         {/* ========== トラブルシューティング ========== */}
         <Section id="troubleshoot" icon="🩹" title="トラブルシューティング" themeColor={THEME}>
-          <Trouble symptom="iPad でログイン画面が出ない (真っ白)">
-            ① Wi-Fi 接続確認、 ② Safari/Chrome のキャッシュ削除、
+          <Trouble symptom="ログイン画面が出ない (真っ白)">
+            ① ネットワーク接続確認、 ② ブラウザのキャッシュ削除、
             ③ <Code>karteplus.jp/c/matsumoto-dm-clinic</Code> でなく直接 <Code>dm-clinic-karte.vercel.app</Code> を
             開いているか確認、 ④ それでも駄目なら一度ログアウト URL <Code>/api/auth (DELETE)</Code> を
-            叩くか、 PC で同じ手順を試して問題切り分け。
+            叩くか、 別の端末で同じ手順を試して問題切り分け。
           </Trouble>
 
           <Trouble symptom="カルテ生成が「生成中」 のまま 30 秒以上止まる">
