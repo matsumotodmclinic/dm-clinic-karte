@@ -120,7 +120,7 @@ export default function WalkinFormPage() {
 
         <div className="kp-no-print" style={{ maxWidth: 760, margin: '0 auto 14px', padding: '10px 14px', background: UI.surface, border: `1px solid ${UI.border}`, borderRadius: 8, fontSize: 12.5, color: UI.textMuted, lineHeight: 1.8 }}>
           <strong>⚠️ 通常は使いません。</strong>入口はドクターキューブに一本化しています
-          （当日来院＝その場で問診アプリ／別日にまわす＝受付のiPadでWEB予約／電話＝スタッフが代行入力）。<br />
+          （当日来院＝その場で問診アプリ／別日にまわす＝受付のAndroidタブレットでWEB予約／電話＝スタッフが代行入力）。<br />
           この用紙は<strong>ドクターキューブやネットが止まったとき</strong>の予備です。
           記入後は、上部の<strong>体重減少・HbA1c</strong> をまず確認し、該当する方は初事前のご予約を前倒しします。
         </div>
