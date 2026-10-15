@@ -28,6 +28,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { splitDrQube } from '../lib/drQube'
+import { isLibreHandoffLine } from '../lib/libreNotes'
 import { collapseBlankLinesForPrint, toWarekiForPrint } from '../lib/printKarte'
 
 // 問診日は西暦（院長確定 2026-10-14）。カルテ本文は和暦だが、ここは受付が見る欄なので揃えない。
@@ -77,6 +78,11 @@ export const PRINT_CSS = `
   font-size: 10.5px; line-height: 1.6; font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
 }
 .kp-print-dq-head { font-size: 10.5px; font-weight: 700; margin-bottom: 6px; }
+/* ★リブレの装着・妊娠糖尿病の予約の行は赤字（院長 2026-10-16）。
+   見落とすと「やったつもり」で診察に入ってしまう行なので、紙の上で目に飛び込むようにする。
+   色が要るのはここだけ。赤を増やすと赤が意味を失う。
+   print-color-adjust は、ブラウザが印刷時に色を落とさないようにするため。 */
+.kp-print-hot { color: #c62828; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 /* 【項目】ごとに間を空ける。ベタ打ちのままだと項目の切れ目が読み取れない */
 .kp-print-dq-block { margin-bottom: 5px; }
 /* 縮小は transform でかける。font-size を個別に下げると行間や枠が崩れるため */
@@ -200,7 +206,17 @@ export default function PrintSheet({ record, onFit, banner }) {
         {/* 貼り付けが無い回は従来どおりカルテが全幅（横並びにすると右が空いて間延びする） */}
         <div className={dq ? 'kp-print-cols' : undefined}>
           {/* ★紙だけ空行を詰める（電子カルテに貼る文は 3 行のまま・院長 2026-10-14） */}
-          <div className="kp-print-karte">{collapseBlankLinesForPrint(record.generated_karte) || '（カルテ未生成）'}</div>
+          {/* 行ごとに span で包む。白地に pre-wrap なので、包んでも折り返しも高さも変わらない
+              （1 枚に収める計算はこの要素の高さを測っている） */}
+          <div className="kp-print-karte">
+            {(() => {
+              const text = collapseBlankLinesForPrint(record.generated_karte)
+              if (!text) return '（カルテ未生成）'
+              return text.split('\n').map((l, i) => (
+                <span key={i} className={isLibreHandoffLine(l) ? 'kp-print-hot' : undefined}>{l}{'\n'}</span>
+              ))
+            })()}
+          </div>
 
           {dq && (
             <div className="kp-print-dq">

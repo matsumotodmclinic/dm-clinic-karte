@@ -16,11 +16,69 @@ import { splitDrQube } from '../../lib/drQube.js'
 import { collapseBlankLinesForPrint } from '../../lib/printKarte.js'
 import { SAMPLE_FORM_DATA, SAMPLE_FORM_TYPE } from '../../lib/printSample.js'
 import { FIXTURES } from './fixtures.mjs'
+import {
+  isLibreHandoffLine, buildRhLibreLines, buildGdmLibreReservationLines, buildDmLibreLines,
+  LIBRE_ATTACHED, LIBRE_NOT_ATTACHED, POSTPRANDIAL_HYPO_SYMPTOM,
+} from '../../lib/libreNotes.js'
 
 const read = f => fs.readFileSync(f, 'utf8')
 const PAGES = ['pages/print/[id].js', 'pages/print/sample.js']
 
+// ★2026-10-16 院長「申し送りのリブレ関連や、妊娠糖尿病の予約日時関連は赤字に」。
+//   紙でだけ赤くする。赤を足すのは簡単なので、**何を赤くしないか**を固定しておく。
+describe('A4 の赤字（リブレの装着・妊娠糖尿病の予約）', () => {
+  // libreNotes が出しうる行を全部集める（足した行を赤字の対象に入れ忘れたら落ちる）
+  const produced = [
+    ...buildRhLibreLines({ libre: { attached: LIBRE_ATTACHED, date: '2026-10-16' } }),
+    ...buildRhLibreLines({ libre: { attached: LIBRE_ATTACHED } }),
+    ...buildRhLibreLines({ libre: { attached: LIBRE_NOT_ATTACHED, note: '在庫切れ' } }),
+    ...buildRhLibreLines({}),
+    ...buildGdmLibreReservationLines({ libre: { firstVisit: '2026-10-23', follow1: '2026-11-06', follow2: '2026-11-20' } }),
+    ...buildGdmLibreReservationLines({ libre: { firstVisit: '2026-10-23' } }),
+    ...buildGdmLibreReservationLines({}),
+    ...[LIBRE_ATTACHED, LIBRE_NOT_ATTACHED, ''].flatMap(attached => buildDmLibreLines({
+      disease: { dmSymptoms: { selected: [POSTPRANDIAL_HYPO_SYMPTOM] } },
+      libre: { attached, date: '2026-10-16' },
+    })),
+    '□リブレ（自費CGM）取り付けに同意済',
+  ]
+
+  test('リブレの装着・予約の行はすべて赤字になる', () => {
+    const missed = produced.filter(l => !isLibreHandoffLine(l))
+    assert.deepEqual(missed, [], '赤字の対象から漏れている行がある（lib/libreNotes.js の RED_PREFIXES）')
+  })
+
+  test('★それ以外は赤くしない（赤を増やすと赤が意味を失う）', () => {
+    const black = [
+      // 1型・小児1型の CGM は患者が既に使っている機器の話。当院の段取りではない
+      '□CGM：フリースタイルリブレ（継続）',
+      '□使用希望デバイス：フリースタイルリブレ',
+      '□通院のご案内をお渡し済',
+      '□紹介状 持参あり',
+      '♯反応性低血糖疑い',
+      '',
+    ]
+    for (const l of black) assert.equal(isLibreHandoffLine(l), false, `赤くしてはいけない行: ${l}`)
+  })
+
+  test('妊娠糖尿病・反応性低血糖のカルテに、赤字になる行が実際に含まれている', () => {
+    for (const form of ['妊娠糖尿病', '反応性低血糖']) {
+      const lines = buildKarteTemplate(form, FIXTURES[form]).split('\n')
+      assert.ok(lines.some(isLibreHandoffLine), `${form}: 赤字になる行が 1 つも無い`)
+    }
+  })
+})
+
 describe('印刷用 A4（components/PrintSheet.js）', () => {
+  test('カルテ本文は行ごとに span で包み、リブレの行に赤字のクラスを付ける', () => {
+    const s = read('components/PrintSheet.js')
+    assert.ok(s.includes('isLibreHandoffLine'), '赤字の判定を PrintSheet が使っていない')
+    assert.ok(s.includes('kp-print-hot'), '赤字のクラスが無い')
+    // ★色はカルテ本文の行にだけ付ける。貼り付け欄（ドクターキューブ）は患者の入力なので赤くしない
+    const dq = s.slice(s.indexOf('const blocks = splitDrQube'))
+    assert.ok(!dq.includes('kp-print-hot'), '赤字の判定が貼り付け欄側に移っている')
+  })
+
   for (const f of PAGES) {
     test(`${f}: 紙の中身は PrintSheet から出す（写さない）`, () => {
       const s = read(f)
