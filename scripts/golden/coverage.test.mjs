@@ -239,9 +239,9 @@ describe('form_data の取りこぼし検査（全14フォーム）', () => {
       'reason.thyroidConcernReason': '「甲状腺疾患が気になって受診」のときだけ使う（土台は検診異常）',
       'reason.thyroidConcernNote': '同上',
       // ⚠️ 列挙値の都合ではない。フォームで聴取しているのにカルテに出ていない
-      'body.weight20': '⚠️ 甲状腺フォームは 20歳時体重・最大体重 を聴取するがカルテには出していない（旧プロンプトから同じ。出すかどうかは院長判断）',
-      'body.weightMax': '⚠️ 同上',
-      'body.weightMaxAge': '⚠️ 同上',
+      'body.weight20': '甲状腺フォームは 20歳時体重・最大体重 を聴取するがカルテには出さない（院長判断 2026-10-15「なしでOK」）',
+      'body.weightMax': '同上',
+      'body.weightMaxAge': '同上',
       'body.doctorGender': '「指定なし」以外のときだけ申し送りに1行出る列挙値',
       'body.patientFlag': '「○患者疑い」「●患者疑い」のときだけ分岐する列挙値',
       'symptom.otherText': '症状に「その他」がチェックされているときだけ使う（土台は動悸・体重減少）',
