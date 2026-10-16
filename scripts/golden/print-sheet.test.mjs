@@ -171,6 +171,16 @@ describe('印刷用 A4（components/PrintSheet.js）', () => {
     }
   })
 
+  // ★貼り付けがあると「左=カルテ / 右=ドクターキューブ」の横並びになり、カルテの幅が 70% に減る。
+  //   赤字が折り返さないか・1 枚に収まるかは、この状態で見ないと確かめたことにならない（院長 2026-10-16）。
+  test('どの見本も貼り付けありの状態で出す（本番でいちばん厳しい並び）', () => {
+    for (const s of PRINT_SAMPLES) {
+      const text = s.formData.drQube?.text
+      assert.ok(text, `${s.key}: ドクターキューブの貼り付けが無い`)
+      assert.ok(splitDrQube(text), `${s.key}: 貼り付けが【項目】形式になっていない`)
+    }
+  })
+
   test('見本の予約日・装着日は今日からの相対（固定の日付を埋めない）', () => {
     // 固定にすると、来年開いたときに去年の日付が並んで見本が腐る
     const src = read('lib/printSample.js')
