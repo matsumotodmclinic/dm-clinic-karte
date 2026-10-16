@@ -46,7 +46,12 @@ export const PRINT_CSS = `
    画面が狭いときは横スクロールさせる（印刷のためのページなので、見た目より寸法を優先） */
 .kp-print-scroll { overflow-x: auto; }
 .kp-print-head { border: 1px solid #333; padding: 10px 14px; margin-bottom: 10px; }
-.kp-print-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 18px; margin-bottom: 10px; }
+/* ★上段は必ず 2 行（院長 2026-10-16）。折り返して 3 行目ができると、受付コードだけが
+   下にぶら下がって読みにくい。nowrap で折り返しを止め、入りきるよう各欄の幅と間隔を詰めてある
+   （実測で 690px に対して約 600px。残り 13% は書体が読み込まれる前の太い代替フォント用の余裕）。
+   ★欄を足すときは必ずブラウザで幅を測り直すこと。nowrap なので、入りきらないと折り返さずに
+   枠からはみ出す（紙の上で切れる）。 */
+.kp-print-row { display: flex; flex-wrap: nowrap; align-items: flex-end; gap: 6px 12px; margin-bottom: 10px; }
 .kp-print-row:last-child { margin-bottom: 0; }
 .kp-print-item { display: flex; align-items: flex-end; gap: 6px; }
 .kp-print-label { font-size: 11px; font-weight: 700; white-space: nowrap; }
@@ -56,11 +61,14 @@ export const PRINT_CSS = `
    flex:1 で伸ばすと紙の幅いっぱいの線になり、場所を取るわりに書く量は増えない。 */
 .kp-print-fill { display: inline-block; border-bottom: 1px solid #333; height: 18px; }
 .kp-print-fill-name { width: 52mm; }
-.kp-print-fill-staff { width: 32mm; }
+.kp-print-fill-staff { width: 20mm; }
 /* 生年月日は 年 / 月 / 日 を印字して、その手前だけ空ける（院長 2026-10-14） */
-.kp-print-fill-y { width: 13mm; }
-.kp-print-fill-md { width: 8mm; }
-.kp-print-value { font-size: 13px; font-weight: 700; border-bottom: 1px solid #333; min-width: 72px; padding: 0 4px 1px; }
+.kp-print-fill-y { width: 11mm; }
+.kp-print-fill-md { width: 7mm; }
+.kp-print-value { font-size: 13px; font-weight: 700; border-bottom: 1px solid #333; min-width: 58px; padding: 0 4px 1px; white-space: nowrap; }
+/* 年齢は「58 歳」と印字するだけ。手で書く欄ではないので下線を中身のぶんだけにする
+   （院長 2026-10-16「年齢や初事前問診者の入力欄が広すぎる」） */
+.kp-print-value-age { min-width: 0; }
 .kp-print-karte {
   white-space: pre-wrap; word-break: break-word;
   font-size: 11.5px; line-height: 1.55;
@@ -189,7 +197,7 @@ export default function PrintSheet({ record, onFit, banner }) {
             <div className="kp-print-item">
               <span className="kp-print-label">年齢</span>
               {/* 年齢だけはアプリが保持している（氏名・生年月日は保存しない設計） */}
-              <span className="kp-print-value">{record.age ? `${record.age} 歳` : ''}</span>
+              <span className="kp-print-value kp-print-value-age">{record.age ? `${record.age} 歳` : ''}</span>
             </div>
           </div>
           <div className="kp-print-row">
