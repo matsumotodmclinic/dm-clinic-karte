@@ -82,7 +82,13 @@ export const PRINT_CSS = `
    見落とすと「やったつもり」で診察に入ってしまう行なので、紙の上で目に飛び込むようにする。
    色が要るのはここだけ。赤を増やすと赤が意味を失う。
    print-color-adjust は、ブラウザが印刷時に色を落とさないようにするため。 */
-.kp-print-hot { color: #c62828; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+/* ★字も大きくする（院長 2026-10-16）。本文 11.5px に対して 14px。
+   行ごとの span なので、大きくなるのはその行だけ（他の行の字の大きさは変わらない）。
+   行が高くなるぶん紙は伸びるが、1 枚に収める縮小は測り直されるので入りきる。 */
+.kp-print-hot {
+  color: #c62828; font-weight: 700; font-size: 14px;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
 /* 【項目】ごとに間を空ける。ベタ打ちのままだと項目の切れ目が読み取れない */
 .kp-print-dq-block { margin-bottom: 5px; }
 /* 縮小は transform でかける。font-size を個別に下げると行間や枠が崩れるため */

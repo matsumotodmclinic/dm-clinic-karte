@@ -14,7 +14,7 @@ import fs from 'node:fs'
 import { buildKarteTemplate } from '../../lib/buildKarteTemplate.js'
 import { splitDrQube } from '../../lib/drQube.js'
 import { collapseBlankLinesForPrint } from '../../lib/printKarte.js'
-import { SAMPLE_FORM_DATA, SAMPLE_FORM_TYPE } from '../../lib/printSample.js'
+import { SAMPLE_FORM_DATA, SAMPLE_FORM_TYPE, PRINT_SAMPLES } from '../../lib/printSample.js'
 import { FIXTURES } from './fixtures.mjs'
 import {
   isLibreHandoffLine, buildRhLibreLines, buildGdmLibreReservationLines, buildDmLibreLines,
@@ -154,6 +154,41 @@ describe('印刷用 A4（components/PrintSheet.js）', () => {
       assert.deepEqual(nonBlank(printed), nonBlank(karte), '中身の行が変わっている（空行を詰めるだけのはず）')
     })
   })
+  // ★2026-10-16 院長「赤が出るような見本をつくってほしい」。
+  //   既定の見本は 1型糖尿病なのでリブレの行が出ず、赤字を紙で確かめられなかった。
+  test('見本の先頭は「いちばん厳しい回」のまま（1枚に収まるかの確認用）', () => {
+    assert.equal(PRINT_SAMPLES[0].formType, '1型糖尿病', '先頭は最長のフォームにしておくこと')
+    assert.ok(PRINT_SAMPLES[0].formData.drQube?.text, '先頭は貼り付けありのままにしておくこと')
+    assert.ok(!PRINT_SAMPLES[0].red, '先頭は赤字の見本ではない')
+  })
+
+  test('赤字の見本には、実際に赤字になる行が入っている', () => {
+    const reds = PRINT_SAMPLES.filter(s => s.red)
+    assert.ok(reds.length >= 2, '赤字の見本が足りない（装着と予約の両方を紙で見たい）')
+    for (const s of reds) {
+      const lines = buildKarteTemplate(s.formType, s.formData).split('\n').filter(isLibreHandoffLine)
+      assert.ok(lines.length > 0, `${s.key}: 赤字になる行が 1 つも無い`)
+    }
+  })
+
+  test('見本の予約日・装着日は今日からの相対（固定の日付を埋めない）', () => {
+    // 固定にすると、来年開いたときに去年の日付が並んで見本が腐る
+    const src = read('lib/printSample.js')
+    assert.ok(src.includes('dayFromToday('), '日付を今日から作っていない')
+    const json = JSON.stringify(PRINT_SAMPLES.map(s => s.formData.libre))
+    assert.ok(!/20\d\d-\d\d-\d\d/.test(src.slice(src.indexOf('PRINT_SAMPLES'))), '見本の一覧に固定の日付が書かれている')
+    assert.ok(json.includes(String(new Date().getFullYear())), '今日を基準にした日付になっていない')
+  })
+
+  test('どの見本にも実在しそうな個人情報を書かない', () => {
+    for (const s of PRINT_SAMPLES) {
+      const json = JSON.stringify(s.formData)
+      for (const ng of ['生年月日', '様', '電話', '℡']) {
+        assert.ok(!json.includes(ng), `${s.key}: 見本データに ${ng} が入っている`)
+      }
+    }
+  })
+
   test('見本に実在しそうな個人情報を書かない（氏名・生年月日は手書き欄）', () => {
     const s = JSON.stringify(SAMPLE_FORM_DATA)
     for (const ng of ['生年月日', '様', '電話', '℡']) {
