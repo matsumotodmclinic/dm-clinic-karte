@@ -23,8 +23,8 @@ import { GUIDE } from '../../components/HelpGuide'
 const GUIDES = [
   // ----- 全フォーム共通 -----
   { category: '📋 全フォーム共通', tone: UI.primary.fg, items: [
-    { id: 'handoff', label: '運用の流れと 申し送り早見表', emoji: '📋', ready: true, href: '/help/handoff',
-      desc: '問診から医師に渡すまでの流れ + 「どう入力すると医師に何が伝わるか」の対応表（2026-10 改訂・A4 印刷可）' },
+    { id: 'handoff', label: '初事前問診 運用の手引き', emoji: '📋', ready: true, href: '/help/handoff',
+      desc: '受付での入口の決め方（当日来院・別日・お電話・非常時）／問診から医師に紙を渡すまで／申し送り早見表。そのまま A4 で印刷して配れます' },
   ]},
   // ----- 糖尿病関連 -----
   { category: '🩺 糖尿病関連', tone: UI.primary.fg, items: [

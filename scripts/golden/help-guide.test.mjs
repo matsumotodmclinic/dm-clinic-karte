@@ -74,3 +74,27 @@ describe('完全ガイド（pages/help）に事実を直書きしない', () => 
     assert.ok(s.includes('COMMON_HOSPITALS.length'), '件数を直書きしている可能性がある')
   })
 })
+
+// ★運用の手引き（/help/handoff）は、事務がマニュアル化する元になる紙（院長 2026-10-16）。
+//   入口の 4 つの場合はどれか 1 つ欠けると現場で止まるので、落ちたら気付くようにしておく。
+describe('運用の手引き（/help/handoff）', () => {
+  const s = fs.readFileSync(path.join(HELP_DIR, 'handoff.js'), 'utf8')
+
+  test('受付の入口が 4 つとも載っている（当日来院・別日・電話・非常時）', () => {
+    for (const ng of ['当日来院', '別日にまわす', 'お電話の方', '非常用']) {
+      assert.ok(s.includes(ng), `入口の説明が欠けている: ${ng}`)
+    }
+  })
+
+  test('紙で配れる（印刷ボタンと印刷用の指定がある）', () => {
+    assert.ok(s.includes('window.print()'), '印刷ボタンが無い')
+    assert.ok(s.includes('@media print'), '印刷用の指定が無い')
+    assert.ok(s.includes('break-inside: avoid'), '表が紙の切れ目で割れる')
+    assert.ok(s.includes('kp-no-print'), '画面用のボタンが紙に出てしまう')
+  })
+
+  test('早見表は lib/handoffCatalog.js から出す（書き写さない）', () => {
+    assert.ok(s.includes("from '../../lib/handoffCatalog'"), 'カタログを import していない')
+    assert.ok(s.includes('HANDOFF_SECTIONS.map'), 'カタログを展開していない')
+  })
+})
