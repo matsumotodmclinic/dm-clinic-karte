@@ -15,6 +15,7 @@
 import { useState } from 'react'
 import { useSpeechRecognition } from '../lib/speechRecognition'
 import { summarizeForKarte, summarizeForPastHistory } from '../lib/voiceSummary'
+import { reviewVoiceOutput } from '../lib/voiceReview'
 import { UI } from '../lib/uiTokens';
 
 const MODE_CONFIG = {
@@ -222,6 +223,32 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
 
   // 現病歴・既往歴の両モード共通: チェックボックス(常時表示)
   // 既往歴モードは既存の「📝 各疾患について確認・追記してください」リストも含む
+  // ── 出口チェック（院長 2026-10-16）─────────────────────────
+  //
+  // 保存済みデータを調べたら、指示文に書いてあるのに守られていない出力が実際に出ていた
+  // （時期が丸ごと落ちる／西暦のまま／文字起こしの混入／病名が半角 #）。
+  // ★**止めない**。AI の判断が正しい回もあるので、指摘を出してスタッフが textarea で直す。
+  //   毎回の描画で見るので、直すとその場で消える。
+  const issues = reviewVoiceOutput({ transcript: sr.transcript, summary: aiSummary, mode })
+  const issuesBox = issues.length ? (
+    <div style={{ marginTop: 8, padding: '10px 12px', background: UI.warning.bg, border: `1px solid ${UI.warning.fg}`, borderRadius: 8 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: UI.warning.fg, marginBottom: 6 }}>
+        ⚠️ 整形結果を確認してください（{issues.length} 件）
+      </div>
+      {issues.map(it => (
+        <div key={it.code} style={{ marginTop: 6 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: it.level === 'error' ? UI.danger.fg : '#92400e', lineHeight: 1.6 }}>
+            ・{it.message}
+          </div>
+          <div style={{ fontSize: 11.5, color: '#7a7a7a', lineHeight: 1.6, marginLeft: 12 }}>{it.hint}</div>
+        </div>
+      ))}
+      <div style={{ fontSize: 11, color: '#7a7a7a', marginTop: 8, lineHeight: 1.6 }}>
+        上の欄を直すと、この表示は消えます。問題なければそのままで構いません。
+      </div>
+    </div>
+  ) : null
+
   const reviewBox = (mode === 'currentIllness' || mode === 'pastHistory') ? (
     <div style={{ marginTop: 12, padding: '14px 16px', background: '#fff7e6', borderRadius: 10, border: '1px solid #fbbf24' }}>
       {mode === 'pastHistory' && (
@@ -303,6 +330,7 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
                   />
                 )
               })()}
+              {issuesBox}
             </div>
           )}
           {reviewBox}
@@ -402,6 +430,7 @@ export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 
           <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
             {cfg.summaryHint}
           </div>
+          {issuesBox}
         </div>
       )}
 
