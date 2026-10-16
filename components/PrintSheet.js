@@ -201,6 +201,19 @@ export default function PrintSheet({ record, onFit, banner }) {
               <span className="kp-print-label">問診日</span>
               <span className="kp-print-value">{formatDate(record.created_at)}</span>
             </div>
+            {/* ★初診日は手書き（院長 2026-10-16）。
+                この紙は初事前の日に刷って、初診の日まで持っておくもの。
+                アプリは初診の予約日を持っていない（妊娠糖尿病のリブレ予約だけ例外）ので、
+                氏名・生年月日と同じく**空の罫線**として印字し、受付が書く。 */}
+            <div className="kp-print-item">
+              <span className="kp-print-label">初診日</span>
+              <span className="kp-print-fill kp-print-fill-y" />
+              <span className="kp-print-label">年</span>
+              <span className="kp-print-fill kp-print-fill-md" />
+              <span className="kp-print-label">月</span>
+              <span className="kp-print-fill kp-print-fill-md" />
+              <span className="kp-print-label">日</span>
+            </div>
             <div className="kp-print-item">
               <span className="kp-print-label">受付コード</span>
               <span className="kp-print-value">{record.visit_code || ''}</span>

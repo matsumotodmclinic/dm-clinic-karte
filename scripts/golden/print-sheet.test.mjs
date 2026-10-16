@@ -99,6 +99,19 @@ describe('印刷用 A4（components/PrintSheet.js）', () => {
     })
   }
 
+  // ★上部の記入欄（院長 2026-10-16「上部の基本情報のところに初診日を入れたい」）。
+  //   この紙は初事前の日に刷って初診の日まで持っておくので、初診日が要る。
+  //   アプリは初診の予約日を持っていないので**空の罫線**にしてある（氏名・生年月日と同じ）。
+  test('上部に初診日の記入欄がある（値は印字しない）', () => {
+    const s = read('components/PrintSheet.js')
+    const i = s.indexOf('初診日')
+    assert.ok(i > 0, '初診日の欄が無い')
+    // 手書き欄なので、ラベルの近くに record の値を埋めていないこと
+    const block = s.slice(i, i + 600)
+    assert.ok(!block.includes('record.'), '初診日に値を埋めている（アプリは初診日を持っていない）')
+    assert.ok(block.includes('kp-print-fill'), '初診日が空の罫線になっていない')
+  })
+
   test('印刷見本は「いちばん厳しい回」になっている', () => {
     assert.equal(SAMPLE_FORM_TYPE, '1型糖尿病', 'カルテが最長のフォームで見本を作ること')
     const karte = buildKarteTemplate(SAMPLE_FORM_TYPE, SAMPLE_FORM_DATA)
