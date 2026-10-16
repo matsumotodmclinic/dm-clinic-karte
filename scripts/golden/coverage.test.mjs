@@ -273,7 +273,6 @@ describe('form_data の取りこぼし検査（全14フォーム）', () => {
       'dmDiff.eyeFundusCheck': '受けていない／今後受ける予定 で分岐する列挙値',
       'dmDiff.eyeNotebook': '「持っていない」のときだけ申し送りに出る列挙値',
       'dmDiff.weightLoss': '「あり（3kg以上）」のときだけ申し送りに出る列挙値',
-      'dmDiff.insulinUse': 'インスリン使用の有無。SAS/HTHL/RH/内分泌 では療養計画書の分岐に使っていない',
       'dmDiff.fhDm': '家族歴 DM。【FH】に (+) として畳まれる真偽値',
       'dmDiff.fhHl': '同上（HL）',
       'dmDiff.importantPast.gastricCancer': '該当時だけ ♯行になる真偽値',

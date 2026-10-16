@@ -737,6 +737,24 @@ describe('lib/buildKarteTemplate（全14フォーム）', () => {
     assert.ok(buildKarteTemplate('反応性低血糖', FIXTURES['反応性低血糖']).includes('□自費CGM（リブレ）初事前で装着済'))
   })
 
+  // ★2026-10-14 に療養計画書の行を外したとき、インスリンの聴取結果が一度どこにも出なくなった。
+  //   同日 □インスリン使用中 を出すようにして解消したが、**器が 3 通りある**のが落とし穴。
+  //   どれか 1 つでも拾い漏らすと、そのフォームだけ静かに出なくなる（2026-10-16 院長が再確認）。
+  test('インスリン使用中は 3 通りの器のどれでも申し送りに出る', () => {
+    const dm = FIXTURES['DM基本']
+    assert.ok(!buildKarteTemplate('DM基本', dm).includes('□インスリン使用中'), '土台は使用なし')
+    assert.ok(buildKarteTemplate('DM基本', { ...dm, disease: { ...dm.disease, insulinUse: true } })
+      .includes('□インスリン使用中'), 'DM基本の真偽値 insulinUse')
+
+    const t1d = FIXTURES['1型糖尿病']
+    assert.ok(buildKarteTemplate('1型糖尿病', { ...t1d, disease: { ...t1d.disease, insulinStatus: 'インスリン使用中' } })
+      .includes('□インスリン使用中'), '1型の列挙値 insulinStatus')
+
+    assert.ok(buildKarteTemplate('睡眠時無呼吸症候群',
+      { ...SAS_WITH_DM_DIFF, dmDiff: { ...SAS_WITH_DM_DIFF.dmDiff, insulinUse: true } })
+      .includes('□インスリン使用中'), 'DM差分問診の dmDiff.insulinUse')
+  })
+
   // ★2026-10-16 院長「リブレ装着をまちがいなく行ったかどうか、日付も含めて明確に残したい」。
   //   それまでは入力が無くても「装着済」と書いていた（= やっていない回も済と書かれる）。
   test('反応性低血糖: リブレは聴取した結果だけを書く（未入力を「済」にしない）', () => {
