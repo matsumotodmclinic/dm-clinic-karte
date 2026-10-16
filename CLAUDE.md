@@ -16,7 +16,7 @@ Android タブレット）。
 
 ## 技術スタック
 
-- Next.js 14.0.0（Pages Router）/ React 18.2.0
+- Next.js 14.2.35（Pages Router）/ React 18.2.0 （14 系の最終版。2026-10-16 に 14.0.0 から上げた）
 - Vercel（ホスティング）
 - Supabase（DB: questionnaires テーブル、service_role キーでRLSバイパス）
 - Anthropic API（モデル: `claude-sonnet-4-5`）
@@ -45,7 +45,9 @@ Android タブレット）。
 │   └── supabase.js                # Supabase クライアント（service_role）
 ├── lib/
 │   ├── voiceSummary.js            # 音声→AI整形のクライアント側プロンプト（現病歴/既往歴2モード）
-│   └── voiceVocabulary.js         # 音声誤認識補正用の語彙リスト（病院109/病名99/薬剤309/検査30等）
+│   ├── voiceVocabulary.js         # 音声誤認識補正用の語彙リスト（病院109/病名99/薬剤309/検査30等）
+│   ├── intakeDraft.js             # 問診の下書き（純粋関数: 保存形式・12 時間の期限・initialData への重ね合わせ）
+│   └── useIntakeDraft.js          # 問診の下書きを自動保存する hook（全 IntakeTool が使う）
 ├── components/
 │   ├── FormHeader.js              # 全フォーム共通ヘッダー（携帯幅は 2 段・iPad/PC は 1 行）
 │   ├── DMIntakeTool.js            # DM基本（2型）
@@ -56,7 +58,8 @@ Android タブレット）。
 │   ├── PedT1DIntakeTool.js        # 小児1型糖尿病
 │   ├── SASIntakeTool.js           # 睡眠時無呼吸症候群（CPAP継続/簡易PSG検査希望）
 │   ├── SASDmDiffEditor.js         # SAS用 DM差分問診エディタ（採血で糖尿病判明時、詳細画面でスタッフが追記）
-│   └── VoiceMemoSection.js        # 音声入力UI（mode=currentIllness/pastHistory）+ 要DR確認チェック
+│   ├── VoiceMemoSection.js        # 音声入力UI（mode=currentIllness/pastHistory）+ 要DR確認チェック
+│   └── DraftRestoreBanner.js      # 「前回の入力が残っています」バナー（下書きの再開／破棄）
 ├── pages/
 │   ├── index.js                   # トップ（7フォーム選択カード）
 │   ├── auth.js                    # ログイン画面
@@ -602,6 +605,35 @@ dmDiff フォームで聞く項目（DM基本との差分のみ）:
 ## タスク履歴
 
 （ここに完了タスクを追記していく）
+
+### 2026-10-16 (3) 問診の下書き保存 + Next.js 14.0.0 → 14.2.35
+
+院長に「ゼロベースで改善点を」と聞かれて挙げたうちの 1 と 2（院長 GO）。
+
+#### 問診の下書き保存（`lib/intakeDraft.js` / `lib/useIntakeDraft.js` / `components/DraftRestoreBanner.js`）
+問診の入力は**送信するまでブラウザのメモリにしか無かった**。タブを閉じる・再読み込み・PC が固まる、のどれかで
+聴取がまるごと消え、患者さんの前で聞き直すことになる。
+- 入力のたびに **この PC の localStorage** に保存（**サーバーには送らない**）。**12 時間**で捨てる
+- 開き直すと最初の画面に「送信されていない前回の入力が残っています」→ **続きから再開**（ステップも戻る）/ **破棄**
+- 受付コードが出たら（保存成功）消す。「最初から」でも消す
+- 開いたときに前回の下書きを別の枠（`:prev`）へ移してから保存を始める。**バナーを無視して入力を始めても前回分を上書きしない**
+- ★バナーは**何も入力していない最初の画面でだけ**出す。音声入力欄は開いた時点の値を持つので、開いた後に流し込むとずれる
+- 下書きの後にフォームの項目が増えても、`mergeDraft()` が initialData の既定値で埋める（`.includes` で落ちない）
+- 送信前にタブを閉じようとするとブラウザの確認が出る（`beforeunload`）
+- 🔴 **ついでに直った既存バグ**: 音声入力欄は**文字起こしを毎回空から始めていた**（`useSpeechRecognition()` に初期値が無かった）。
+  「修正する」で戻って最終ステップを開き直すと文字起こしが消え、要DR確認のチェックを触ると親にも `''` を送り返して
+  `voiceMemo.transcript` を消していた（出口チェックの `era-missing` は文字起こしを見るので効かなくなる）。初期値を渡すようにした
+- テスト `scripts/golden/intake-draft.test.mjs`（11 件。壊して赤くなることを確認済み）。新しいフォームで組み込みを忘れたら落ちる
+- ブラウザで実地確認: RH で入力→ステップ 2 へ→再読み込み→バナー→再開でステップ・選択・自由記入が戻る／文字起こしがステップを行き来しても残る
+- ⚠️ 未確認: 「破棄」（確認ダイアログ）と、保存成功で消える経路（ローカルに Supabase が無いため）
+
+#### Next.js 14.0.0 → 14.2.35
+14.0.0 は middleware の認証すり抜け（CVE-2025-29927、14.2.25 で修正）の対象だった。**この app は認証を middleware だけで掛けている**。
+- 14.2.35 は **14 系の最終版**。`npm audit` には next の指摘が残る（修正は 15.5.24 以降にしか無い）。
+  残りの多くは App Router / Server Actions / next/image / rewrites / i18n 向けで、**この app はどれも使っていない**
+  （Pages Router・`next.config.js` は空・`next/image` 不使用）。ただし 14 系にはもう修正が出ないので、いずれ 15 へ上げる
+- `npm audit fix`（非破壊）で ws / nanoid / source-map-js も更新
+- `npm run check`（ゴールデン 397 件・eval 125/125）と `next build` グリーン（警告なし）
 
 ### 2026-10-16 (2) 音声整形の出口チェック（`lib/voiceReview.js`）
 

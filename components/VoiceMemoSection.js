@@ -123,7 +123,7 @@ const btnGhost = {
  */
 export default function VoiceMemoSection({ formData, formType, onUpdate, mode = 'currentIllness', initialValue }) {
   const cfg = MODE_CONFIG[mode] || MODE_CONFIG.currentIllness
-  const sr = useSpeechRecognition()
+  const sr = useSpeechRecognition(initialValue?.transcript || '')
   const [aiSummary, setAiSummary] = useState(initialValue?.aiSummary || formData?.voiceMemo?.aiSummary || '')
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')

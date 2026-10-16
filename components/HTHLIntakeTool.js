@@ -1,4 +1,6 @@
 import { useState, useRef } from "react";
+import DraftRestoreBanner from "./DraftRestoreBanner";
+import { useIntakeDraft } from "../lib/useIntakeDraft";
 import VoiceMemoSection from "./VoiceMemoSection";
 import Hba1cInput from "./Hba1cInput";
 import ReferralLetterInput from "./ReferralLetterInput";
@@ -105,6 +107,8 @@ export default function HTHLIntakeTool() {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [visitCode, setVisitCode] = useState("");
+  // 聴取の途中で消えないよう、入力のたびにこの PC に下書きを保存する（lib/intakeDraft.js）
+  const draft = useIntakeDraft("高血圧・脂質異常症", { data, step, initialData, saved: !!visitCode, lastStep: STEPS.length - 1 });
   const [recordId, setRecordId] = useState("");
   const [showKarte, setShowKarte] = useState(false);
   const [saveError, setSaveError] = useState(false);
@@ -546,6 +550,7 @@ export default function HTHLIntakeTool() {
       </div>
 
       <div style={{maxWidth:680,margin:"0 auto"}}>
+        <DraftRestoreBanner draft={draft} onRestore={(d) => { setData(d.data); setStep(d.step); }} />
         {!done&&(<div style={{display:"flex",gap:4,marginBottom:18}}>
           {STEPS.map((s,i)=>(<div key={s.id} onClick={()=>goStep(i)} style={{flex:1,textAlign:"center",cursor:"pointer",userSelect:"none"}}>
             <div style={{height:3,borderRadius:2,background:i<=step?TONE.fg:UI.border,marginBottom:5,transition:"background 0.3s"}}/>
