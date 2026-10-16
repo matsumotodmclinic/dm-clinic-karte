@@ -2,6 +2,7 @@ import { supabase } from '../../lib/supabase'
 import { getSession } from '../../lib/session'
 import { recordAuditLog } from '../../lib/auditLog'
 import { validateCreate, validatePatch } from '../../lib/validateQuestionnaire'
+import { purgeExpired } from '../../lib/retention'
 
 function generateVisitCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -54,6 +55,18 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
+    // 保存から一定日数を過ぎた問診を消す（lib/retention.js。環境変数が無ければ何もしない）
+    const session = await getSession(req, res)
+    await purgeExpired(supabase, {
+      onDeleted: ({ deleted, cutoff, days }) => recordAuditLog({
+        category: 'questionnaire',
+        action: 'purge_expired',
+        table_name: 'questionnaires',
+        note: `保存から ${days} 日を過ぎた問診 ${deleted} 件を自動削除（${cutoff.slice(0, 10)} より前）`,
+        new_value: JSON.stringify({ count: deleted, days }),
+      }, session.user),
+    })
+
     const { visit_code } = req.query
     let query = supabase
       .from('questionnaires')
