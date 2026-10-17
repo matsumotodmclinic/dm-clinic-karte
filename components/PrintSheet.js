@@ -60,7 +60,10 @@ export const PRINT_CSS = `
    ★幅は用途ごとに決め打ちする（院長 2026-10-14 実印刷「記入欄はもっと小さくてよい」）。
    flex:1 で伸ばすと紙の幅いっぱいの線になり、場所を取るわりに書く量は増えない。 */
 .kp-print-fill { display: inline-block; border-bottom: 1px solid #333; height: 18px; }
-.kp-print-fill-name { width: 52mm; }
+/* ★氏名の線だけは縮む。問診の種類は「甲状腺（腺腫悪性疑い）」のように長い回があり、
+   nowrap のままだと紙からはみ出す。はみ出すより、書く線が少し短いほうがまし。 */
+.kp-print-fill-name { flex: 0 1 46mm; width: 46mm; min-width: 28mm; }
+.kp-print-item { min-width: 0; }
 .kp-print-fill-staff { width: 20mm; }
 /* 生年月日は 年 / 月 / 日 を印字して、その手前だけ空ける（院長 2026-10-14） */
 .kp-print-fill-y { width: 11mm; }
@@ -69,6 +72,16 @@ export const PRINT_CSS = `
 /* 年齢は「58 歳」と印字するだけ。手で書く欄ではないので下線を中身のぶんだけにする
    （院長 2026-10-16「年齢や初事前問診者の入力欄が広すぎる」） */
 .kp-print-value-age { min-width: 0; }
+/* 問診の種類（「妊娠糖尿病」等）も印字するだけ。いちばん長いのは「甲状腺（腺腫悪性疑い）」 */
+.kp-print-value-form { min-width: 0; }
+/* ★上段で赤くするもの（院長 2026-10-16「どの問診を使用したかと初診日を赤文字で。
+   フォントは同じ大きさで」）。申し送りの赤字（.kp-print-hot）は 14px に拡大するが、
+   こちらは**大きさを変えない**。上段は nowrap で幅がぎりぎりなので、大きくすると紙からはみ出す。 */
+.kp-print-red,
+.kp-print-red .kp-print-label,
+.kp-print-red .kp-print-value { color: #c62828; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.kp-print-red .kp-print-fill,
+.kp-print-red .kp-print-value { border-bottom-color: #c62828; }
 .kp-print-karte {
   white-space: pre-wrap; word-break: break-word;
   font-size: 11.5px; line-height: 1.55;
@@ -199,6 +212,13 @@ export default function PrintSheet({ record, onFit, banner }) {
               {/* 年齢だけはアプリが保持している（氏名・生年月日は保存しない設計） */}
               <span className="kp-print-value kp-print-value-age">{record.age ? `${record.age} 歳` : ''}</span>
             </div>
+            {/* ★どの問診を使ったか（院長 2026-10-16）。それまで紙のどこにも出ていなかった。
+                赤字にするが **大きさは本文のまま**（院長指定）。14 フォームあるので
+                どの様式で聴いた記録かが分からないと、医師が読む前提を間違える。 */}
+            <div className="kp-print-item kp-print-red">
+              <span className="kp-print-label">問診</span>
+              <span className="kp-print-value kp-print-value-form">{record.form_type || ''}</span>
+            </div>
           </div>
           <div className="kp-print-row">
             <div className="kp-print-item">
@@ -213,7 +233,7 @@ export default function PrintSheet({ record, onFit, banner }) {
                 この紙は初事前の日に刷って、初診の日まで持っておくもの。
                 アプリは初診の予約日を持っていない（妊娠糖尿病のリブレ予約だけ例外）ので、
                 氏名・生年月日と同じく**空の罫線**として印字し、受付が書く。 */}
-            <div className="kp-print-item">
+            <div className="kp-print-item kp-print-red">
               <span className="kp-print-label">初診日</span>
               <span className="kp-print-fill kp-print-fill-y" />
               <span className="kp-print-label">年</span>

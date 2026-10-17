@@ -40,7 +40,7 @@ describe('A4 の赤字（リブレの装着・妊娠糖尿病の予約）', () =
       disease: { dmSymptoms: { selected: [POSTPRANDIAL_HYPO_SYMPTOM] } },
       libre: { attached, date: '2026-10-16' },
     })),
-    '□リブレ（自費CGM）取り付けに同意済',
+    '□リブレ（自費CGM）取り付けに同意され、リブレLink、リブレViewインストール、当院IDとのリンクを依頼済',
   ]
 
   test('リブレの装着・予約の行はすべて赤字になる', () => {
@@ -105,6 +105,35 @@ describe('印刷用 A4（components/PrintSheet.js）', () => {
   // ★上段は必ず 2 行（院長 2026-10-16「上段は必須で２列にしてほしい」）。
   //   折り返しを許すと、幅が少し足りないだけで受付コードが 3 行目にぶら下がる（実際に起きた）。
   //   実測（190mm 幅）: 1 行目 542px / 2 行目 596px / 使える幅 690px。
+  // ★2026-10-16 院長「どの問診を使用したかと初診日を赤文字で。フォントは同じ大きさで」。
+  //   それまで紙のどこにも「どの様式で聴いた記録か」が出ていなかった。
+  test('上部に問診の種類が出る（赤・大きさは本文のまま）', () => {
+    const s = read('components/PrintSheet.js')
+    assert.ok(s.includes('record.form_type'), '問診の種類を印字していない')
+    assert.ok(s.includes('kp-print-red'), '赤字のクラスが無い')
+    // 申し送りの赤字（kp-print-hot）は 14px に拡大するが、上段は大きさを変えない
+    const red = s.match(/\.kp-print-red[^}]*\{[^}]*\}/g)?.join('') || ''
+    assert.ok(red.includes('color: #c62828'), '上段の赤が指定されていない')
+    assert.ok(!/font-size/.test(red), '上段の赤字で大きさを変えている（院長指定は「同じ大きさ」）')
+  })
+
+  test('初診日も赤くする', () => {
+    const s = read('components/PrintSheet.js')
+    // ★コメント中の「初診日」ではなく、画面に出るラベルの側を見る
+    const i = s.indexOf('<span className="kp-print-label">初診日</span>')
+    assert.ok(i > 0, '初診日のラベルが無い')
+    assert.ok(s.slice(i - 120, i).includes('kp-print-red'), '初診日の欄が赤くなっていない')
+  })
+
+  // ★問診の種類は「甲状腺（腺腫悪性疑い）」のように長い。nowrap なので、はみ出す前に
+  //   氏名の線が縮んで吸収する（ブラウザで全フォーム分を実測して決めた）。
+  test('氏名の線は縮んで長い問診名を吸収する', () => {
+    const s = read('components/PrintSheet.js')
+    const rule = s.match(/\.kp-print-fill-name \{[^}]*\}/)?.[0] || ''
+    assert.ok(/flex:\s*0 1/.test(rule), '氏名の線が縮まない（長い問診名で紙からはみ出す）')
+    assert.ok(/min-width/.test(rule), '縮みすぎて書けなくなる下限が無い')
+  })
+
   test('上段は折り返さない（2 行から増やさない）', () => {
     const s = read('components/PrintSheet.js')
     const row = s.match(/\.kp-print-row \{[^}]*\}/)?.[0]
