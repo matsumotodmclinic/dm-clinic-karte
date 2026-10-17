@@ -20,6 +20,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { UI } from '../../lib/uiTokens'
 import { HANDOFF_SECTIONS } from '../../lib/handoffCatalog'
+import { RED_ON_PAPER } from '../../lib/libreNotes'
 
 const FONT = "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif"
 
@@ -102,10 +103,19 @@ const NEW_ITEMS = [
 
 // ── ④ 印刷用A4（医師に渡す紙）の見方 ──────────────────────
 const SHEET = [
-  ['上段の 2 行', '手書きするのは 氏名・男女・生年月日・初事前問診者・初診日。年齢・問診日・受付コードはアプリが入れます。氏名と生年月日をアプリに保存しない設計なので、ここだけ手書きです。'],
-  ['赤くて大きい行', 'リブレの装着と、妊娠糖尿病の予約です。やったかどうかがそのまま残る行なので、見落とさないように赤くしてあります。モノクロのプリンタでは灰色になります。'],
+  ['上段の 2 行', '手書きするのは 氏名・男女・生年月日・初事前問診者・初診日。年齢・問診日・受付コード・問診の種類はアプリが入れます。氏名と生年月日をアプリに保存しない設計なので、ここだけ手書きです。'],
   ['右側の枠', 'ドクターキューブの事前WEB問診を貼り付けた回だけ出ます（左がカルテ、右が貼り付け）。貼り付けが無い回はカルテが全幅になります。'],
   ['1 枚に入らないとき', '自動で少しだけ縮めて 1 枚に収めます。縮めても入らないときは画面に警告が出るので、貼り付けを削ってください。'],
+]
+
+// ── ④-2 紙で赤くなるもの（院長 2026-10-16）────────────────
+//
+// 上段は**大きさを変えずに色だけ**、申し送りは**赤くて大きい**。意味が違うので分けて説明する。
+// ★申し送り側の一覧は `lib/libreNotes.js` の RED_ON_PAPER から出す（書き写さない）。
+//   赤を足したらこのページにも自動で載る。
+const RED_HEAD = [
+  ['問診の種類', 'どの様式で聴いた記録かが分からないと、医師が読む前提を間違えるためです（14 フォームあります）。'],
+  ['初診日', 'この紙は初事前の日に刷って初診の日まで持っておくものなので、受付が手で書きます。'],
 ]
 
 // ── ⑤ 今回の改訂で変わったこと ────────────────────────────
@@ -239,6 +249,37 @@ export default function HandoffHelpPage() {
               <div className="kp-row" key={t}>
                 <div className="kp-line">{t}</div>
                 <div className="kp-when">{b}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="kp-card">
+            <h2 className="kp-h2">④-2 紙で赤くなるもの</h2>
+            <p className="kp-note">
+              赤は「見落とすと困るもの」にだけ使っています。増やすと赤が意味を失うので、ここに挙げたものだけです。
+              <strong>モノクロのプリンタでは灰色になります。</strong>色で確かめたいときはカラーで印刷してください。
+            </p>
+
+            <div style={{ fontSize: 13, fontWeight: 700, color: UI.text, margin: '10px 0 2px' }}>
+              上段（色だけ赤・大きさは他と同じ）
+            </div>
+            {RED_HEAD.map(([t, b]) => (
+              <div className="kp-row" key={t}>
+                <div className="kp-line" style={{ color: '#c62828' }}>{t}</div>
+                <div className="kp-when">{b}</div>
+              </div>
+            ))}
+
+            <div style={{ fontSize: 13, fontWeight: 700, color: UI.text, margin: '14px 0 2px' }}>
+              申し送り（赤くて大きい）
+            </div>
+            <p className="kp-note" style={{ margin: '0 0 6px' }}>
+              リブレに関わる行です。<strong>やったかどうかがそのまま残る</strong>ので、入れ忘れると「未確認」と医師に伝わります。
+            </p>
+            {RED_ON_PAPER.map(r => (
+              <div className="kp-row" key={r.match}>
+                <div className="kp-line" style={{ color: '#c62828' }}>{r.what}</div>
+                <div className="kp-when">{r.when}</div>
               </div>
             ))}
           </div>

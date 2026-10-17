@@ -93,6 +93,17 @@ describe('運用の手引き（/help/handoff）', () => {
     assert.ok(s.includes('kp-no-print'), '画面用のボタンが紙に出てしまう')
   })
 
+  // ★紙で赤くなるものはガイドにまとめる（院長 2026-10-16「完全ガイドに赤文字にしている内容をまとめておいて」）。
+  //   申し送り側は lib/libreNotes.js の RED_ON_PAPER から出す＝赤を足したらガイドにも自動で載る。
+  test('紙で赤くなるものを載せている（申し送り側は正本から出す）', () => {
+    assert.ok(s.includes("from '../../lib/libreNotes'"), '赤の正本を import していない')
+    assert.ok(s.includes('RED_ON_PAPER.map'), '赤の一覧を書き写している可能性がある')
+    // 上段の 2 つは PrintSheet 側にあるので、ここだけは文言で確かめる
+    for (const ng of ['問診の種類', '初診日', 'モノクロ']) {
+      assert.ok(s.includes(ng), `赤の説明が欠けている: ${ng}`)
+    }
+  })
+
   test('早見表は lib/handoffCatalog.js から出す（書き写さない）', () => {
     assert.ok(s.includes("from '../../lib/handoffCatalog'"), 'カタログを import していない')
     assert.ok(s.includes('HANDOFF_SECTIONS.map'), 'カタログを展開していない')
