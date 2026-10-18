@@ -102,10 +102,19 @@ describe('依頼書 HTML: 赤くする場所', () => {
   })
 })
 
-describe('依頼書 HTML: 出力が資料と同期している', () => {
-  test('npm run build:drqube を流し忘れていない', () => {
-    const committed = fs.readFileSync(OUT, 'utf8')
-    assert.equal(committed, html,
-      `${OUT} が ${SRC} と食い違っている。\`npm run build:drqube\` を流してからコミットすること`)
+describe('依頼書 HTML: 生成物は repo に置かない', () => {
+  // ★2026-10-18: 最初は出力を repo に入れて「流し忘れ」を検査していたが、
+  //   **開いて見るファイルと生成し直すファイルが同じ**なので、院長が開いている間は
+  //   Windows がファイルを掴んで書き換えられず、作業が止まった。
+  //   正本は .md だけにして、送る直前に作り直す手順にした。
+  test('出力は .gitignore に入っている（追跡すると書き換えられなくなる）', () => {
+    const ignore = fs.readFileSync('.gitignore', 'utf8')
+    assert.ok(/docs\/doctorqube_request\*?\.html/.test(ignore),
+      '生成物が追跡対象に戻っている。開いている間に書き換えられず作業が止まる')
+  })
+
+  test('生成物が無くても検査できる（.md から組み立てて見ている）', () => {
+    assert.ok(html.length > 1000, 'HTML が組み立てられていない')
+    assert.ok(!fs.existsSync(OUT) || true, '出力の有無に関係なく通ること')
   })
 })
