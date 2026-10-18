@@ -10,7 +10,8 @@
     "check": "npm run check:styles && npm test && npm run eval",
     "check:styles": "node scripts/verify-form-styles.mjs",
     "eval": "node --env-file-if-exists=.env.local scripts/eval/run.mjs",
-    "audit:handoff": "node scripts/handoff-audit.mjs"
+    "audit:handoff": "node scripts/handoff-audit.mjs",
+    "build:drqube": "node scripts/build-drqube-request.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
