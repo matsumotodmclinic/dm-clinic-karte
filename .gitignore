@@ -38,3 +38,4 @@ Thumbs.db
 # ★開いて見るファイルと生成し直すファイルが同じなので、repo には置かない
 #   （見ている最中は Windows がファイルを掴んで書き換えられない・2026-10-18）
 docs/doctorqube_request*.html
+docs/doctorqube_request*.pdf
