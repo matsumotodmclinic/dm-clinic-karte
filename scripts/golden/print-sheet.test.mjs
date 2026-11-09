@@ -104,7 +104,12 @@ describe('印刷用 A4（components/PrintSheet.js）', () => {
   //   アプリは初診の予約日を持っていないので**空の罫線**にしてある（氏名・生年月日と同じ）。
   // ★上段は必ず 2 行（院長 2026-10-16「上段は必須で２列にしてほしい」）。
   //   折り返しを許すと、幅が少し足りないだけで受付コードが 3 行目にぶら下がる（実際に起きた）。
-  //   実測（190mm 幅）: 1 行目 542px / 2 行目 596px / 使える幅 690px。
+  // ★2026-11-09 に ID と初診の時刻を足した（院長「時間を書くスペースと ID のスペースが欲しい。
+  //   今のスペースから大きくならないように」）。欄の幅・間隔を詰めて **2 行のまま・高さも同じ**にした。
+  //   実測（190mm 幅・使える幅 696px / 受付コードは 4 桁・問診名はいちばん長い回）:
+  //     1 行目 604px（1型）/ 688px（甲状腺（腺腫悪性疑い））/ 2 行目 679px
+  //   測り方: 縮小（transform）と width を外し、行を width:max-content にして offsetWidth を読む。
+  //   ★そのまま測ると、flex が縮めた後の幅（＝使える幅と同値）しか返らず「収まっている」と誤読する。
   // ★2026-10-16 院長「どの問診を使用したかと初診日を赤文字で。フォントは同じ大きさで」。
   //   それまで紙のどこにも「どの様式で聴いた記録か」が出ていなかった。
   test('上部に問診の種類が出る（赤・大きさは本文のまま）', () => {
@@ -144,12 +149,61 @@ describe('印刷用 A4（components/PrintSheet.js）', () => {
 
   test('上部に初診日の記入欄がある（値は印字しない）', () => {
     const s = read('components/PrintSheet.js')
-    const i = s.indexOf('初診日')
+    // ★CSS のコメントにも「初診日」が出てくるので、**画面に出るラベル**から数える
+    const i = s.indexOf('<span className="kp-print-label">初診日</span>')
     assert.ok(i > 0, '初診日の欄が無い')
     // 手書き欄なので、ラベルの近くに record の値を埋めていないこと
-    const block = s.slice(i, i + 600)
+    const block = s.slice(i, i + 700)
     assert.ok(!block.includes('record.'), '初診日に値を埋めている（アプリは初診日を持っていない）')
     assert.ok(block.includes('kp-print-fill'), '初診日が空の罫線になっていない')
+  })
+
+  // ★2026-11-09 院長「初診日は手書きだが、時間も書きたい。ID のスペースも欲しい。
+  //   今のスペースから大きくならないように」。どちらも手書き欄（アプリは時刻も ID も持たない）。
+  test('初診日に時刻（時・分）の記入欄がある', () => {
+    const s = read('components/PrintSheet.js')
+    const i = s.indexOf('<span className="kp-print-label">初診日</span>')
+    const j = s.indexOf('</div>', i)
+    const block = s.slice(i, j)
+    for (const unit of ['年', '月', '日', '時', '分']) {
+      assert.ok(block.includes(`<span className="kp-print-label">${unit}</span>`),
+        `初診日の欄に「${unit}」が無い（日付と時刻はひとまとまりで書く）`)
+    }
+    assert.ok(!block.includes('record.'), '初診の時刻に値を埋めている（アプリは初診の時刻を持っていない）')
+  })
+
+  test('時刻は初診日と同じ赤字の枠の中にある（日時はひとまとまり）', () => {
+    const s = read('components/PrintSheet.js')
+    const i = s.indexOf('<span className="kp-print-label">初診日</span>')
+    const head = s.slice(i - 120, i)
+    assert.ok(head.includes('kp-print-red'), '初診日の欄が赤くなっていない')
+    // 「分」まで同じ item の中（＝次の </div> より前）にあること
+    const j = s.indexOf('</div>', i)
+    assert.ok(s.slice(i, j).includes('>分</span>'), '時刻が初診日と別の欄に出ている（赤が揃わない）')
+  })
+
+  test('上部に ID の記入欄がある（値は印字しない）', () => {
+    const s = read('components/PrintSheet.js')
+    const i = s.indexOf('<span className="kp-print-label">ID</span>')
+    assert.ok(i > 0, 'ID の欄が無い')
+    const block = s.slice(i, s.indexOf('</div>', i))
+    assert.ok(block.includes('kp-print-fill-id'), 'ID が空の罫線になっていない')
+    // ★アプリは ID を保存しない（氏名・生年月日と同じ匿名化設計）。埋めようとしたら落とす
+    assert.ok(!block.includes('record.'), 'ID に値を埋めている（アプリは ID を持っていない）')
+  })
+
+  // ★欄を足すと 3 行目に落ちる or 枠からはみ出す。幅はブラウザで実測して詰めてあるので、
+  //   「詰めた指定」が消えていないかをここで固定する（消すと静かに紙が壊れる）。
+  test('上段 2 行に収めるために詰めた幅の指定が残っている', () => {
+    const s = read('components/PrintSheet.js')
+    const row = s.match(/\.kp-print-row \{[^}]*\}/)?.[0] || ''
+    assert.ok(/gap:\s*6px 8px/.test(row), '欄の間隔が広がっている（2 行に収まらなくなる）')
+    const head = s.match(/\.kp-print-head \{[^}]*\}/)?.[0] || ''
+    assert.ok(/padding:\s*10px 10px/.test(head), '枠の内側の余白が広がっている（使える幅が減る）')
+    // 2 行目にも「縮んで吸収する線」が要る（1 行目の氏名に当たるもの）
+    const staff = s.match(/\.kp-print-fill-staff \{[^}]*\}/)?.[0] || ''
+    assert.ok(/flex:\s*0 1/.test(staff) && /min-width/.test(staff),
+      '2 行目に縮んで吸収する線が無い（書体が替わると枠からはみ出す）')
   })
 
   test('印刷見本は「いちばん厳しい回」になっている', () => {

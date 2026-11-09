@@ -45,13 +45,20 @@ export const PRINT_CSS = `
    「1 枚に収める」計算が画面幅に引きずられる（実測: 画面を細くすると縮小率 2% まで落ちた）。
    画面が狭いときは横スクロールさせる（印刷のためのページなので、見た目より寸法を優先） */
 .kp-print-scroll { overflow-x: auto; }
-.kp-print-head { border: 1px solid #333; padding: 10px 14px; margin-bottom: 10px; }
+.kp-print-head { border: 1px solid #333; padding: 10px 10px; margin-bottom: 10px; }
 /* ★上段は必ず 2 行（院長 2026-10-16）。折り返して 3 行目ができると、受付コードだけが
-   下にぶら下がって読みにくい。nowrap で折り返しを止め、入りきるよう各欄の幅と間隔を詰めてある
-   （実測で 690px に対して約 600px。残り 13% は書体が読み込まれる前の太い代替フォント用の余裕）。
+   下にぶら下がって読みにくい。nowrap で折り返しを止め、入りきるよう各欄の幅と間隔を詰めてある。
    ★欄を足すときは必ずブラウザで幅を測り直すこと。nowrap なので、入りきらないと折り返さずに
-   枠からはみ出す（紙の上で切れる）。 */
-.kp-print-row { display: flex; flex-wrap: nowrap; align-items: flex-end; gap: 6px 12px; margin-bottom: 10px; }
+   枠からはみ出す（紙の上で切れる）。
+   ★測り方（2026-11-09 に確立）: 縮小（transform）と width を外し、行を width:max-content
+   にして offsetWidth を読む。**そのままの状態で測ってはいけない** — 行は既に目一杯なので、
+   （★この注意書きはテンプレートリテラルの中にある。バッククォートを書くと文字列がそこで終わる）
+   flex が全部の欄を縮めた後の幅（＝使える幅と同じ値）しか返らない。
+   ★ID と初診時間を足したときの実測（2026-11-09・いちばん長い「甲状腺（腺腫悪性疑い）」）:
+   使える幅 696px / 1 行目 709px（氏名の線が 46mm→42mm に縮んで吸収）/ 2 行目 679px。
+   このとき詰めたもの: 欄の間隔 12→8px・枠の内側 14→10px・問診者 16→12mm・年月日 11→9mm /
+   7→6mm・年齢を 2 行目へ（ラベルなし）。 */
+.kp-print-row { display: flex; flex-wrap: nowrap; align-items: flex-end; gap: 6px 8px; margin-bottom: 10px; }
 .kp-print-row:last-child { margin-bottom: 0; }
 .kp-print-item { display: flex; align-items: flex-end; gap: 6px; }
 .kp-print-label { font-size: 11px; font-weight: 700; white-space: nowrap; }
@@ -62,18 +69,29 @@ export const PRINT_CSS = `
 .kp-print-fill { display: inline-block; border-bottom: 1px solid #333; height: 18px; }
 /* ★氏名の線だけは縮む。問診の種類は「甲状腺（腺腫悪性疑い）」のように長い回があり、
    nowrap のままだと紙からはみ出す。はみ出すより、書く線が少し短いほうがまし。 */
-.kp-print-fill-name { flex: 0 1 46mm; width: 46mm; min-width: 28mm; }
+.kp-print-fill-name { flex: 0 1 42mm; width: 42mm; min-width: 28mm; }
 .kp-print-item { min-width: 0; }
-.kp-print-fill-staff { width: 20mm; }
-/* 生年月日は 年 / 月 / 日 を印字して、その手前だけ空ける（院長 2026-10-14） */
-.kp-print-fill-y { width: 11mm; }
-.kp-print-fill-md { width: 7mm; }
-.kp-print-value { font-size: 13px; font-weight: 700; border-bottom: 1px solid #333; min-width: 58px; padding: 0 4px 1px; white-space: nowrap; }
+/* ★ID と 初診時間 を足したので（院長 2026-11-09）、既にあった欄の幅を詰めて 2 行を守った。
+   初事前問診者は 20mm → 16mm（院長 2026-10-16「年齢や初事前問診者の入力欄が広すぎる」）。 */
+/* ★2 行目にも「縮んで吸収する線」を 1 本つくる（2026-11-09）。
+   1 行目は氏名の線が長い問診名を吸収するが、2 行目にはそれが無く、書体が替わって数 px 伸びただけで
+   枠からはみ出す（nowrap なので折り返さずに紙の上で切れる）。初事前問診者は頭文字か短い名字しか
+   書かないので、ここを吸収役にする。 */
+.kp-print-fill-staff { flex: 0 1 12mm; width: 12mm; min-width: 8mm; }
+/* 電子カルテの患者 ID（院長 2026-11-09）。受付が手で書く。
+   アプリは ID を保存しない（氏名・生年月日と同じ匿名化設計）ので空の罫線にする。 */
+.kp-print-fill-id { width: 13mm; }
+/* 生年月日・初診日は 年 / 月 / 日 を印字して、その手前だけ空ける（院長 2026-10-14） */
+.kp-print-fill-y { width: 9mm; }
+.kp-print-fill-md { width: 6mm; }
+.kp-print-value { font-size: 13px; font-weight: 700; border-bottom: 1px solid #333; min-width: 58px; padding: 0 3px 1px; white-space: nowrap; }
 /* 年齢は「58 歳」と印字するだけ。手で書く欄ではないので下線を中身のぶんだけにする
    （院長 2026-10-16「年齢や初事前問診者の入力欄が広すぎる」） */
 .kp-print-value-age { min-width: 0; }
 /* 問診の種類（「妊娠糖尿病」等）も印字するだけ。いちばん長いのは「甲状腺（腺腫悪性疑い）」 */
 .kp-print-value-form { min-width: 0; }
+/* 受付コードは必ず 4 桁。下線を中身のぶんだけにして、足した欄のぶんの幅を作る（2026-11-09） */
+.kp-print-value-code { min-width: 0; }
 /* ★上段で赤くするもの（院長 2026-10-16「どの問診を使用したかと初診日を赤文字で。
    フォントは同じ大きさで」）。申し送りの赤字（.kp-print-hot）は 14px に拡大するが、
    こちらは**大きさを変えない**。上段は nowrap で幅がぎりぎりなので、大きくすると紙からはみ出す。 */
@@ -191,6 +209,13 @@ export default function PrintSheet({ record, onFit, banner }) {
         <div className="kp-print-head">
           {/* 氏名・生年月日は保存しない設計なので手書き。線は書くのに要るぶんだけ */}
           <div className="kp-print-row">
+            {/* ★ID（院長 2026-11-09）。電子カルテの患者番号を受付が手で書く。
+                アプリは ID を保存しない（氏名・生年月日と同じ匿名化設計）ので空の罫線。
+                患者を特定する欄なので氏名の隣に置く。赤字にはしない（赤は 問診の種類・初診日 だけ）。 */}
+            <div className="kp-print-item">
+              <span className="kp-print-label">ID</span>
+              <span className="kp-print-fill kp-print-fill-id" />
+            </div>
             <div className="kp-print-item">
               <span className="kp-print-label">氏名</span>
               <span className="kp-print-fill kp-print-fill-name" />
@@ -206,11 +231,6 @@ export default function PrintSheet({ record, onFit, banner }) {
               <span className="kp-print-label">月</span>
               <span className="kp-print-fill kp-print-fill-md" />
               <span className="kp-print-label">日</span>
-            </div>
-            <div className="kp-print-item">
-              <span className="kp-print-label">年齢</span>
-              {/* 年齢だけはアプリが保持している（氏名・生年月日は保存しない設計） */}
-              <span className="kp-print-value kp-print-value-age">{record.age ? `${record.age} 歳` : ''}</span>
             </div>
             {/* ★どの問診を使ったか（院長 2026-10-16）。それまで紙のどこにも出ていなかった。
                 赤字にするが **大きさは本文のまま**（院長指定）。14 フォームあるので
@@ -229,10 +249,21 @@ export default function PrintSheet({ record, onFit, banner }) {
               <span className="kp-print-label">問診日</span>
               <span className="kp-print-value">{formatDate(record.created_at)}</span>
             </div>
+            {/* ★年齢は 2026-11-09 に 1 行目から 2 行目へ移した（ID と初診時間を足した場所を作るため）。
+                ラベルは付けない — 値が「58 歳」なので「年齢」と書かなくても読める。
+                年齢を持っていない回は欄ごと出さない（空の下線だけが残ると手書き欄に見える）。
+                年齢だけはアプリが保持している（氏名・生年月日は保存しない設計）。 */}
+            {record.age ? (
+              <div className="kp-print-item">
+                <span className="kp-print-value kp-print-value-age">{record.age} 歳</span>
+              </div>
+            ) : null}
             {/* ★初診日は手書き（院長 2026-10-16）。
                 この紙は初事前の日に刷って、初診の日まで持っておくもの。
                 アプリは初診の予約日を持っていない（妊娠糖尿病のリブレ予約だけ例外）ので、
-                氏名・生年月日と同じく**空の罫線**として印字し、受付が書く。 */}
+                氏名・生年月日と同じく**空の罫線**として印字し、受付が書く。
+                ★時刻も書く（院長 2026-11-09）。同じ item の中に置くので、
+                  日付と同じ赤字になる（予約の日時はひとまとまりで読むもの）。 */}
             <div className="kp-print-item kp-print-red">
               <span className="kp-print-label">初診日</span>
               <span className="kp-print-fill kp-print-fill-y" />
@@ -241,10 +272,14 @@ export default function PrintSheet({ record, onFit, banner }) {
               <span className="kp-print-label">月</span>
               <span className="kp-print-fill kp-print-fill-md" />
               <span className="kp-print-label">日</span>
+              <span className="kp-print-fill kp-print-fill-md" />
+              <span className="kp-print-label">時</span>
+              <span className="kp-print-fill kp-print-fill-md" />
+              <span className="kp-print-label">分</span>
             </div>
             <div className="kp-print-item">
               <span className="kp-print-label">受付コード</span>
-              <span className="kp-print-value">{record.visit_code || ''}</span>
+              <span className="kp-print-value kp-print-value-code">{record.visit_code || ''}</span>
             </div>
           </div>
         </div>
